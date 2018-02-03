@@ -959,7 +959,7 @@ lemma second_stepB: "\<lbrakk> \<turnstile> (A :: ('s :: state) attree);
                  (\<forall> i < (length sl - 1).  \<turnstile> \<N>\<^bsub>(sl ! i,sl ! (i+1) )\<^esub>
                          )) \<rbrakk>
     \<Longrightarrow> Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s"    
-           apply (simp add:check_def)
+  apply (simp add:check_def)
            apply (rule subsetI)
     apply (rule CollectI)
            apply (rule conjI)
@@ -1091,6 +1091,22 @@ theorem ATV_EF: "\<lbrakk> \<turnstile>\<^sub>V (A :: ('s :: state) attree); (I,
   apply (simp add: valid_ref_def)
     apply (erule conjE)
   apply (erule AT_EF)
-    by (simp add: ref_pres_att)
+  by (simp add: ref_pres_att)
+    
+    
+(* Completeness *)
+    
+lemma Compl_step1: 
+"Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s 
+\<Longrightarrow> \<forall> x \<in> I. \<exists> y \<in> s. x \<rightarrow>\<^sub>i* y"
+  apply (simp add:check_def)
+         apply clarify
+apply (drule subsetD)
+   apply assumption
+  apply (drule CollectD)
+  apply (erule conjE)
+by (erule EF_step_star_rev)
+   
+
   
 end

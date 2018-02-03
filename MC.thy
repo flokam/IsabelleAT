@@ -437,6 +437,73 @@ lemma EF_step_star: "\<lbrakk> x  \<rightarrow>\<^sub>i* y; y \<in> f \<rbrakk> 
     apply (erule EF_lem2a)
   apply (clarify)
   apply (erule EF_step_step)
-    by assumption
+  by assumption
 
+lemma EF_induct_prep: "(a::'a::state) \<in> lfp (\<lambda> Z. (f::'a::state set) \<union> EX' Z) \<Longrightarrow>
+    mono  (\<lambda> Z. (f::'a::state set) \<union> EX' Z) \<Longrightarrow>
+    (\<And>x::'a::state.
+        x \<in> ((\<lambda> Z. (f::'a::state set) \<union> EX' Z)(lfp (\<lambda> Z. (f::'a::state set) \<union> EX' Z) \<inter> {x::'a::state. (P::'a::state \<Rightarrow> bool) x})) \<Longrightarrow> P x) \<Longrightarrow>
+    P a"
+  apply (rule_tac A = "EF f" in def_lfp_induct_set)
+     apply (rule EF_def)
+    apply assumption
+   by (simp add: EF_def)+
+    
+lemma EF_induct: "(a::'a::state) \<in> EF (f :: 'a :: state set) \<Longrightarrow>
+    mono  (\<lambda> Z. (f::'a::state set) \<union> EX' Z) \<Longrightarrow>
+    (\<And>x::'a::state.
+        x \<in> ((\<lambda> Z. (f::'a::state set) \<union> EX' Z)(EF f \<inter> {x::'a::state. (P::'a::state \<Rightarrow> bool) x})) \<Longrightarrow> P x) \<Longrightarrow>
+    P a"
+apply (simp add: EF_def)  
+  apply (erule EF_induct_prep)
+    apply assumption
+  by simp
+    
+lemma valEF_E: "M \<turnstile> EF f \<Longrightarrow> x \<in> init M \<Longrightarrow> x \<in> EF f"
+  apply (simp add: check_def)     
+    apply (drule subsetD)
+   apply assumption
+  by simp
+    
+lemma valEFI: " \<forall> x \<in> init M. x \<in> EF f \<Longrightarrow> M \<turnstile> EF f"
+  apply (simp add: check_def)
+    apply (rule subsetI)
+  apply (drule_tac x = x in bspec)
+   apply assumption
+  apply (rule CollectI)
+  apply (simp add: init_def)
+    oops
+    
+lemma EF_step_star_rev[rule_format]: "x \<in> EF s \<Longrightarrow>  (\<exists> y \<in> s.  x  \<rightarrow>\<^sub>i* y)"
+  apply (erule EF_induct)
+   apply (simp add: mono_def EX'_def)
+   apply force
+  apply (erule UnE)
+   apply (rule_tac x = x in bexI)
+    apply (simp add: state_transition_refl_def)
+   apply assumption
+  apply (simp add: EX'_def)
+  apply (erule bexE)
+  apply (erule IntE)
+  apply (drule CollectD)
+  apply (erule bexE)
+  apply (rule_tac x = xb in bexI)
+   apply (simp add: state_transition_refl_def)
+   apply (rule rtrancl_trans)
+    apply (rule r_into_rtrancl)
+    apply (rule CollectI)
+    apply simp
+  by assumption+
+    
+      
+lemma EF_step_inv: "(I \<subseteq> {sa::'s :: state. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> EF s})  
+         \<Longrightarrow> \<forall> x \<in> I. \<exists> y \<in> s. x \<rightarrow>\<^sub>i* y"
+  apply clarify
+apply (drule subsetD)
+   apply assumption
+  apply (drule CollectD)
+  apply (erule conjE)
+by (erule EF_step_star_rev)
+ 
+  
 end
