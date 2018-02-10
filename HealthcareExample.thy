@@ -227,9 +227,9 @@ lemma att_hc: "\<turnstile>[\<N>\<^bsub>(Ihc,HC')\<^esub>, \<N>\<^bsub>(HC',HC''
   apply (simp add: att_and)
     apply (rule conjI)
    apply (simp add: Ihc_def HC'_def att_base) 
-    (* instantiation should give that for free 
-    apply (rule step1) *)
-  sorry
+    (* instantiation gives that for free *)
+by (rule step1) 
+
     
 
 theorem hc_EF: "hc_Kripke \<turnstile> EF shc"
@@ -241,88 +241,7 @@ theorem hc_EF: "hc_Kripke \<turnstile> EF shc"
   by simp
     
     
-(* similar to IoT-MC. Not needed any more because of AT_EF theorem 
-theorem hc_Kripke_policy_fail: 
-  "hc_Kripke \<turnstile> AG ({x. global_policy x ''Carer''})"
-(* fails *)
-oops
 
-(* similar to IoT-MC  *)
-theorem hc_Kripke_attack:
-  "hc_Kripke \<turnstile> EF ({x. \<not> global_policy x ''Carer''})"
-sorry
 
-theorem hc_find_attack:
-  "hc_Kripke \<turnstile> EF ({x. enables x bankapp (Actor ''Carer'') eval})"
-sorry                                      
-*)
-
-(* Now the attack tree lemmas *)
-(*  Update this later
-lemma ref_lem_b: "([\<N>\<^bsub>Goto bankapp\<^esub>, \<N>\<^bsub>Perform eval\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(''getmovemoveeval'')\<^esup> )
-               \<sqsubseteq>\<^sub>hc_scenario ([\<N>\<^bsub>Perform get\<^esub>, \<N>\<^bsub>Goto sphone\<^esub>, \<N>\<^bsub>Goto bankapp\<^esub>, \<N>\<^bsub>Perform eval\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(''getmovemoveeval'')\<^esup>)"
-apply (rule_tac l = "[Perform get, Goto sphone, Goto bankapp]" and
-                a = "Goto bankapp" and I' = hc_scenario 
-                and I'' = hc_scenario''' in refI)
-apply (simp add: state_transition_refl_def)
-(* prefer 4
-apply simp *)
-prefer 3
-apply simp
-prefer 2
-apply simp
-apply (rule transf_trans3)
-apply (rule step1t)
-apply (rule step2t)
-apply (rule step3t)
-by simp
-*)
-
-                
-                
-                
-(* old version now very different see above                
-lemma final_attack_a: "hc_scenario, Actor ''Carer'' \<turnstile> 
-([\<N>\<^bsub>Perform get\<^esub>, \<N>\<^bsub>Goto sphone\<^esub>, \<N>\<^bsub>Goto bankapp\<^esub>, \<N>\<^bsub>Perform eval\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(''getmovemoveeval'')\<^esup>)"
-(*  
-apply (subgoal_tac "[\<N>\<^bsub>Perform get\<^esub>, \<N>\<^bsub>Goto sphone\<^esub>, \<N>\<^bsub>Goto bankapp\<^esub>, \<N>\<^bsub>Perform eval\<^esub>]
-                 = [\<N>\<^bsub>Perform get\<^esub>] @  [\<N>\<^bsub>Goto sphone\<^esub>, \<N>\<^bsub>Goto bankapp\<^esub>, \<N>\<^bsub>Perform eval\<^esub>]")
-apply (erule ssubst) *)   
-apply (rule_tac s = "''getmovemoveeval''"  in att_comp_and_cons)
-apply (rule_tac l = room in att_act)
-apply (simp add: hc_scenario_def local_policies_def ex_locs_def ex_graph_def ex_creds_def enables_def)
-apply (rule_tac I = hc_scenario' in att_comp_and_cons)
-apply (rule_tac l = sphone in att_goto)
-apply (simp add: hc_scenario'_def local_policies_def ex_locs_def ex_graph_def ex_creds'_def enables_def)
-apply (rule_tac I = hc_scenario'' in att_comp_and_cons)
-apply (rule_tac l = bankapp in att_goto)
-apply (simp add: hc_scenario''_def local_policies_def ex_locs_def ex_graph'_def 
-       ex_creds'_def enables_def atI_def sphone_def room_def)
-apply (rule_tac I = hc_scenario'' in att_and_one)
-apply (rule_tac l = bankapp in att_act)
-apply (simp add: hc_scenario''_def local_policies_def ex_locs_def ex_graph'_def 
-       ex_creds'_def enables_def atI_def sphone_def room_def bankapp_def)
-(*     
-apply (rule_tac I = hc_scenario'' in att_and_nil)
-apply (simp add: state_transition_refl_def) *)
-(* simplified rule for att_comp_and has no condition on the string, therefore
-   less subgoals.
-prefer 7
-apply simp
-apply simp
-*)
-apply (simp add: state_transition_refl_def) 
-(* apply simp *) 
-apply (rule step2r)
-(* apply (simp add: get_attack_def) *)
-by (rule step1r)
-
-    
-
-theorem hc_attack:"hc_scenario, Actor ''Carer'' \<turnstile> ([\<N>\<^bsub>Goto bankapp\<^esub>, \<N>\<^bsub>Perform eval\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(''getmovemoveeval'')\<^esup>)"
-apply (rule_tac A' = "([\<N>\<^bsub>Perform get\<^esub>, \<N>\<^bsub>Goto sphone\<^esub>, \<N>\<^bsub>Goto bankapp\<^esub>, \<N>\<^bsub>Perform eval\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(''getmovemoveeval'')\<^esup>)" in att_ref)
-apply (rule ref_lem_b)
-by (rule final_attack_a)
-*)
 
 end
