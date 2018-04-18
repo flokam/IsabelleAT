@@ -1,5 +1,5 @@
-theory Insider
-imports AT
+theory Infrastructure
+imports AT "/Applications/Isabelle2016-1.app/Isabelle/src/HOL/Hoare/Hoare_Logic"
 begin
 datatype action = get | move | eval |put
 typedecl actor 
@@ -10,9 +10,32 @@ type_synonym policy = "((actor => bool) * action set)"
 definition ID :: "[actor, string] \<Rightarrow> bool"
 where "ID a s \<equiv> (a = Actor s)"
 
+(* a simple definition of data and instantiating 
+the generic types of the Hoare logic to pairs of owner and data as 
+basic data type for specification. This enables the unique marking
+(module insider impersonation) of data within the system. 
+The manipulation of the data (using simple while language) can thus 
+be modelled but additionally taking the ownership into account. We use 
+eval below and anchor the access control in restricing base functions
+for the Basic com type *)
+type_synonym data = nat  
+  (* Inspired by Myers DLM mode: first is the owner of a data item, second is the
+     set of all actors that may access the data item *)
+type_synonym dlm = "actor * actor set"
+  (* the following type constructors are from Hoare_logic:
+     bexp and assn are just synonyms for set, and
+     com is a simple datatype repesenting while command language
+     over some Basic 'a \<Rightarrow> 'a functions, while 'a sem is
+     just the type of relations 'a \<Rightarrow> 'a \<Rightarrow> bool representing relational
+     semantics *)
+type_synonym acond = "(dlm * data) bexp"
+type_synonym aassn = "(dlm * data) assn"
+type_synonym acom = "(dlm * data) com"
+type_synonym asem = "(dlm * data) sem"
+  
 datatype location = Location nat
   datatype igraph = Lgraph "(location * location)set" "location \<Rightarrow> identity set"
-                         "actor \<Rightarrow> (string set * string set)"  "location \<Rightarrow> string set"
+                         "actor \<Rightarrow> (string set * string set)"  "location \<Rightarrow> string * acond"
 datatype infrastructure = 
          Infrastructure "igraph" 
                         "[igraph ,location] \<Rightarrow> policy set" 
@@ -25,7 +48,7 @@ primrec agra :: "igraph \<Rightarrow> (location \<Rightarrow> identity set)"
 where  "agra(Lgraph g a c l) = a"
 primrec cgra :: "igraph \<Rightarrow> (actor \<Rightarrow> string set * string set)"
 where  "cgra(Lgraph g a c l) = c"
-primrec lgra :: "igraph \<Rightarrow> (location \<Rightarrow> string set)"
+primrec lgra :: "igraph \<Rightarrow> (location \<Rightarrow> string * acond)"
 where  "lgra(Lgraph g a c l) = l"
 
 definition nodes :: "igraph \<Rightarrow> location set" 
@@ -40,7 +63,7 @@ primrec delta :: "[infrastructure, igraph, location] \<Rightarrow> policy set"
 where "delta (Infrastructure g d) = d"
 primrec tspace :: "[infrastructure, actor ] \<Rightarrow> string set * string set"
   where "tspace (Infrastructure g d) = cgra g"
-primrec lspace :: "[infrastructure, location ] \<Rightarrow> string set"
+primrec lspace :: "[infrastructure, location ] \<Rightarrow> string * acond"
 where "lspace (Infrastructure g d) = lgra g"
 
 definition credentials :: "string set * string set \<Rightarrow> string set"
@@ -53,10 +76,46 @@ definition role :: "[igraph, actor * string] \<Rightarrow> bool"
   where "role G ac \<equiv> snd ac \<in> roles(cgra G (fst ac))"
 
 definition isin :: "[igraph,location, string] \<Rightarrow> bool" 
-  where "isin G l s \<equiv> s \<in> (lgra G l)"
+  where "isin G l s \<equiv> s = fst (lgra G l)"
+
+(*    
+definition owns :: "[igraph, location, actor, data] \<Rightarrow> bool"    
+  where "owns G l a d \<equiv> \<exists> as. ((a,as),d) \<in> snd(lgra G l)"
+*)
+definition owner :: "dlm * data \<Rightarrow> actor" where "owner d \<equiv> fst(fst d)"
+    
+definition owns :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"    
+  where "owns G l a d \<equiv> owner d = a"
+    
+    
+(*    
+definition has_access :: "[igraph, location, actor, data] \<Rightarrow> bool"    
+  where "has_access G l a d \<equiv> (\<exists> as a'. ((a',as),d) \<in> snd(lgra G l) \<and> a \<in> as)"
+*)
+definition readers :: "dlm * data \<Rightarrow> actor set"
+  where "readers d \<equiv> snd (fst d)"
+
+definition has_access :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"    
+where "has_access G l a d \<equiv> owns G l a d \<or> a \<in> readers d"
   
-  
-  
+definition actor_can_delete ::   "[infrastructure, actor, location] \<Rightarrow> bool"
+where actor_can_delete_def: "actor_can_delete I h l \<equiv>  
+                   (\<forall> as n. ((h, as), n) \<notin> (snd (lgra (graphI I) l)))"
+    
+    
+(* type of functions that preserves the security labeling *)    
+typedef label_fun = "{f :: dlm * data \<Rightarrow> dlm * data. 
+                        \<forall> x:: dlm * data. fst x = fst (f x)}"  
+  apply auto
+  apply (rule_tac x = id in exI)
+  by simp
+    
+definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" ("_ \<Updown> _" 50)
+  where "f  \<Updown> d \<equiv> (Rep_label_fun f) d" 
+    
+definition valid_proc :: "acond \<Rightarrow> label_fun \<Rightarrow> acond \<Rightarrow> bool"    
+  where "valid_proc a f b \<equiv> Valid a (Basic (Rep_label_fun f)) b"
+    
 datatype psy_states = happy | depressed | disgruntled | angry | stressed
 datatype motivations = financial | political | revenge | curious | competitive_advantage | power | peer_recognition
 
@@ -138,6 +197,11 @@ primrec nodup :: "['a, 'a list] \<Rightarrow> bool"
     nodup_nil: "nodup a [] = True" |
     nodup_step: "nodup a (x # ls) = (if x = a then (a \<notin> (set ls)) else nodup a ls)"
 
+instantiation "infrastructure" :: state
+begin
+instance 
+  by (rule MC.class.MC.state.of_class.intro)
+
 definition move_graph_a :: "[identity, location, location, igraph] \<Rightarrow> igraph"
 where "move_graph_a n l l' g \<equiv> Lgraph (gra g) 
                     (if n \<in> ((agra g) l) &  n \<notin> ((agra g) l') then 
@@ -158,36 +222,51 @@ where
                            (lgra G))
                    (delta I)
          \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-| put : "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; enables I l (Actor a) put;
+| get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
+        enables I l' (Actor a) get \<Longrightarrow> 
+       ((Actor a', as), n) \<in> snd (lgra G l') \<Longrightarrow> Actor a \<in> as \<Longrightarrow>
+        I' = Infrastructure 
+                   (Lgraph (gra G)(agra G)(cgra G)
+                   ((lgra G)(l := (tex, snd (lgra G l)  \<union> {((Actor a', as), n)}))))
+                   (delta I)
+         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
+| process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
+        enables I l (Actor a) eval \<Longrightarrow> 
+       ((Actor a', as), n) \<in> snd (lgra G l) \<Longrightarrow> Actor a \<in> as \<Longrightarrow>
+        I' = Infrastructure 
+                   (Lgraph (gra G)(agra G)(cgra G)
+                   ((lgra G)(l := (fst (lgra G l), 
+                    snd (lgra G l)  - {((Actor a', as), n)}
+                    \<union> {(f :: label_fun) \<Updown> ((Actor a', as), n)}))))
+                   (delta I)
+         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"  
+| del_data : "G = graphI I \<Longrightarrow> a \<in> actors G \<Longrightarrow> l \<in> nodes G \<Longrightarrow>
+       ((Actor a, as), n) \<in> snd (lgra G l) \<Longrightarrow> 
+        I' = Infrastructure 
+                   (Lgraph (gra G)(agra G)(cgra G)
+                   ((lgra G)(l := (fst (lgra G l), snd (lgra G l) - {((Actor a, as), n)}))))
+                   (delta I)
+         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
+| put : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> enables I l (Actor a) put \<Longrightarrow>
         I' = Infrastructure 
                   (Lgraph (gra G)(agra G)(cgra G)
-                          ((lgra G)(l := {z})))
+                          ((lgra G)(l := (s, snd (lgra G l) \<union> {((Actor a, as), n)}))))
                    (delta I)
-         \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
+          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
   
-(* show that this infrastructure is a state as given in MC.thy *)
-instantiation "infrastructure" :: state
-begin
-instance 
-  by (rule MC.class.MC.state.of_class.intro)
     
-(*
-instance   "infrastructure" :: state
-  by (rule MC.class.MC.state.of_class.intro)
-*)    
-
+  
 definition state_transition_in_refl ("(_ \<rightarrow>\<^sub>n* _)" 50)
-  where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
-    
+where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
+
 (* instantiation should give that for free -- there is something weird *)    
 lemma state_trans_inst_eq : "(s \<rightarrow>\<^sub>i s') = (s \<rightarrow>\<^sub>n s')"
   apply (unfold state_transition_in.simps)
   apply (rule iffI)
    apply auto
-  sorry
-    
-end
+  sorry  
   
+end
   
 (* del related results not needed since we use sets here for credentials etc  
 lemma del_del[rule_format]: "n \<in> set (del a S) \<longrightarrow> n \<in> set S"
@@ -262,6 +341,16 @@ lemma move_graph_eq: "move_graph_a a l l g = g"
   by force
      
     
-
+(* show that this infrastructure is a state as given in MC.thy 
+instantiation "infrastructure" :: state
+begin
+instance 
+  by (rule MC.class.MC.state.of_class.intro)
+*)    
+(*
+instance   "infrastructure" :: state
+  by (rule MC.class.MC.state.of_class.intro)
+*)    
+end
 end
   
