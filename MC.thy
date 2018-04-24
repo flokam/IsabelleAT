@@ -506,4 +506,19 @@ apply (drule subsetD)
 by (erule EF_step_star_rev)
  
   
+(*  *)  
+lemma AG_nEFn: "AG f = -(EF (- f))"
+  apply (rule equalityI)
+   apply (rule subsetI) 
+    apply (simp add: EF_def AG_def)
+  sorry
+    
+lemma check2_def: "(Kripke S I \<turnstile> f) = (I \<subseteq> S \<inter> f)"
+  apply (simp add: check_def)
+by blast
+    
+lemma not_prop_not_imp: "s \<noteq> {} \<Longrightarrow> i \<noteq> {} \<Longrightarrow>
+                         (\<not>((Kripke s i) \<turnstile> f)) = ((Kripke s i) \<turnstile> (- f))"    
+oops    
+    
 end

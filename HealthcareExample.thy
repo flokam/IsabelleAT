@@ -1,5 +1,5 @@
 theory HealthcareExample
-imports Insider 
+imports Insider
 begin
 
 locale scenarioHealthcare = 

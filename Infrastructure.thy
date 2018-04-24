@@ -78,10 +78,6 @@ definition role :: "[igraph, actor * string] \<Rightarrow> bool"
 definition isin :: "[igraph,location, string] \<Rightarrow> bool" 
   where "isin G l s \<equiv> s = fst (lgra G l)"
 
-(*    
-definition owns :: "[igraph, location, actor, data] \<Rightarrow> bool"    
-  where "owns G l a d \<equiv> \<exists> as. ((a,as),d) \<in> snd(lgra G l)"
-*)
 definition owner :: "dlm * data \<Rightarrow> actor" where "owner d \<equiv> fst(fst d)"
     
 definition owns :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"    
@@ -180,12 +176,7 @@ where "misbehaviour I \<equiv> -(behaviour I)"
 
 (* state transition on infrastructures *)
 declare [[show_types]]
-(*
-primrec del :: "['a, 'a list] \<Rightarrow> 'a list"
-where 
-del_nil: "del a [] = []" |
-del_cons: "del a (x#ls) = (if x = a then ls else x # (del a ls))"
-*)
+
 
 primrec jonce :: "['a, 'a list] \<Rightarrow> bool"
 where
@@ -224,10 +215,12 @@ where
          \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l' (Actor a) get \<Longrightarrow> 
-       ((Actor a', as), n) \<in> snd (lgra G l') \<Longrightarrow> Actor a \<in> as \<Longrightarrow>
+(* naive version omits the check of the DLM labels 
+       ((Actor a', as), n) \<in> snd (lgra G l') \<Longrightarrow> Actor a \<in> as \<Longrightarrow> *)
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
-                   ((lgra G)(l := (tex, snd (lgra G l)  \<union> {((Actor a', as), n)}))))
+                   ((lgra G)(l := (fst (lgra G l), 
+                                   snd (lgra G l)  \<union> {((Actor a', as), n)}))))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
@@ -259,8 +252,9 @@ where
 definition state_transition_in_refl ("(_ \<rightarrow>\<^sub>n* _)" 50)
 where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
 
-(* instantiation should give that for free -- there is something weird *)    
-lemma state_trans_inst_eq : "(s \<rightarrow>\<^sub>i s') = (s \<rightarrow>\<^sub>n s')"
+(* instantiation should give that for free -- this is a bug
+  in the Isabelle classes implementation version 2016-1 to be fixed in 2018 *)    
+lemma state_trans_inst_eq : "((s :: infrastructure) \<rightarrow>\<^sub>i s') = (s \<rightarrow>\<^sub>n s')"
   apply (unfold state_transition_in.simps)
   apply (rule iffI)
    apply auto
@@ -268,89 +262,13 @@ lemma state_trans_inst_eq : "(s \<rightarrow>\<^sub>i s') = (s \<rightarrow>\<^s
   
 end
   
-(* del related results not needed since we use sets here for credentials etc  
-lemma del_del[rule_format]: "n \<in> set (del a S) \<longrightarrow> n \<in> set S"
-  apply (induct_tac S)
-  by auto
-*)
-(* Not true in the current formulation of del since copies are not 
-   deleted. But changing that causes extra complxity also elsewhere 
-   (see jonce) 
-lemma del_del_elim[rule_format]: "n \<in> set (S) \<longrightarrow> n \<notin> set (del n S)" *)
-    
-(*    
-lemma del_dec[rule_format]: "a \<in> set S \<longrightarrow> length (del a S) < length S"  
-  apply (induct_tac S)
-    by auto
-
-lemma del_sort[rule_format]: "\<forall> n. (Suc n ::nat) \<le> length (l) \<longrightarrow> n \<le> length (del a (l))"   
-  apply (induct_tac l)
-   apply simp
-  apply clarify
-  apply (case_tac n)
-   apply simp
-    by simp
-    
-lemma del_jonce: "jonce a l \<longrightarrow> a \<notin> set (del a l)"
-  apply (induct_tac l)
-  by auto
-    
-lemma del_nodup[rule_format]: "nodup a l \<longrightarrow> a \<notin> set(del a l)"
-  apply (induct_tac l)
-  by auto
-    
-lemma nodup_up[rule_format]: "a \<in> set (del a l) \<longrightarrow> a \<in> set l"
-  apply (induct_tac l)
-  by auto
-    
-    lemma del_up [rule_format]: "a \<in> set (del aa l) \<longrightarrow> a \<in> set l"
-   apply (induct_tac l)
-  by auto
-
-lemma nodup_notin[rule_format]:   "a \<notin> set list \<longrightarrow> nodup a list"
-  apply (induct_tac list)
-  by auto
-    
-    lemma nodup_down[rule_format]: "nodup a l \<longrightarrow> nodup a (del a l)"
-      apply (induct_tac l)
-       apply simp+
-      apply (clarify)
-    by (erule nodup_notin)
-
-lemma del_notin_down[rule_format]: "a \<notin> set list \<longrightarrow> a \<notin> set (del aa list) "
-  apply (induct_tac list)
-  by auto
-
-lemma del_not_a[rule_format]: " x \<noteq> a \<longrightarrow> x \<in> set l \<longrightarrow> x \<in> set (del a l)"
-  apply (induct_tac l)
-    by auto
-      
-lemma nodup_down_notin[rule_format]: "nodup a l \<longrightarrow> nodup a (del aa l)"
-  apply (induct_tac l)
-   apply simp+
-    apply (rule conjI)
-  apply (clarify)
-   apply (erule nodup_notin)
-  apply (rule impI)+
- by (erule del_notin_down)
-*)
     
 lemma move_graph_eq: "move_graph_a a l l g = g"  
   apply (simp add: move_graph_a_def)
   apply (case_tac g)
   by force
      
-    
-(* show that this infrastructure is a state as given in MC.thy 
-instantiation "infrastructure" :: state
-begin
-instance 
-  by (rule MC.class.MC.state.of_class.intro)
-*)    
-(*
-instance   "infrastructure" :: state
-  by (rule MC.class.MC.state.of_class.intro)
-*)    
+   
 end
-end
+
   
