@@ -34,11 +34,6 @@ defines ex_creds_def: "ex_creds \<equiv> (\<lambda> x. if x = Actor ''Patient'' 
                             (if x = Actor ''Doctor'' then
                                 ({''PIN''},{}) else ({},{})))"
 
-fixes ex_creds' :: "actor \<Rightarrow> (string set * string set)"
-defines ex_creds'_def: "ex_creds' \<equiv> (\<lambda> x. if x = Actor ''Patient'' then 
-                         ({''PIN'',''skey''}, {}) else 
-                            (if x = Actor ''Doctor'' then
-                                ({''PIN'',''skey''}, {}) else ({},{})))"
 
 fixes ex_locs :: "location \<Rightarrow> string * acond"
 defines "ex_locs \<equiv> (\<lambda> x.  if x = cloud then
@@ -50,22 +45,22 @@ fixes ex_graph :: "igraph"
 defines ex_graph_def: "ex_graph \<equiv> Lgraph 
      {(home, cloud), (sphone, cloud), (cloud,hospital)}
      (\<lambda> x. if x = home then {''Patient''} else 
-           (if x = hospital then {''Doctor''} else {})) 
+           (if x = hospital then {''Doctor'', ''Eve''} else {})) 
      ex_creds ex_locs"
   
 fixes ex_graph' :: "igraph"
 defines ex_graph'_def: "ex_graph' \<equiv> Lgraph 
      {(home, cloud), (sphone, cloud), (cloud,hospital)}
        (\<lambda> x. if x = cloud then {''Patient''} else 
-           (if x = hospital then {''Doctor''} else {})) 
-     ex_creds' ex_locs"
+           (if x = hospital then {''Doctor'',''Eve''} else {})) 
+     ex_creds ex_locs"
   
 fixes ex_graph'' :: "igraph"
 defines ex_graph''_def: "ex_graph'' \<equiv> Lgraph 
      {(home, cloud), (sphone, cloud), (cloud,hospital)}
        (\<lambda> x. if x = cloud then {''Patient'', ''Eve''} else 
            (if x = hospital then {''Doctor''} else {})) 
-     ex_creds' ex_locs"
+     ex_creds ex_locs"
 
 
 fixes local_policies :: "[igraph, location] \<Rightarrow> policy set"
@@ -128,24 +123,91 @@ fixes gdpr_Kripke
 defines "gdpr_Kripke \<equiv> Kripke gdpr_states {gdpr_scenario}"
 
 fixes sgdpr 
-defines "sgdpr \<equiv> {x. \<not> (global_policy x ''Eve'')}"  
+defines "sgdpr \<equiv> {x. \<not> (global_policy' x ''Eve'')}"  
   
 begin
 
+lemma step1: "gdpr_scenario  \<rightarrow>\<^sub>n gdpr_scenario'"
+  apply (rule_tac l = home and a = "''Patient''" and l' = cloud in move)
+        apply (rule refl)
+       apply (simp add: gdpr_scenario_def ex_graph_def atI_def nodes_def)+
+      apply blast
+     apply (simp add: gdpr_scenario_def nodes_def ex_graph_def)
+     apply blast
+    apply (simp add: actors_graph_def gdpr_scenario_def ex_graph_def nodes_def)
+    apply blast
+   apply (simp add: enables_def gdpr_scenario_def ex_graph_def local_policies_def
+                    ex_creds_def ex_locs_def has_def credentials_def)
+  apply (simp add: gdpr_scenario'_def ex_graph'_def move_graph_a_def 
+                   gdpr_scenario_def ex_graph_def home_def cloud_def hospital_def
+                    ex_creds_def)
+  apply (rule ext)
+ by (simp add: hospital_def)
+
+lemma step1r: "gdpr_scenario  \<rightarrow>\<^sub>n* gdpr_scenario'"
+apply (simp add: state_transition_in_refl_def)
+  apply (insert step1)
+  by auto
+    
+   
+ lemma step2: "gdpr_scenario'  \<rightarrow>\<^sub>n gdpr_scenario''"
+  apply (rule_tac l = hospital and a = "''Eve''" and l' = cloud in move)
+        apply (rule refl)
+        apply (simp add: gdpr_scenario'_def ex_graph'_def hospital_def cloud_def
+               atI_def nodes_def)+
+      apply blast
+     apply (simp add: gdpr_scenario'_def nodes_def ex_graph'_def)
+     apply blast
+     apply (simp add: actors_graph_def gdpr_scenario'_def ex_graph'_def nodes_def
+                     hospital_def cloud_def)
+    apply blast
+   apply (simp add: enables_def gdpr_scenario'_def ex_graph_def local_policies_def
+                    ex_creds_def ex_locs_def has_def credentials_def cloud_def
+                     sphone_def)
+  apply (simp add: gdpr_scenario'_def ex_graph''_def move_graph_a_def 
+                   gdpr_scenario''_def ex_graph'_def home_def cloud_def hospital_def
+                    ex_creds_def)
+  apply (rule ext)
+ apply (simp add: hospital_def)
+by blast
+    
+ lemma step2r: "gdpr_scenario'  \<rightarrow>\<^sub>n* gdpr_scenario''"
+apply (simp add: state_transition_in_refl_def)
+  apply (insert step2)
+   by auto   
+     
 (* Attack example: Eve can get onto cloud and get Patient's data 
  for the naive version of get_data (with no use of DLM) 
 Attention: the following lemmas up to and including GDPR_AT
 only work when the premises 
 "((Actor a', as), n) \<in> snd (lgra G l') \<Longrightarrow> Actor a \<in> as \<Longrightarrow>"
 in rule get_data in Infrastructure.thy are omitted
-(thus switching of the DLM-IFC  
+(thus switching off the DLM-IFC) 
 *)
+     
+lemma att_gdpr: "\<turnstile>[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
+     apply (simp add: att_and)
+  apply (rule conjI)
+    apply (simp add: Igdpr_def GDPR'_def att_base)
+  apply (subst state_trans_inst_eq)
+   apply (rule step1)
+    apply (simp add: GDPR'_def sgdpr_def att_base)
+  apply (subst state_trans_inst_eq)
+by (rule step1)
+
+  
 lemma gdpr_att: "gdpr_Kripke \<turnstile> EF {x. \<not>(global_policy' x ''Eve'')}"
-sorry  
- 
+  apply (insert att_gdpr)
+  apply (subgoal_tac "(Igdpr,sgdpr) = attack ([\<N>\<^bsub>(Igdpr, GDPR')\<^esub>, \<N>\<^bsub>(GDPR', sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr, sgdpr)\<^esup>)")
+   apply (drule AT_EF)
+    apply simp
+    apply (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def sgdpr_def)
+by simp
 
 theorem gdpr_EF: "gdpr_Kripke \<turnstile> EF sgdpr"  
-  sorry
+  apply (insert gdpr_att)
+  by (simp add: sgdpr_def)
+    
 (* The CTL statement can now be directly translated into Attack Trees *)  
   
 theorem gdpr_AT: "\<exists> A. \<turnstile> A \<and> attack A = (Igdpr,sgdpr)"
