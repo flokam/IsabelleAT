@@ -240,6 +240,10 @@ by simp
 lemma att_or_empty[rule_format] : " \<turnstile>[] \<oplus>\<^sub>\<or>\<^bsup>(s', s'')\<^esup> \<longrightarrow> s' \<subseteq> s''"
 apply (subst att_or)  
   by simp
+    
+lemma att_or_empty_back[rule_format]: " s' \<subseteq> s'' \<longrightarrow>  \<turnstile>[] \<oplus>\<^sub>\<or>\<^bsup>(s', s'')\<^esup>"
+  apply (subst att_or)  
+by simp
 
 lemma att_or_empty_rev: "\<lbrakk> \<turnstile> l \<oplus>\<^sub>\<or>\<^bsup>(s, s')\<^esup> ; \<not>(s \<subseteq> s') \<rbrakk> \<Longrightarrow> l \<noteq> []"    
     apply (erule contrapos_nn)
@@ -268,7 +272,319 @@ lemma att_andD2 : " \<turnstile>x1 # x2 \<oplus>\<^sub>\<and>\<^bsup>s\<^esup> \
      apply (simp add: att_and)
     apply (rule att_and_nonemptyD2)
       apply simp
-by assumption
+  by assumption
+    
+lemma in_set_list_cons: "x \<in> set x2 \<Longrightarrow> x \<in> set (x1 # x2)"  
+  by (rule List.list.set_intros(2))
+    
+lemma att_and_fst_lem[rule_format]: 
+   " \<turnstile>x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup> \<longrightarrow> xa \<in> fst (attack (x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>))
+                     \<longrightarrow> xa \<in> fst (attack x1)"  
+  apply (induct_tac x2a)
+  by (simp add: att_and)+
+       
+lemma att_orD1: " \<turnstile>x1 # x2 \<oplus>\<^sub>\<or>\<^bsup>x\<^esup> \<Longrightarrow> \<turnstile> x1"
+    apply (case_tac x2)
+  by (simp add: att_or)+
+    
+lemma att_or_snd_hd: " \<turnstile>a # list \<oplus>\<^sub>\<or>\<^bsup>(aa, b)\<^esup> \<Longrightarrow> snd(attack a) \<subseteq> b"
+      apply (case_tac list)
+  by (simp add: att_or)+
+    
+lemma att_or_singleton[rule_format]: " \<turnstile>[x1] \<oplus>\<^sub>\<or>\<^bsup>x\<^esup> \<longrightarrow> \<turnstile>[] \<oplus>\<^sub>\<or>\<^bsup>(fst x - fst (attack x1), snd x)\<^esup>"    
+  apply (subst att_or)
+  apply simp
+  apply (rule impI)
+  apply (rule att_or_empty_back)
+  by blast
+  
+lemma att_orD2[rule_format]: " \<turnstile>x1 # x2 \<oplus>\<^sub>\<or>\<^bsup>x\<^esup> \<longrightarrow>  \<turnstile> x2 \<oplus>\<^sub>\<or>\<^bsup>(fst x - fst(attack x1), snd x)\<^esup>"
+  apply (case_tac x2)
+   apply (rule impI)
+   apply (subst att_or)
+    apply simp
+   apply (rule att_or_empty)
+   apply (erule att_or_singleton)
+  apply simp
+       apply (subst att_or)
+by simp
+   
+lemma att_or_snd_att[rule_format]: "\<forall> x. \<turnstile> x2 \<oplus>\<^sub>\<or>\<^bsup>x\<^esup> \<longrightarrow> (\<forall> a \<in> (set x2). snd(attack a) \<subseteq> snd x )" 
+     apply (induct_tac x2)
+   apply (simp add: att_or)
+  apply clarify
+  apply (subgoal_tac "ab = a \<or> ab \<in> set list")
+   apply (erule disjE)
+    apply (drule att_or_snd_hd)
+    apply simp
+    apply (erule subsetD, assumption)
+  apply (drule att_orD2)
+  apply (drule_tac x = "(fst (aa, b) - fst (attack a), snd (aa, b))" in spec)
+  apply (drule mp, assumption)
+    apply simp
+  apply (drule_tac x = ab in bspec, assumption)
+  apply (erule subsetD, assumption)
+ by simp
+    
+lemma singleton_or_lem[rule_format]: " \<turnstile>[x1] \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>  \<longrightarrow>
+                           fst x \<subseteq> fst(attack x1)"   
+by (simp add: att_or)   
+    
+lemma or_att_fst_sup0[rule_format]: "x2 \<noteq> [] \<longrightarrow> (\<forall> x. (\<turnstile> ((x2 \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>):: ('s :: state) attree)) \<longrightarrow>
+                      ((\<Union> y::'s attree\<in> set x2. fst (attack y)) \<supseteq> fst(x))) "
+  apply (induct_tac x2)
+   apply simp
+    apply (case_tac list)
+  apply (subst att_or)
+  apply simp
+  apply clarify
+  apply simp
+  apply (frule att_orD2)
+  apply (drule_tac x = "fst (ab, b) - fst (attack a)" in spec)
+  apply (drule mp)
+   apply (rule_tac x = "snd (ab, b)" in exI, assumption)
+  apply simp
+  apply (case_tac "x \<in> fst(attack a)")
+   apply (erule disjI1)
+  apply (subgoal_tac "x \<in> fst (attack aa) \<union> (\<Union>x::'s attree\<in>set lista. fst (attack x))")
+    apply (erule UnE)
+    apply (rule disjI2, erule disjI1)    
+   apply (rule disjI2)+
+   apply simp
+  apply (erule subsetD)
+  by simp
+  
+lemma or_att_fst_sup: "(\<turnstile> ((x1 # x2 \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>):: ('s :: state) attree)) \<Longrightarrow>
+                      ((\<Union> y::'s attree\<in> set (x1 # x2). fst (attack y)) \<supseteq> fst(x)) "
+apply (rule or_att_fst_sup0)
+   apply simp
+  by assumption
+    
+    
+
+
+  
+(***** att_elem_seq is the main lemma for Correctness. ******
+  It shows that for a given attack tree x1, for each element in the set of start sets 
+  of the first attack, we can reach in zero or more steps a state in the states in which 
+  the attack is successful (the final attack state snd(attack x1)).
+  This proof is a Big alternative to an earlier version of the proof with
+  first_step etc that mapped first on a sequence of sets of states .
+*)    
+lemma att_elem_seq[rule_format]: "\<turnstile> x1 \<longrightarrow> (\<forall> x \<in> fst(attack x1).
+                     (\<exists> y. y \<in> snd(attack x1) \<and> x \<rightarrow>\<^sub>i* y))"
+(* first attack tree induction *)
+  apply (induct_tac x1)
+    (* base case *)
+       apply (simp add: att_base)
+    apply clarify
+    apply simp
+    apply (drule_tac x = x in bspec, assumption)
+    apply (erule bexE)
+    apply (rule_tac x = xa in exI)
+    apply (rule conjI, assumption)
+    apply (simp add: state_transition_refl_def)
+    apply force
+    (* second case \<and> -- setting it for induction *)
+       apply (rule_tac x = x2 in spec)
+apply (subgoal_tac "(\<forall> x1aa::'a attree.
+           x1aa \<in> set x1a \<longrightarrow>
+           \<turnstile>x1aa \<longrightarrow>
+           (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y))")
+          apply (rule mp)
+    prefer 2
+     apply (rotate_tac -1)
+    apply assumption
+(* induction for \<and>*)
+  apply (rule_tac list = "x1a" in list.induct)
+(* \<and> induction empty case *)
+   apply clarify
+     apply simp
+          apply (rule_tac x = "x" in exI)
+      apply (rule_tac conjI)
+       apply (drule att_and_empty) 
+      apply (erule subsetD, assumption)
+    apply (simp add: state_transition_refl_def)
+  (* \<and> induction case nonempty  *)
+      apply (rule impI, rule allI, rule impI)
+      (* free IH *)
+apply (subgoal_tac " (\<forall>x::'a set \<times> 'a set.
+           \<turnstile>x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup> \<longrightarrow>
+           (\<forall>xa::'a\<in>fst (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)).
+               \<exists>y::'a. y \<in> snd (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y))")
+       prefer 2
+      (* *)
+       apply (rule mp)
+        apply assumption
+    apply (rule allI)
+       apply (rule impI)+
+       apply (rotate_tac -4)
+       apply (drule_tac x = x1aa in spec)
+      apply (rotate_tac -1)
+       apply (drule mp)
+        apply (erule in_set_list_cons)
+       apply (erule mp, assumption)
+(* *)
+    apply (thin_tac "(\<forall>x1aa::'a attree.
+           x1aa \<in> set x2a \<longrightarrow>
+           \<turnstile>x1aa \<longrightarrow>
+           (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y)) \<longrightarrow>
+       (\<forall>x::'a set \<times> 'a set.
+           \<turnstile>x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup> \<longrightarrow>
+           (\<forall>xa::'a\<in>fst (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)).
+               \<exists>y::'a. y \<in> snd (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y))")
+      apply (thin_tac "(\<And>x1aa::'a attree.
+           x1aa \<in> set x1a \<Longrightarrow>
+           \<turnstile>x1aa \<longrightarrow>
+           (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y)) ")
+apply (thin_tac "       \<forall>x1aa::'a attree.
+          x1aa \<in> set x1a \<longrightarrow>
+          \<turnstile>x1aa \<longrightarrow>
+          (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y) ")
+    apply (rule ballI)
+(* prepare the steps *)
+      apply (drule_tac x = "(snd(attack x1), snd x)" in spec)
+      apply (rotate_tac -1)
+      apply (erule impE)
+     apply (erule att_andD2)
+    (* premise for x1 *)
+    apply (drule_tac x = x1 in spec)
+    apply (drule mp)
+     apply simp
+  apply (drule mp)
+     apply (erule att_andD1)
+    (* instantiate first step for xa *)
+    apply (rotate_tac -1)
+    apply (drule_tac x = xa in bspec)
+    apply (erule att_and_fst_lem, assumption)
+    apply (erule exE)
+    apply (erule conjE)
+    (* take this y and put it as first into the second part *)
+  apply (drule_tac x = y in bspec)
+     apply simp
+    apply (erule exE)
+    apply (erule conjE)
+ (* bind the first xa \<rightarrow>\<^sub>i* y  and second y \<rightarrow>\<^sub>i* ya together for solution *)
+    apply (rule_tac x = ya in exI)
+    apply (rule conjI)
+     apply simp
+    apply (simp add: state_transition_refl_def)
+   apply simp
+(* or_attack case ! *)    
+    (* set up for induction *)
+      apply (rule_tac x = x2 in spec)
+apply (subgoal_tac "(\<forall> x1aa::'a attree.
+           x1aa \<in> set x1a \<longrightarrow>
+           \<turnstile>x1aa \<longrightarrow>
+           (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y))") 
+   apply (rule mp)
+    prefer 2
+     apply (rotate_tac -1)
+    apply assumption
+    apply (thin_tac "(\<And>x1aa::'a attree.
+           x1aa \<in> set x1a \<Longrightarrow>
+           \<turnstile>x1aa \<longrightarrow>
+           (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y))")
+(* induction for \<or> case *)
+     apply (rule_tac list = "x1a" in list.induct)
+(* \<and> induction empty case *)
+   apply clarify
+        apply simp
+          apply (rule_tac x = "x" in exI)
+    apply (rule_tac conjI)
+       apply (drule att_or_empty) 
+      apply (erule subsetD, assumption)
+    apply (simp add: state_transition_refl_def)
+    (* \<or> induction case nonempty *)
+          apply (rule impI, rule allI, rule impI)
+      (* free IH *)
+    apply (subgoal_tac "(\<forall>x::'a set \<times> 'a set.
+           \<turnstile>x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup> \<longrightarrow>
+           (\<forall>xa::'a\<in>fst (attack (x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)).
+               \<exists>y::'a. y \<in> snd (attack (x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y)) ")
+       prefer 2
+        (* *)
+       apply (rule mp)
+        apply assumption
+    apply (rule allI)
+       apply (rule impI)+
+       apply (rotate_tac -4)
+       apply (drule_tac x = x1aa in spec)
+      apply (rotate_tac -1)
+       apply (drule mp)
+        apply (erule in_set_list_cons)
+    apply (erule mp, assumption)
+(* *)
+    apply (thin_tac "(\<forall>x1aa::'a attree.
+           x1aa \<in> set x2a \<longrightarrow>
+           \<turnstile>x1aa \<longrightarrow>
+           (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y)) \<longrightarrow>
+       (\<forall>x::'a set \<times> 'a set.
+           \<turnstile>x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup> \<longrightarrow>
+           (\<forall>xa::'a\<in>fst (attack (x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)).
+               \<exists>y::'a. y \<in> snd (attack (x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y)) ")
+      apply (thin_tac "\<forall>x1aa::'a attree.
+          x1aa \<in> set x1a \<longrightarrow>
+          \<turnstile>x1aa \<longrightarrow>
+          (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y) ")
+  prefer 2
+   apply simp
+  apply (rule ballI)
+(* prepare the step for xa*)    
+        apply (drule_tac x = x1 in spec)
+    apply (drule mp)
+     apply simp
+  apply (drule mp)
+   apply (erule att_orD1)
+  apply simp
+  (* apply or_att_fst_sup to infer from xa \<in> fst x that it is in
+     ((\<Union> y::'s attree\<in> set (x1 # x2a). fst (attack y)). Then UnE should
+     provide that xa \<in> fst (attack x1) or xa \<in> fst (attack x2) for some x2 \<in> (set x2a)  *)  
+  apply (frule or_att_fst_sup)
+    apply (drule subsetD, assumption)
+  apply (erule UnionE)
+  apply simp
+  apply (erule disjE)
+    (* case xa \<in> fst(attack x1) *)
+   apply (drule_tac x = xa in bspec, erule subst, assumption)
+   apply (erule exE)
+   apply (erule conjE)
+  apply (rule_tac x = y in exI)
+   apply (rule conjI)
+    thm att_or_snd_att
+      apply (frule_tac a = x1 and x = x in att_or_snd_att)
+       apply simp
+      apply (erule subsetD, assumption)
+     apply assumption
+      (* second case: xa \<in> X; X \<in> (\<lambda>y::'a attree. fst (attack y)) ` set x2a *)
+    apply (drule_tac x = "fst x - fst(attack x1)" in spec)
+    apply (drule_tac x = "snd x" in spec)
+    apply (drule mp)
+     apply (erule att_orD2)
+    apply (case_tac "xa \<in> fst(attack x1)")
+     apply (drule_tac x = xa in bspec, assumption)
+     apply (erule exE)
+     apply (erule conjE)
+    apply (rule_tac x = y in exI)
+     apply (rule conjI)
+      apply (frule_tac a = x1 and x = x in att_or_snd_att)
+       apply simp
+      apply (erule subsetD, assumption)
+     apply assumption
+      (*xa \<notin> fst (attack x1) *)
+      apply (rotate_tac -2)
+      apply (drule_tac x = xa in bspec)
+     apply simp
+ by assumption
+ 
+    
+lemma att_elem_seq0: "\<turnstile> x1 \<Longrightarrow> (\<forall> x \<in> fst(attack x1).
+                     (\<exists> y. y \<in> snd(attack x1) \<and> x \<rightarrow>\<^sub>i* y))"
+  apply clarify
+    by (erule att_elem_seq, assumption)
+  
+
+  
   
 (* other lemmas not needed here but potentially useful in future applications
 att_and_distr_left: "\<lbrakk> \<turnstile> ( [a,(as \<oplus>\<^sub>\<or>\<^bsup>(s',s'')\<^esup>)] \<oplus>\<^sub>\<and>\<^bsup>(s,s'')\<^esup>)  ;
@@ -294,21 +610,19 @@ lemma att_comp_and_cons:  "\<forall> a s s'. \<turnstile>  a \<longrightarrow> a
 lemma or_attD: " \<turnstile> ((x1 :: (('s :: state) attree)list)  \<oplus>\<^sub>\<or>\<^bsup>a\<^esup>) \<longrightarrow> (\<forall> x \<in> (set x1). \<turnstile> x) "
 lemma and_attD : "\<forall> a. \<turnstile> ((x1 :: (('s :: state) attree)list)  \<oplus>\<^sub>\<and>\<^bsup>a\<^esup>) \<longrightarrow> (\<forall> x \<in> (set x1). \<turnstile> x) "
 *)
- 
+
+      
+(*** Valid refinements ****)      
 definition valid_ref :: "[('s :: state) attree, 's attree] \<Rightarrow> bool" ("_ \<sqsubseteq>\<^sub>V _" 50)
   where
 "A \<sqsubseteq>\<^sub>V A' \<equiv>  ( A \<sqsubseteq> A' \<and>  \<turnstile> A')"
 
-(* This is not true, since the abstract AT is not valid now any more 
-theorem att_ref: "\<lbrakk> A \<sqsubseteq>\<^sub>V A'; \<turnstile> A'; attack A = attack A' \<rbrakk> \<Longrightarrow> \<turnstile> A" 
-but we can introduce a refinement validity based on the valid refinement
-*)
 definition ref_validity :: "[('s :: state) attree] \<Rightarrow> bool" ("\<turnstile>\<^sub>V _" 50)
   where
 "\<turnstile>\<^sub>V A  \<equiv>  (\<exists> A'. A \<sqsubseteq>\<^sub>V A')"
 
      
-(* Further general theorems -- Correctness and Completeness
+(* Main theorems of Correctness and Completeness
    between AT and Kripke, \<turnstile> (init K, p) \<equiv>  K \<turnstile> EF p *) 
 (* This proof roughly goes in two steps:
     First, the attack can be refined into an or of single-step attack sequences: 
@@ -323,12 +637,10 @@ definition ref_validity :: "[('s :: state) attree] \<Rightarrow> bool" ("\<turns
     \<Longrightarrow> Kripke(I,  \<rightarrow>\<^sub>i) \<turnstile> EF s
 Proof with induction over definition of EF 
 *)    
-(* More precisely: at the outermost level we need to assume an OrAttack.
-   Inside the OrAttack there are pure AndAttack sequences. To prove this
-   will involve a lot of AC-reasoning but the above rules for |- for
-   distributivity can be used to prove first AC equalities (from the 
-   |- in two directions) *)
-    
+
+
+
+(* many more additional lemmas -- might not all be needed any more *)
 lemma att_eq1 [rule_format]:  "\<turnstile>x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup> \<longrightarrow> fst x = fst (attack x1)"
   apply (subst att_and)
 by simp
@@ -445,14 +757,9 @@ lemma nth_app_eq3: "tl sl \<noteq> [] \<Longrightarrow>
     apply simp
 by (erule tl_eq3)
   
-
-  
 lemma not_empty_ex: "A \<noteq> {} \<Longrightarrow> ? x. x \<in> A"
 by force
 
-lemma in_set_list_cons: "x \<in> set x2 \<Longrightarrow> x \<in> set (x1 # x2)"  
-  by (rule List.list.set_intros(2))
-  
 lemma in_set_list_head: "x \<in> set (x # x2)"  
   by (rule List.list.set_intros(1))
     
@@ -482,314 +789,7 @@ lemma fst_eq1: "(sla ! (0::nat), y) = attack x1 \<Longrightarrow>
 lemma base_att_lem1: " y0 \<subseteq> y1 \<Longrightarrow> \<turnstile> \<N>\<^bsub>(y1, y)\<^esub> \<Longrightarrow>\<turnstile> \<N>\<^bsub>(y0, y)\<^esub>"
   apply (simp add: att_base)
 by blast
-    
-lemma first_step[rule_format]:" \<turnstile> (A :: ('s :: state) attree) \<longrightarrow> 
-       ((A = \<N>\<^bsub>attack A\<^esub>) \<or>
-       (\<exists> al. (A  = (al \<oplus>\<^sub>\<and>\<^bsup>(attack A)\<^esup>)) \<and> 
-              (\<exists> (sl :: ((('s :: state) set)list)). (sl \<noteq> []) \<and> 
-                 sl ! 0 = fst(attack A) \<and> sl ! (length sl - 1) \<subseteq> snd(attack A) \<and>
-                 (\<forall> i < (length sl - 1).  \<turnstile> \<N>\<^bsub>(sl ! i,sl ! (i+1) )\<^esub>
-                         ))) \<or>
-        (\<exists> oal. (A = (oal \<oplus>\<^sub>\<or>\<^bsup>(attack A)\<^esup>) ) \<and> 
-          (\<forall> a \<in> (set oal). 
-              (\<exists> (sl :: ((('s :: state) set)list)). (sl \<noteq> []) \<and> 
-                 sl ! 0 = fst(attack A) \<and> sl ! (length sl - 1) \<subseteq> snd(attack A) \<and>
-                 (\<forall> i < (length sl - 1).  \<turnstile> \<N>\<^bsub>(sl ! i,sl ! (i+1) )\<^esub>
-                         )))))"
-  apply (induct_tac A)
-(* first case *)
-    apply (rule impI)
-    apply (rule disjI1)
-    apply (simp add:ref_refl)
-(* snd case \<and> *)
-    apply (rule impI)
-   apply (rule disjI2)
-    apply (rule disjI1)
-   apply (rule exI)
-   apply (rule conjI)
-    apply simp
-   apply (rule mp)
-    prefer 2
-    apply (rotate_tac -1)
-    apply assumption
-   apply (rule_tac x = x2 in spec)
-apply (subgoal_tac  "(\<forall> x1aa::'s attree.
-           x1aa \<in> set x1a \<longrightarrow>
-           \<turnstile>x1aa \<longrightarrow>
-           x1aa = \<N>\<^bsub>attack x1aa\<^esub> \<or>
-           (\<exists>al::'s attree list.
-               x1aa = (al \<oplus>\<^sub>\<and>\<^bsup>attack x1aa\<^esup>) \<and>
-               (\<exists>sl::'s set list. (sl \<noteq> []) \<and> 
-                   sl ! (0::nat) = fst(attack x1aa) \<and> 
-                   sl ! (length sl - (1::nat)) \<subseteq> snd(attack x1aa) \<and>
-                   (\<forall>i<length sl - (1::nat). \<turnstile>\<N>\<^bsub>(sl ! i, sl ! (i + (1::nat)))\<^esub>))) \<or>
-           (\<exists>oal::'s attree list.
-               x1aa = oal \<oplus>\<^sub>\<or>\<^bsup>attack x1aa\<^esup> \<and>
-               (\<forall>a::'s attree\<in>set oal.
-                      (\<exists>sl::'s set list. (sl \<noteq> []) \<and> 
-                          sl ! (0::nat) = fst(attack x1aa) \<and>
-                          sl ! (length sl - (1::nat)) \<subseteq> snd(attack x1aa) \<and>
-                          (\<forall>i<length sl - (1::nat).
-                              \<turnstile>\<N>\<^bsub>(sl ! i, sl ! (i + (1::nat)))\<^esub>)))))")   
-    apply (rule mp)
-    prefer 2
-     apply (rotate_tac -1)
-    apply assumption
-    thm list.induct
-     apply (rule_tac list = "x1a" in list.induct)
-      (* \<and> induction empty case *)
-      apply clarify
-      apply (rule_tac x = "[aa]" in exI)
-      apply (rule_tac conjI)
-        apply simp
-       apply (rule conjI)
-        apply simp+
-       apply (erule att_and_empty) 
-(* \<and> induction case nonempty  *)
-      apply (rule impI, rule allI, rule impI)
-      (* free IH *)
-      apply (subgoal_tac "(\<forall>x::'s set \<times> 's set.
-           \<turnstile>x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup> \<longrightarrow>
-           (\<exists>sl::'s set list. (sl \<noteq> []) \<and>
-               sl ! (0::nat) = fst(attack(x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and>
-               sl ! (length sl - (1::nat)) \<subseteq> snd(attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and>
-               (\<forall>i<length sl - (1::nat). \<turnstile>\<N>\<^bsub>(sl ! i, sl ! (i + (1::nat)))\<^esub>))) ")
-       prefer 2
-      (* *)
-       apply (rule mp)
-        apply assumption
-    apply (rule allI)
-       apply (rule impI)+
-       apply (rotate_tac -4)
-       apply (drule_tac x = x1aa in spec)
-      apply (rotate_tac -1)
-       apply (drule mp)
-        apply (erule in_set_list_cons)
-       apply (erule mp, assumption)
-      (* *)
- apply (thin_tac " (\<forall>x1aa::'s attree.
-           x1aa \<in> set x2a \<longrightarrow>
-           \<turnstile>x1aa \<longrightarrow>
-           x1aa = \<N>\<^bsub>attack x1aa\<^esub> \<or>
-           (\<exists>al::'s attree list.
-               x1aa = (al \<oplus>\<^sub>\<and>\<^bsup>attack x1aa\<^esup>) \<and>
-               (\<exists>sl::'s set list.
-                   sl \<noteq> [] \<and>
-                   sl ! (0::nat) = fst (attack x1aa) \<and>
-                   sl ! (length sl - (1::nat)) \<subseteq> snd (attack x1aa) \<and>
-                   (\<forall>i<length sl - (1::nat). \<turnstile>\<N>\<^bsub>(sl ! i, sl ! (i + (1::nat)))\<^esub>))) \<or>
-           (\<exists>oal::'s attree list.
-               x1aa = oal \<oplus>\<^sub>\<or>\<^bsup>attack x1aa\<^esup> \<and>
-               (\<forall>a::'s attree\<in>set oal.
-                   \<exists>sl::'s set list.
-                      sl \<noteq> [] \<and>
-                      sl ! (0::nat) = fst (attack x1aa) \<and>
-                      sl ! (length sl - (1::nat)) \<subseteq> snd (attack x1aa) \<and>
-                      (\<forall>i<length sl - (1::nat).
-                          \<turnstile>\<N>\<^bsub>(sl ! i, sl ! (i + (1::nat)))\<^esub>)))) \<longrightarrow>
-       (\<forall>x::'s set \<times> 's set.
-           \<turnstile>x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup> \<longrightarrow>
-           (\<exists>sl::'s set list.
-               sl \<noteq> [] \<and>
-               sl ! (0::nat) = fst (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and>
-               sl ! (length sl - (1::nat)) \<subseteq> snd (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and>
-               (\<forall>i<length sl - (1::nat). \<turnstile>\<N>\<^bsub>(sl ! i, sl ! (i + (1::nat)))\<^esub>)))")
-
-      apply (drule_tac x = "(snd(attack x1), snd x)" in spec)
-      apply (rotate_tac -1)
-      apply (erule impE)
-       apply (erule att_andD2)
-      apply (erule exE)
-      (* unleash the 3 cases for x1 *)
-      apply (frule att_andD1)
-      apply (rotate_tac -4)
-      apply (drule_tac x = x1 in spec)
-      apply (rotate_tac -1)
-      apply (erule impE)
-       apply (rule in_set_list_head)
-    apply (rotate_tac -1)
-      apply (erule impE)
-       apply assumption
-      (* first case of x1 as base *)
-      apply (erule disjE)
-      apply (rotate_tac 2)
-      apply (rule_tac x = "(fst x) # sl" in exI)
-      apply (rule conjI)
-       apply (erule conjE)
-       apply force
-      apply (erule conjE)
-      apply (rule conjI)
-       apply (rule fst_att_eq)
-(* from freeing the IH *)      
-      prefer 3
-       apply simp      
-(* extra *)
-      apply (rule conjI)
-       apply (erule conjE)+
-       apply (subgoal_tac "snd (attack (x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) =
-                        snd (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>(snd (attack x1), snd x)\<^esup>))")
-        apply (subgoal_tac "(fst x # sl) ! (length (fst x # sl) - (1::nat)) =
-                            sl ! (length sl - (1::nat))")
-    apply (rotate_tac -1)
-         apply (erule ssubst)
-    apply (rotate_tac -1)
-         apply (erule ssubst)
-    apply assumption
-    apply (erule list_eq1)
-      apply (rule attack_eq1)      
-(* the actual sl property *)      
-      (* apply simp *) 
-apply (rule allI, rule impI)      
-      apply (case_tac i)
-      apply (subgoal_tac "fst x = fst(attack x1)")
-      apply simp
-       apply (erule att_eq1)
-      apply simp
-      (* second case of x1 as \<and> attack *)
-      apply (erule disjE)
-      apply (erule exE)
-      apply (erule conjE)+
-      apply (erule exE)
-      apply (erule conjE)+
-      apply (rule_tac x = "sla @ (tl sl)" in exI)
-      apply (rule conjI)
-       apply simp
-      apply (rule conjI)
-       apply simp
-       apply (subgoal_tac "x = (fst(attack x1), snd x)")
-        apply (rotate_tac -1)
-      apply (erule ssubst)
-        apply simp
-(*        apply (rule conjI) 
-         apply (subgoal_tac "sla ! 0 = fst(attack x1)") *)
-          apply (erule zeroth_app_eq)
-         apply assumption
-       apply (frule att_eq1)
-       apply (rotate_tac -1)
-       apply (erule subst)
-       apply simp
-      (* anders *)
-      apply (rule conjI)
-      (* important invariant *)
-      apply (subgoal_tac "sla ! (length sla - 1) \<subseteq> sl ! 0")
-      (*  solve it first *)
-       prefer 2
-          apply (rotate_tac -7)
-        apply (erule ssubst)
-        apply simp
-      (* great *)
-       apply (case_tac "tl sl = []")
-        apply (subgoal_tac "sl ! (0::nat) \<subseteq> snd x")
-         apply simp
-        apply (subgoal_tac "sl ! (0::nat) = sl ! (length sl - (1::nat))")
-         apply simp
-        apply (erule tl_eq2)
-      (* tl sl = [] finished *)
-       apply (subst nth_app_eq3, assumption)
-      apply simp
-   (*  \<subseteq> cond for \<and> finished *)
-      (* so far ...*)
-      (* again tl sl = []*)
-      apply (case_tac "tl sl = []")
-      apply simp
-      (* tl sl \<noteq> [] *)
-      apply (rule allI)
-      apply (rule impI)
-      apply (subgoal_tac "(i < length sla - 1) \<or>  (i = length sla - 1) \<or>(((length sla) \<le> i) \<and> (i < length (sla @ (tl sl)) - (1::nat)))")
-       apply (erule disjE)
-        prefer 3
-        apply (subgoal_tac "length (sla @ (tl sl)) = length sla + (length sl - 1)")
-         apply arith
-      apply simp
-       apply (subst nth_app_eq1)
-        apply arith
-       apply (subst nth_app_eq1)
-        apply arith
-       apply (rotate_tac -4)
-       apply (drule_tac x = i in spec)
-       apply (erule mp)
-       apply assumption
-      (* i = length sla - 1 *)
-      apply (erule disjE)
-       apply (subst nth_app_eq1)
-        apply simp
-       apply (subst nth_app_eq2)
-        apply simp
-      (* need to change to sla ! i \<subseteq> sl ! 0 and
-         therefore need to prove lemma 
-        \<N>\<^bsub>(y1, y)\<^esub> \<Longrightarrow> y0 \<subseteq> y1 \<Longrightarrow> \<N>\<^bsub>(y1, y)\<^esub>
-       to apply this *)
-       apply (subgoal_tac "sla ! i \<subseteq> sl ! 0")
-        apply (erule base_att_lem1)
-        apply (subgoal_tac "tl sl ! (i + (1::nat) - length sla) = sl ! 1")
-         apply (rotate_tac -1)
-         apply (erule ssubst)
-         apply (rotate_tac -8)
-         apply (drule_tac x = 0 in spec)
-      apply (rotate_tac -1)
-         apply (drule mp)
-          apply simp
-         apply simp
-        apply simp
-      apply (rule tl_eq1)
-        apply assumption
-       apply simp
-      (* length sla \<le> i \<and> i < length (sla @ tl sl) - (1::nat) *)
-      apply (subst nth_app_eq2)
-       apply arith
-      apply (subst nth_app_eq2)
-       apply arith
-      apply (subst ineq2)
-       apply (erule conjE,assumption)
-      apply (subst nth_tl_length1)
-       apply assumption
-      apply (subst nth_tl_length1)
-       apply assumption
-      apply (rotate_tac -8)
-      apply (drule_tac x = " (i - length sla + (1::nat))" in spec)
-      apply (rotate_tac -1)
-      apply (drule mp)
-       prefer 2
-       apply simp
-      (* so far *)
-      apply (rule ineq3)
-        apply assumption+
-       apply simp+
- (* third case \<or> of the overall second \<and> case *)
-     apply (erule exE)
-     apply (erule conjE)+
-     apply (rotate_tac -4)
-      (* an empty list of or attacks in the first \<and> element *is possible *)
-     apply (case_tac "oal = []") 
-      (* in this case fst(attack x1) = snd(attack x1) = fst x and we can use
-         the existing sl *)
-      (* otherwise oa \<noteq> [] pick one random element and perform the same
-         proof with that as in the previous case for \<and> *)
-      
-(* finally the third case \<or> *)      
-      
-sorry       
   
-  
-
-(* First need lemmas for showing that if \<turnstile> (oal \<oplus>\<^sub>\<or>\<^bsup>(attack A)\<^esup>) then for all
-   xa in oal we have \<turnstile> xa. Same for \<and>. They are needed to invoke the IH.
-   For each xa in oal we need to prove three cases (disj in premise): xa is base,
-   and, or or-attack. 
-   The use of this single element threefold IH seems quite complex with lots of 
-   associativity restructuring needed to transfer to the goal-list oal .
-   But for oal we only need to show that there is another list sl with base attack pairs 
-   lined up. So even if we have from the assumption one small attack xa in the and-chain 
-   oal which is again an or-attack with various alternatives (from IH) then we can pick one
-   of the sl-sub chains and "implant" it into the result chain sl for oal. 
-   How to set up the induction for the xla/ola is difficult maybe -- separate inductions
-   for each case?
-   Now, without the refinement, it should be a little easier. We
-   simplify the conclusion (there is not necessarily a one-one structural 
-   correspondance.
-   The induction can be set up over lists on oal.
-   *)
-
 lemma ref_pres_att: "A \<sqsubseteq> A' \<Longrightarrow> attack A = attack A'"
   apply (erule refines_to.induct)
      apply simp
@@ -827,32 +827,10 @@ apply (simp add: att_base)
   apply (erule_tac x = xaa in bexI)
     apply (erule subsetD)
 by assumption
-    
-lemma second_stepA: "\<lbrakk> \<turnstile>  \<N>\<^bsub>(I,s)\<^esub> \<rbrakk>
-    \<Longrightarrow> Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s"
-           apply (simp add:check_def)
-           apply (rule subsetI)
-    apply (rule CollectI)
-           apply (rule conjI)
-    apply (simp add: state_transition_refl_def)
-            apply (rule_tac x = x in bexI)
-             apply simp
-   apply assumption
-  apply (simp add: att_base)
-(*    apply (erule conjE) *)
-    apply (rotate_tac -1)
-  apply (drule_tac x = x in bspec)
-   apply assumption
-  apply (erule bexE)
-  apply (erule EF_step)
-    by assumption
 
-lemma second_stepB: "\<lbrakk> \<turnstile> (A :: ('s :: state) attree);  
-                      (A :: ('s :: state) attree) =  (al \<oplus>\<^sub>\<and>\<^bsup>((I,s))\<^esup>);
-              (\<exists> (sl :: ((('s :: state) set)list)). (sl \<noteq> []) \<and>
-                 sl ! 0 = I \<and> sl ! (length sl - 1) \<subseteq> s  \<and>
-                 (\<forall> i < (length sl - 1).  \<turnstile> \<N>\<^bsub>(sl ! i,sl ! (i+1) )\<^esub>
-                         )) \<rbrakk>
+
+(**** Correctness theorem ****)  
+theorem AT_EF: "\<lbrakk> \<turnstile> (A :: ('s :: state) attree); attack A = (I,s) \<rbrakk>
     \<Longrightarrow> Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s"    
       
    apply (simp add:check_def)
@@ -869,248 +847,10 @@ lemma second_stepB: "\<lbrakk> \<turnstile> (A :: ('s :: state) attree);
     apply (rotate_tac -1)
    apply (erule bexE)
    apply (erule EF_step_star, assumption)
-    (* \<forall>x::'s\<in>I. \<exists>y::'s\<in>s. x \<rightarrow>\<^sub>i* y; try elim "\<exists> sl ..." quantifier and then
-       list induction over sl (after integrating assumptions before a \<longrightarrow>)*)
-  apply (erule exE)
-  apply (rule mp)
-   prefer 2
-   apply (rotate_tac -1)
-   apply assumption
-  apply (rule mp)
-   prefer 2
-   apply (rotate_tac 2)
-   apply assumption
-  apply (rule_tac x = s in spec)
-    apply (rule_tac x = I in spec)
-  apply (rule_tac xs = sl in rev_nonempty_induct)
-   apply simp
-   apply clarify
-apply (rule_tac x = xd in bexI)
-    apply (simp add: state_transition_refl_def)
-   apply simp
-    apply (erule subsetD,assumption)
-    apply (rule allI)+
-  apply (rule impI)+
-  apply (rotate_tac -1)
-  apply (drule_tac x = xb in spec)
-  apply (rotate_tac -1)
-    apply (drule_tac x = "xs ! (length xs - Suc (0::nat))" in spec)
-  apply (drule mp)
-   apply assumption
-  apply (drule mp)
-  apply (rule conjI)  
-   apply assumption
-  apply (rule conjI)
-    apply (rule zeroth_app_eq_rev)
-    apply assumption
-   apply (erule conjE)+
-   apply assumption
-  apply (erule conjE)+
-   apply (rule conjI)
-    apply (rule subset_refl)
-   apply (rule allI)
-    apply (rule impI)
-   apply (rotate_tac -4)
-   apply (drule_tac x = i in spec)
-  apply (rotate_tac -1)
-   apply (drule mp)
-  apply simp
-   apply (rule_tac t = "xs ! i" and s = "(xs @ [xa]) ! i" in subst)
-  apply (rule nth_app_eq1)
-    apply simp
-    apply (rule_tac t = "xs ! (Suc i)" and s = "(xs @ [xa]) ! Suc i" in subst)
-   apply (subst nth_app_eq1)
-     apply simp
-    apply (rule refl)
-   apply assumption
-  apply (rule ballI)
-    apply (rotate_tac -2)
-  apply (drule_tac x = xd in bspec)
-   apply assumption
-    apply (erule bexE)
-  apply (subgoal_tac "\<forall> y \<in> xs ! (length xs - Suc (0::nat)). \<exists> z \<in> xc. y  \<rightarrow>\<^sub>i z")
-   apply (drule_tac x = y in bspec)
-    apply assumption
-   apply (erule bexE)
-   apply (rule_tac x = z in bexI)
-    apply (simp add : state_transition_refl_def)
-    apply (erule rtrancl.intros(2))
-    apply simp
-   apply assumption
-  apply (subgoal_tac "\<turnstile>\<N>\<^bsub>(xs ! (length xs - Suc (0::nat)), xc)\<^esub>")
-   apply (simp add: att_base)    
-   apply (erule conjE)+
-   apply (rotate_tac -4)
-  apply (erule subst)
-  apply (subgoal_tac 
-"xs ! (length xs - Suc (0::nat)) = ((xs @ [xa]) ! (length (xs @ [xa]) - Suc (1::nat)))")
-   apply (rotate_tac -1)
-   apply (erule ssubst)
-   apply (drule_tac x = " (length (xs @ [xa]) - Suc (1::nat))" in spec)
-   apply (drule mp)
-    apply simp+
-   defer
-    apply simp
-  apply (rule nth_app_eq1_rev)
-   apply simp
-  by (rule base_subset)
-
-      
-lemma second_stepC: "\<lbrakk> \<turnstile> (A :: ('s :: state) attree); 
-                      (A :: ('s :: state) attree) =  (oal \<oplus>\<^sub>\<or>\<^bsup>((I,s))\<^esup>);
-      (\<forall> a \<in> (set oal). 
-              (\<exists> (sl :: ((('s :: state) set)list)). (sl \<noteq> []) \<and>
-                sl ! 0 = I \<and> sl ! (length sl - 1) \<subseteq> s \<and>
-                 (\<forall> i < (length sl - 1).  \<turnstile> \<N>\<^bsub>(sl ! i,sl ! (i+1) )\<^esub>
-                         ))) \<rbrakk>
-    \<Longrightarrow> Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s"   
-    apply (case_tac "I \<subseteq> s")
-    apply (simp add:check_def)
-           apply (rule subsetI)
-    apply (rule CollectI)
-           apply (rule conjI)
-    apply (simp add: state_transition_refl_def)
-            apply (rule_tac x = x in bexI)
-             apply simp
-    apply assumption
-   apply (rule EF_lem2a)
-   apply (erule subsetD)
-    apply assumption
-     apply (simp add:check_def)
-           apply (rule subsetI)
-    apply (rule CollectI)
-           apply (rule conjI)
-    apply (simp add: state_transition_refl_def)
-            apply (rule_tac x = x in bexI)
-             apply simp
-    apply assumption
-  apply (subgoal_tac "oal \<noteq> []")
-    prefer 2
-   apply (erule att_or_empty_rev)
-   apply assumption
 (* *)    
-      apply (subgoal_tac "\<forall> x \<in> I. \<exists> y \<in> s. x \<rightarrow>\<^sub>i* y")
-   apply (drule_tac x = x in bspec)
-    apply assumption
-    apply (rotate_tac -1)
-   apply (erule bexE)
-   apply (erule EF_step_star, assumption)
-    (* \<forall>x::'s\<in>I. \<exists>y::'s\<in>s. x \<rightarrow>\<^sub>i* y; try elim "\<exists> sl ..." quantifier and then
-       list induction over sl (after integrating assumptions before a \<longrightarrow>)*)
-  apply (subgoal_tac "set oal \<noteq> {}")
-   apply (drule not_empty_ex)
-   apply (erule exE)
-   apply (drule mp)
-    apply (rule_tac x = xa in exI, assumption)
-  apply (erule exE)
-  apply (rule mp)
-   prefer 2
-   apply (rotate_tac -1)
-   apply assumption
-  apply (rule mp)
-   prefer 2
-   apply (rotate_tac 3)
-   apply assumption
-  apply (rule_tac x = s in spec)
-    apply (rule_tac x = I in spec)
-  apply (rule_tac xs = sl in rev_nonempty_induct)
-   apply simp
-   apply clarify
-apply (rule_tac x = xf in bexI)
-    apply (simp add: state_transition_refl_def)
-    apply simp
-    apply (erule subsetD, assumption)
-    apply (rule allI)+
-  apply (rule impI)+
-  apply (rotate_tac -1)
-  apply (drule_tac x = xc in spec)
-  apply (rotate_tac -1)
-    apply (drule_tac x = "xs ! (length xs - Suc (0::nat))" in spec)
-  apply (drule mp)
-   apply assumption
-  apply (drule mp)
-  apply (rule conjI)  
-   apply assumption
-  apply (rule conjI)
-    apply (rule zeroth_app_eq_rev)
-    apply assumption
-   apply (erule conjE)+
-   apply assumption
-  apply (erule conjE)+
-   apply (rule conjI)
-    apply (rule subset_refl)
-   apply (rule allI)
-    apply (rule impI)
-   apply (rotate_tac -4)
-   apply (drule_tac x = i in spec)
-  apply (rotate_tac -1)
-   apply (drule mp)
-  apply simp
-   apply (rule_tac t = "xs ! i" and s = "(xs @ [xb]) ! i" in subst)
-  apply (rule nth_app_eq1)
-    apply simp
-    apply (rule_tac t = "xs ! (Suc i)" and s = "(xs @ [xb]) ! Suc i" in subst)
-   apply (subst nth_app_eq1)
-     apply simp
-    apply (rule refl)
-   apply assumption
-  apply (rule ballI)
-    apply (rotate_tac -2)
-  apply (drule_tac x = xe in bspec)
-   apply assumption
-    apply (erule bexE)
-  apply (subgoal_tac "\<forall> y \<in> xs ! (length xs - Suc (0::nat)). \<exists> z \<in> xd. y  \<rightarrow>\<^sub>i z")
-   apply (drule_tac x = y in bspec)
-    apply assumption
-   apply (erule bexE)
-   apply (rule_tac x = z in bexI)
-    apply (simp add : state_transition_refl_def)
-    apply (erule rtrancl.intros(2))
-    apply simp
-   apply assumption
-  apply (subgoal_tac "\<turnstile>\<N>\<^bsub>(xs ! (length xs - Suc (0::nat)), xd)\<^esub>")
-   apply (simp add: att_base)    
-   apply (erule conjE)+
-   apply (rotate_tac -4)
-  apply (erule subst)
-  apply (subgoal_tac 
-"xs ! (length xs - Suc (0::nat)) = ((xs @ [xb]) ! (length (xs @ [xb]) - Suc (1::nat)))")
-   apply (rotate_tac -1)
-   apply (erule ssubst)
-   apply (drule_tac x = " (length (xs @ [xb]) - Suc (1::nat))" in spec)
-   apply (drule mp)
-     apply simp+
-       defer
-    apply simp
-   apply (rule nth_app_eq1_rev)
-    apply simp+
-  by (rule base_subset)
-
- 
- theorem AT_EF: "\<lbrakk> \<turnstile> (A :: ('s :: state) attree); (I,s) = attack A \<rbrakk> \<Longrightarrow>
- (Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s) } (I :: ('s :: state)set)  \<turnstile> EF s)" 
-  apply (frule first_step)
-  apply (erule disjE)
-   apply (rule second_stepA)
-    apply simp
-   apply (subgoal_tac "I = fst(attack A)")
-   apply (subgoal_tac "s = snd(attack A)")     
-  apply (erule disjE)
-  apply (erule exE)
-  apply (erule conjE)+
-  apply (rule second_stepB, assumption)
-     apply (erule ssubst, assumption)+
-    apply simp
-  apply (erule exE)
-    apply (erule conjE)+
-    apply (rule second_stepC)
-       apply simp+
-    apply (erule subst)
-    apply simp
-   apply (erule subst)
-by simp
-     
-
+  apply (drule att_elem_seq0)
+by force  
+      
 theorem ATV_EF: "\<lbrakk> \<turnstile>\<^sub>V (A :: ('s :: state) attree); (I,s) = attack A \<rbrakk> \<Longrightarrow>
  (Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s) } (I :: ('s :: state)set)  \<turnstile> EF s)"   
     apply (simp add: ref_validity_def)
