@@ -226,8 +226,8 @@ theorem gdpr_EF': "gdpr_Kripke \<turnstile> EF sgdpr"
   apply (insert gdpr_AT)
   apply (erule exE)
     apply (erule conjE)
-    apply (drule AT_EF)
-  apply (erule sym)
+  apply (drule AT_EF)
+    apply assumption
 by (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def)
 
     
