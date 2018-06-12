@@ -247,9 +247,21 @@ lemma contrapos_compl:
   apply (erule contrapos_nn)
   apply (erule Completeness,assumption)
 by assumption
-        
-    
-(** GDPR property  **)    
+
+lemma contrapos_corr:   
+"(\<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s))
+\<Longrightarrow> attack A = (I::'s::state set, s::'s::state set) 
+\<Longrightarrow> \<not> (\<turnstile> A::'s::state attree) "
+apply (erule contrapos_nn)
+by (erule AT_EF, assumption)
+
+  
+lemma AG_eq_notnotEF: 
+"((Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> AG s)) = 
+ (\<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF (- s)))"
+  sorry
+  
+(** GDPR properties  **)    
 
 (* GDPR three: Processing preserves ownership in any location *)    
 lemma gdpr_three: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
@@ -268,5 +280,39 @@ lemma gdpr_three: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations 
    apply (simp add: owns_def)
 by (simp add: gdpr_scenario_def owns_def)
 
+(* Application example of Correctness and Completeness: 
+   show that there is no attack to ownership possible *)  
+theorem no_attack_gdpr_three: 
+"h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow> 
+ owns (Igraph gdpr_scenario) l (Actor h) d \<Longrightarrow>
+attack A = (Igdpr, -{x. \<forall> l \<in> gdpr_locations. owns (Igraph x) l (Actor h) d })
+\<Longrightarrow> \<not> (\<turnstile> A::infrastructure attree)"
+  apply (rule contrapos_corr)
+   prefer 2
+   apply assumption
+  apply (insert AG_eq_notnotEF)
+  apply (drule_tac x = Igdpr in meta_spec)
+  apply (drule_tac x = 
+   "{x:: infrastructure. \<forall> l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}"
+      in meta_spec)
+    apply (thin_tac "attack A =
+    (Igdpr,
+     - {x::infrastructure.
+        \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d})")
+  apply (erule subst)
+  apply (drule gdpr_three, assumption, assumption)
+by (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
 
+(* Other interesting properties *)  
+(* GDPR one: Owner and listed readers can access*)
+lemma gdpr_one: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
+                 Actor h \<in> {owner d} \<union> readers d \<Longrightarrow>
+                 gdpr_Kripke \<turnstile> AG {x. has_access (graphI x) l (Actor h) d}"
+oops
+  (* All actors in the infrastructure can delete their data at all times 
+   and at all locations -- this could be moved to the Infrastructure
+   since it holds for all applications *)    
+lemma gdpr_two: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
+                 gdpr_Kripke \<turnstile> AG (EX' {x. actor_can_delete x (Actor h) l})"
+oops
 end
