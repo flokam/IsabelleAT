@@ -238,41 +238,19 @@ by (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def)
   
 (* Other examples illustrating the GDPR rules *)  
 (* Positive example: Only the Doctor can use data processing in hospital *)  
-lemma gdpr_zero: "gdpr_Kripke \<turnstile> AG {x. (global_policy x ''Doctor'')}"
-  oops
 
-(** GDPR properties  **)    
-(* GDPR one: Owner and listed readers can access*)
-lemma gdpr_one: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
-                 Actor h \<in> {owner d} \<union> readers d \<Longrightarrow>
-                 gdpr_Kripke \<turnstile> AG {x. has_access (graphI x) l (Actor h) d}"
-oops
-(* All actors in the infrastructure can delete their data at all times 
-   and at all locations -- this could be moved to the Infrastructure
-   since it holds for all applications *)    
-lemma gdpr_two: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
-                 gdpr_Kripke \<turnstile> AG (EX' {x. actor_can_delete x (Actor h) l})"
-  apply (simp add: gdpr_Kripke_def check_def)
-  apply (rule conjI)
-   apply (simp add: gdpr_states_def state_transition_refl_def)
-  apply (unfold AG_def)
-  apply (simp add: gfp_def)
-  apply (rule_tac x = Igdpr in exI)
-  apply (rule conjI)
-  prefer 2
-   apply (rule conjI)
-    apply (unfold AX_def)
-    apply (simp add: Igdpr_def gdpr_scenario_def)
+lemma contrapos_compl: 
+     "I \<noteq> {} \<Longrightarrow> finite I \<Longrightarrow> 
+      (\<not> (\<exists> (A :: ('s :: state) attree). \<turnstile> A \<and> attack A = (I, - s))) \<Longrightarrow>
+      \<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF (- s))"
+  apply (rotate_tac 1)
+  apply (erule contrapos_nn)
+  apply (erule Completeness,assumption)
+by assumption
+        
     
-  apply (simp add: actor_can_delete_def)
-    
-  sorry
+(** GDPR property  **)    
 
-theorem GDPR_two: "\<forall> h \<in> gdpr_actors. \<forall> l \<in> gdpr_locations.
-                 gdpr_Kripke \<turnstile> AG (EX' {x. actor_can_delete x (Actor h) l})"    
-  by (simp add: gdpr_two)
-    
-    
 (* GDPR three: Processing preserves ownership in any location *)    
 lemma gdpr_three: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
          owns (Igraph gdpr_scenario) l (Actor h) d \<Longrightarrow>
