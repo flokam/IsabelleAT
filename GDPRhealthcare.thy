@@ -251,7 +251,21 @@ oops
    and at all locations -- this could be moved to the Infrastructure
    since it holds for all applications *)    
 lemma gdpr_two: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
-                 gdpr_Kripke \<turnstile> AG (EX' {x. actor_can_delete x (Actor h) l})"    
+                 gdpr_Kripke \<turnstile> AG (EX' {x. actor_can_delete x (Actor h) l})"
+  apply (simp add: gdpr_Kripke_def check_def)
+  apply (rule conjI)
+   apply (simp add: gdpr_states_def state_transition_refl_def)
+  apply (unfold AG_def)
+  apply (simp add: gfp_def)
+  apply (rule_tac x = Igdpr in exI)
+  apply (rule conjI)
+  prefer 2
+   apply (rule conjI)
+    apply (unfold AX_def)
+    apply (simp add: Igdpr_def gdpr_scenario_def)
+    
+  apply (simp add: actor_can_delete_def)
+    
   sorry
 
 theorem GDPR_two: "\<forall> h \<in> gdpr_actors. \<forall> l \<in> gdpr_locations.
@@ -263,7 +277,18 @@ theorem GDPR_two: "\<forall> h \<in> gdpr_actors. \<forall> l \<in> gdpr_locatio
 lemma gdpr_three: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
          owns (Igraph gdpr_scenario) l (Actor h) d \<Longrightarrow>
          gdpr_Kripke \<turnstile> AG {x. \<forall> l \<in> gdpr_locations. owns (Igraph x) l (Actor h) d }"  
-sorry
-  
+  apply (simp add: gdpr_Kripke_def check_def)
+  apply (rule conjI)
+   apply (simp add: gdpr_states_def state_transition_refl_def)
+  apply (unfold AG_def)
+  apply (simp add: gfp_def)
+  apply (rule_tac x = "{x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}" in exI)
+  apply (rule conjI)
+   apply (rule subset_refl)
+   apply (rule conjI)
+    apply (unfold AX_def)
+   apply (simp add: owns_def)
+by (simp add: gdpr_scenario_def owns_def)
+
 
 end
