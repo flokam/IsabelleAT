@@ -378,6 +378,17 @@ lemma EF_lem2a: "x \<in> f \<Longrightarrow> x \<in> EF f"
 apply (rule EF_lem1)
   by (erule disjI1)
 
+lemma EF_lem2c: "x \<notin> f \<Longrightarrow> x \<in> EF (- f)"
+  apply (subgoal_tac "x \<in> (- f)")
+  prefer 2
+   apply simp
+by (erule EF_lem2a)
+    
+lemma EF_lem2d: "x \<notin> EF f \<Longrightarrow> x \<notin> f"
+  apply (erule contrapos_nn)
+  by (erule EF_lem2a)
+    
+
 (* not true     
 lemma EF_lem2b: "x \<in> EF f \<longrightarrow> x \<in> f"
     apply (subst EF_lem000)
@@ -506,19 +517,114 @@ apply (drule subsetD)
 by (erule EF_step_star_rev)
  
   
-(*  *)  
-lemma AG_nEFn: "AG f = -(EF (- f))"
-  apply (rule equalityI)
-   apply (rule subsetI) 
-    apply (simp add: EF_def AG_def)
-  sorry
+(* AG lemmas *)  
+  
+ lemma AG_in_lem:   "x \<in> AG s \<Longrightarrow> x \<in> s"  
+  apply (simp add: AG_def)
+  apply (simp add: gfp_def)
+  apply (erule exE)
+  apply (erule conjE)+
+by (erule subsetD, assumption)
+ 
+
+lemma AG_lem1: "x \<in> s \<and> x \<in> (AX (AG s)) \<Longrightarrow> x \<in> AG s"
+  apply (simp add: AG_def)
+  apply (subgoal_tac "gfp (\<lambda>Z::'a set. s \<inter> AX Z) =
+                      s \<inter> (AX (gfp (\<lambda>Z::'a set. s \<inter> AX Z)))")
+      apply (erule ssubst)
+   apply simp
+  apply (rule def_gfp_unfold)
+    apply (rule reflexive)
+  apply (unfold mono_def AX_def)
+  by auto
+
+lemma AG_lem2: "x \<in> AG s \<Longrightarrow> x \<in> (s \<inter> (AX (AG s)))"
+  apply (subgoal_tac "AG s = s \<inter> (AX (AG s))")
+   apply (erule subst)
+   apply assumption
+   apply (simp add: AG_def)
+  apply (rule def_gfp_unfold)
+    apply (rule reflexive)
+  apply (unfold mono_def AX_def)
+  by auto
     
+lemma AG_lem3: "AG s = (s \<inter> (AX (AG s)))"    
+  apply (rule equalityI)  
+  apply (rule subsetI)
+   apply (erule AG_lem2)
+    apply (rule subsetI)
+  apply (rule AG_lem1)
+  by simp
+    
+lemma AG_step: "y \<rightarrow>\<^sub>i z \<Longrightarrow> y \<in> AG s \<Longrightarrow> z \<in> AG s"  
+apply (drule AG_lem2)
+  apply (erule IntE)
+  apply (unfold AX_def)
+  apply simp
+  apply (erule subsetD)
+ by simp
+    
+lemma AG_all_s: " x \<rightarrow>\<^sub>i* y \<Longrightarrow> x \<in> AG s \<Longrightarrow> y \<in> AG s"
+    apply (simp add: state_transition_refl_def)
+  apply (rule mp)
+   prefer 2
+   apply (rotate_tac -1)
+   apply assumption
+  apply (erule rtrancl_induct)
+   apply (rule impI, assumption)
+  apply clarify
+by (erule AG_step, assumption)
+       
+lemma AG_eq_notnotEF: 
+"I \<noteq> {} \<Longrightarrow> ((Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> AG s)) = 
+ (\<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF (- s)))"
+  apply (rule iffI)
+   apply (rule notI)
+   apply (simp add: check_def)
+    apply (subgoal_tac "{sa::'s. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> AG s} \<inter>
+                        {sa::'s. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> EF (- s)} = {}")
+  apply (subgoal_tac "? x. x : I")
+     apply (erule exE)
+     apply blast
+    apply blast
+  apply (subgoal_tac "(? x. x \<in> {sa::'s. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> AG s} \<and>
+                           x \<in> {sa::'s. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> EF (- s)}) \<Longrightarrow> False")
+    apply blast
+    apply (erule exE)
+   apply (erule conjE)
+   apply (subgoal_tac "x \<in> s")
+    apply (subgoal_tac "x \<in> - s")
+     apply blast
+  prefer 2
+  apply (subgoal_tac "x \<in> AG s")
+    apply (erule AG_in_lem)
+    apply simp
+   apply (subgoal_tac "x \<in> EF s")
+  prefer 2
+    apply (rule EF_step_star)
+     prefer 2
+     apply assumption
+    apply (simp add: state_transition_refl_def)
+   apply (subgoal_tac "x \<in> EF (- s)")
+  prefer 2
+    apply simp
+   apply (rotate_tac -1)
+   apply (drule EF_step_star_rev)
+   apply (erule bexE) 
+    apply (subgoal_tac "x \<in> AG s")
+    apply (drule AG_all_s)
+     apply assumption
+  apply (rotate_tac -1)
+    apply (drule AG_in_lem)
+    apply blast
+   apply simp
+(* other direction similar*)    
+sorry    
+  
+      
 lemma check2_def: "(Kripke S I \<turnstile> f) = (I \<subseteq> S \<inter> f)"
   apply (simp add: check_def)
 by blast
-    
-lemma not_prop_not_imp: "s \<noteq> {} \<Longrightarrow> i \<noteq> {} \<Longrightarrow>
-                         (\<not>((Kripke s i) \<turnstile> f)) = ((Kripke s i) \<turnstile> (- f))"    
-oops    
+ 
     
 end
