@@ -256,11 +256,6 @@ apply (erule contrapos_nn)
 by (erule AT_EF, assumption)
 
   
-lemma AG_eq_notnotEF: 
-"((Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> AG s)) = 
- (\<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF (- s)))"
-  sorry
-  
 (** GDPR properties  **)    
 
 (* GDPR three: Processing preserves ownership in any location *)    
@@ -299,9 +294,13 @@ attack A = (Igdpr, -{x. \<forall> l \<in> gdpr_locations. owns (Igraph x) l (Act
     (Igdpr,
      - {x::infrastructure.
         \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d})")
+  apply (subgoal_tac "Igdpr \<noteq> {}")
+   apply (drule meta_mp)
+    apply assumption
   apply (erule subst)
   apply (drule gdpr_three, assumption, assumption)
-by (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
+  apply (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
+by (simp add: Igdpr_def)   
 
 (* Other interesting properties *)  
 (* GDPR one: Owner and listed readers can access*)
