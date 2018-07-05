@@ -574,12 +574,13 @@ lemma AG_all_s: " x \<rightarrow>\<^sub>i* y \<Longrightarrow> x \<in> AG s \<Lo
    apply (rule impI, assumption)
   apply clarify
 by (erule AG_step, assumption)
-       
+
+  
 lemma AG_eq_notnotEF: 
 "I \<noteq> {} \<Longrightarrow> ((Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> AG s)) = 
  (\<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF (- s)))"
-  apply (rule iffI)
-   apply (rule notI)
+apply (rule iffI)
+  apply (rule notI)
    apply (simp add: check_def)
     apply (subgoal_tac "{sa::'s. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> AG s} \<inter>
                         {sa::'s. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> EF (- s)} = {}")
@@ -617,9 +618,7 @@ lemma AG_eq_notnotEF:
   apply (rotate_tac -1)
     apply (drule AG_in_lem)
     apply blast
-   apply simp
-(* other direction similar*)    
-sorry    
+by simp
   
       
 lemma check2_def: "(Kripke S I \<turnstile> f) = (I \<subseteq> S \<inter> f)"

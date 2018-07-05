@@ -1542,4 +1542,22 @@ Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (
   apply (rule Compl_step2)
   by (erule Compl_step1)
     
+    
+(* Contrapositions of Correctness and Completeness *)    
+    lemma contrapos_compl: 
+     "I \<noteq> {} \<Longrightarrow> finite I \<Longrightarrow> 
+      (\<not> (\<exists> (A :: ('s :: state) attree). \<turnstile> A \<and> attack A = (I, - s))) \<Longrightarrow>
+      \<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF (- s))"
+  apply (rotate_tac 1)
+  apply (erule contrapos_nn)
+  apply (erule Completeness,assumption)
+by assumption
+
+lemma contrapos_corr:   
+"(\<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s))
+\<Longrightarrow> attack A = (I::'s::state set, s::'s::state set) 
+\<Longrightarrow> \<not> (\<turnstile> A::'s::state attree) "
+apply (erule contrapos_nn)
+by (erule AT_EF, assumption)  
+    
 end

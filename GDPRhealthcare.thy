@@ -239,23 +239,7 @@ by (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def)
 (* Other examples illustrating the GDPR rules *)  
 (* Positive example: Only the Doctor can use data processing in hospital *)  
 
-lemma contrapos_compl: 
-     "I \<noteq> {} \<Longrightarrow> finite I \<Longrightarrow> 
-      (\<not> (\<exists> (A :: ('s :: state) attree). \<turnstile> A \<and> attack A = (I, - s))) \<Longrightarrow>
-      \<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF (- s))"
-  apply (rotate_tac 1)
-  apply (erule contrapos_nn)
-  apply (erule Completeness,assumption)
-by assumption
 
-lemma contrapos_corr:   
-"(\<not>(Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s))
-\<Longrightarrow> attack A = (I::'s::state set, s::'s::state set) 
-\<Longrightarrow> \<not> (\<turnstile> A::'s::state attree) "
-apply (erule contrapos_nn)
-by (erule AT_EF, assumption)
-
-  
 (** GDPR properties  **)    
 
 (* GDPR three: Processing preserves ownership in any location *)    
@@ -285,23 +269,12 @@ attack A = (Igdpr, -{x. \<forall> l \<in> gdpr_locations. owns (Igraph x) l (Act
   apply (rule contrapos_corr)
    prefer 2
    apply assumption
-  apply (insert AG_eq_notnotEF)
-  apply (drule_tac x = Igdpr in meta_spec)
-  apply (drule_tac x = 
-   "{x:: infrastructure. \<forall> l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}"
-      in meta_spec)
-    apply (thin_tac "attack A =
-    (Igdpr,
-     - {x::infrastructure.
-        \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d})")
-  apply (subgoal_tac "Igdpr \<noteq> {}")
-   apply (drule meta_mp)
-    apply assumption
-  apply (erule subst)
+  apply (rule AG_imp_notnotEF)
+      apply (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
   apply (drule gdpr_three, assumption, assumption)
-  apply (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
-by (simp add: Igdpr_def)   
+by (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
 
+  
 (* Other interesting properties *)  
 (* GDPR one: Owner and listed readers can access*)
 lemma gdpr_one: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
