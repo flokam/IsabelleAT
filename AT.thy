@@ -221,7 +221,10 @@ apply simp+
       apply simp
      apply (rule allI)
      apply (rule list.induct)
-by simp+
+  by simp+
+    
+export_code is_attack_tree in Scala    
+    
       
 lemma att_and_one: "\<lbrakk> \<turnstile> a; attack a = s \<rbrakk>  \<Longrightarrow> \<turnstile>[a] \<oplus>\<^sub>\<and>\<^bsup>s\<^esup> "
   apply (subst att_and)
@@ -621,7 +624,11 @@ definition ref_validity :: "[('s :: state) attree] \<Rightarrow> bool" ("\<turns
   where
 "\<turnstile>\<^sub>V A  \<equiv>  (\<exists> A'. A \<sqsubseteq>\<^sub>V A')"
 
-     
+lemma ref_valI: " A \<sqsubseteq> A'\<Longrightarrow>  \<turnstile> A' \<Longrightarrow> \<turnstile>\<^sub>V A"
+  apply (simp add: ref_validity_def valid_ref_def)
+by (rule exI, rule conjI)
+
+
 (* Main theorems of Correctness and Completeness
    between AT and Kripke, \<turnstile> (init K, p) \<equiv>  K \<turnstile> EF p *) 
 (* This proof roughly goes in two steps:

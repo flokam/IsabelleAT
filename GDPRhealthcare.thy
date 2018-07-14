@@ -40,12 +40,27 @@ defines "ex_locs \<equiv> (\<lambda> x.  if x = cloud then
              (''free'',{((Actor ''Patient'',{Actor ''Doctor''}),42)}) 
              else ('''',{}))"
 
+
+fixes ex_loc_ass :: "location \<Rightarrow> identity set"
+defines ex_loc_ass_def: "ex_loc_ass \<equiv>
+          (\<lambda> x.  if x = home then {''Patient''}  
+                 else (if x = hospital then {''Doctor'', ''Eve''} 
+                       else {}))"
+
+(* The nicer representation with case suffers from
+   not so nice presentation in the cases (need to unfold the syntax) *) 
+fixes ex_loc_ass_alt :: "location \<Rightarrow> identity set"
+defines ex_loc_ass_alt_def: "ex_loc_ass_alt \<equiv>
+          (\<lambda> x.  (case x of 
+             Location (Suc 0) \<Rightarrow> {''Patient''}  
+           | Location (Suc (Suc 0)) \<Rightarrow> {''Doctor'', ''Eve''} 
+           |  _ \<Rightarrow> {}))"
   
+
 fixes ex_graph :: "igraph"
 defines ex_graph_def: "ex_graph \<equiv> Lgraph 
      {(home, cloud), (sphone, cloud), (cloud,hospital)}
-     (\<lambda> x. if x = home then {''Patient''} else 
-           (if x = hospital then {''Doctor'', ''Eve''} else {})) 
+     ex_loc_ass
      ex_creds ex_locs"
   
 fixes ex_graph' :: "igraph"
@@ -62,7 +77,21 @@ defines ex_graph''_def: "ex_graph'' \<equiv> Lgraph
            (if x = hospital then {''Doctor''} else {})) 
      ex_creds ex_locs"
 
+(* Same as above: the nicer representation with case suffers from
+   not so nice presentation in the cases (need to unfold the syntax) *) 
+fixes local_policies_alt :: "[igraph, location] \<Rightarrow> policy set"
+defines local_policies_alt_def: "local_policies_alt G \<equiv> 
+    (\<lambda> x. case x of 
+         Location (Suc 0) \<Rightarrow> {(\<lambda> y. True, {put,get,move,eval})}
+       | Location 0 \<Rightarrow> {((\<lambda> y. has G (y, ''PIN'')), {put,get,move,eval})} 
+       | Location (Suc (Suc (Suc 0))) \<Rightarrow> {(\<lambda> y. True, {put,get,move,eval})}
+       | Location (Suc (Suc 0)) \<Rightarrow>
+                {((\<lambda> y. (\<exists> n. (n  @\<^bsub>G\<^esub> hospital) \<and> Actor n = y \<and> 
+                           has G (y, ''skey''))), {put,get,move,eval})} 
+       | _ \<Rightarrow>  {})"
 
+  
+  
 fixes local_policies :: "[igraph, location] \<Rightarrow> policy set"
 defines local_policies_def: "local_policies G \<equiv> 
     (\<lambda> x. if x = home then
@@ -130,17 +159,17 @@ begin
 lemma step1: "gdpr_scenario  \<rightarrow>\<^sub>n gdpr_scenario'"
   apply (rule_tac l = home and a = "''Patient''" and l' = cloud in move)
         apply (rule refl)
-       apply (simp add: gdpr_scenario_def ex_graph_def atI_def nodes_def)+
+       apply (simp add: gdpr_scenario_def ex_graph_def ex_loc_ass_def atI_def nodes_def)+
       apply blast
      apply (simp add: gdpr_scenario_def nodes_def ex_graph_def)
      apply blast
-    apply (simp add: actors_graph_def gdpr_scenario_def ex_graph_def nodes_def)
+    apply (simp add: actors_graph_def gdpr_scenario_def ex_graph_def ex_loc_ass_def nodes_def)
     apply blast
    apply (simp add: enables_def gdpr_scenario_def ex_graph_def local_policies_def
                     ex_creds_def ex_locs_def has_def credentials_def)
   apply (simp add: gdpr_scenario'_def ex_graph'_def move_graph_a_def 
                    gdpr_scenario_def ex_graph_def home_def cloud_def hospital_def
-                    ex_creds_def)
+                    ex_loc_ass_def ex_creds_def)
   apply (rule ext)
  by (simp add: hospital_def)
 
@@ -184,6 +213,15 @@ only work when the premises
 in rule get_data in Infrastructure.thy are omitted
 (thus switching off the DLM-IFC) 
 *)
+lemma gdpr_ref: "[\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup> \<sqsubseteq>
+                  [\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"  
+  apply (rule_tac l = "[]" and l' = "[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>]" and
+                  l'' = "[]" and si = Igdpr and si' = Igdpr and 
+                  si'' = sgdpr and si''' = sgdpr in refI)
+                apply simp
+   apply (rule refl)
+  by simp
+    
      
 lemma att_gdpr: "\<turnstile>[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
      apply (simp add: att_and)
@@ -195,6 +233,10 @@ lemma att_gdpr: "\<turnstile>[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GD
   apply (subst state_trans_inst_eq)
 by (rule step1)
 
+lemma gdpr_abs_att: "\<turnstile>\<^sub>V [\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
+by (rule ref_valI, rule gdpr_ref, rule att_gdpr)
+
+  
   
 lemma gdpr_att: "gdpr_Kripke \<turnstile> EF {x. \<not>(global_policy' x ''Eve'')}"
   apply (insert att_gdpr)
@@ -229,17 +271,11 @@ theorem gdpr_EF': "gdpr_Kripke \<turnstile> EF sgdpr"
   apply (drule AT_EF)
     apply assumption
 by (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def)
-
-    
 (* However, when integrating DLM info into the get_data rule this isn't
    possible any more: gdpr_EF is not true any more *)  
   
   
   
-(* Other examples illustrating the GDPR rules *)  
-(* Positive example: Only the Doctor can use data processing in hospital *)  
-
-
 (** GDPR properties  **)    
 
 (* GDPR three: Processing preserves ownership in any location *)    
