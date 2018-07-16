@@ -25,8 +25,7 @@ defines global_policy_def: "global_policy I a \<equiv> a \<noteq> ''Doctor''
 
 fixes global_policy' :: "[infrastructure, identity] \<Rightarrow> bool"
 defines global_policy'_def: "global_policy' I a \<equiv> a \<notin> gdpr_actors 
-                 \<longrightarrow> \<not>(enables I cloud (Actor a) get)"
-  
+                 \<longrightarrow> \<not>(enables I cloud (Actor a) get)"  
   
 fixes ex_creds :: "actor \<Rightarrow> (string set * string set)"
 defines ex_creds_def: "ex_creds \<equiv> (\<lambda> x. if x = Actor ''Patient'' then 
@@ -135,7 +134,7 @@ defines GDPR'_def:
   "GDPR' \<equiv> {gdpr_scenario'}"
 
 
-(* Second step: Eve goes onto cloud from where she'' be able to get the data *)
+(* Second step: Eve goes onto cloud from where she'll be able to get the data *)
 fixes gdpr_scenario'' :: "infrastructure"
 defines gdpr_scenario''_def:
 "gdpr_scenario'' \<equiv> Infrastructure ex_graph'' local_policies"
@@ -206,12 +205,13 @@ apply (simp add: state_transition_in_refl_def)
    by auto   
      
 (* Attack example: Eve can get onto cloud and get Patient's data 
- for the naive version of get_data (with no use of DLM) 
-Attention: the following lemmas up to and including GDPR_AT
-only work when the premises 
-"((Actor a', as), n) \<in> snd (lgra G l') \<Longrightarrow> Actor a \<in> as \<Longrightarrow>"
-in rule get_data in Infrastructure.thy are omitted
-(thus switching off the DLM-IFC) 
+   because the policy allows Eve to get on cloud.
+   This attack can easily be fixed by disabling Eve to get
+   in the policy (just change the True for clound to a set with no 
+   Eve in it).
+   However, it would not prevent Insider attacks (where Eve is 
+   impersonating the Doctor, for example). Insider attacks can
+   be checked using the UasI predicate.
 *)
 lemma gdpr_ref: "[\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup> \<sqsubseteq>
                   [\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"  
@@ -221,8 +221,7 @@ lemma gdpr_ref: "[\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsu
                 apply simp
    apply (rule refl)
   by simp
-    
-     
+         
 lemma att_gdpr: "\<turnstile>[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
      apply (simp add: att_and)
   apply (rule conjI)
@@ -235,8 +234,6 @@ by (rule step1)
 
 lemma gdpr_abs_att: "\<turnstile>\<^sub>V [\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
 by (rule ref_valI, rule gdpr_ref, rule att_gdpr)
-
-  
   
 lemma gdpr_att: "gdpr_Kripke \<turnstile> EF {x. \<not>(global_policy' x ''Eve'')}"
   apply (insert att_gdpr)
@@ -276,7 +273,7 @@ by (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def)
   
   
   
-(** GDPR properties  **)    
+(** GDPR properties  for the illustration of the DLM labeling **)    
 
 (* GDPR three: Processing preserves ownership in any location *)    
 lemma gdpr_three: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
@@ -311,7 +308,7 @@ attack A = (Igdpr, -{x. \<forall> l \<in> gdpr_locations. owns (Igraph x) l (Act
 by (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
 
   
-(* Other interesting properties *)  
+(* Other interesting properties -- not yet proved, for future use. *)  
 (* GDPR one: Owner and listed readers can access*)
 lemma gdpr_one: "h \<in> gdpr_actors \<Longrightarrow> l \<in> gdpr_locations \<Longrightarrow>
                  Actor h \<in> {owner d} \<union> readers d \<Longrightarrow>

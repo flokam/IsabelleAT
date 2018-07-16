@@ -215,8 +215,8 @@ where
          \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l' (Actor a) get \<Longrightarrow> 
-(* naive version omits the check of the DLM labels 
-       ((Actor a', as), n) \<in> snd (lgra G l') \<Longrightarrow> Actor a \<in> as \<Longrightarrow> *)
+(* naive version omits the following two checks of the DLM labels *)
+       ((Actor a', as), n) \<in> snd (lgra G l') \<Longrightarrow> Actor a \<in> as \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
                    ((lgra G)(l := (fst (lgra G l), 
