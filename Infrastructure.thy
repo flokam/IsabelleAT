@@ -1,5 +1,4 @@
 theory Infrastructure
-(* experiment to fix the bug with instance *)
 imports AT "/Applications/Isabelle2016-1.app/Isabelle/src/HOL/Hoare/Hoare_Logic"
 begin
 datatype action = get | move | eval |put
