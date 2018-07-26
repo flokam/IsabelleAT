@@ -1,4 +1,5 @@
 theory Infrastructure
+(* experiment to fix the bug with instance *)
 imports AT "/Applications/Isabelle2016-1.app/Isabelle/src/HOL/Hoare/Hoare_Logic"
 begin
 datatype action = get | move | eval |put
@@ -188,10 +189,6 @@ primrec nodup :: "['a, 'a list] \<Rightarrow> bool"
     nodup_nil: "nodup a [] = True" |
     nodup_step: "nodup a (x # ls) = (if x = a then (a \<notin> (set ls)) else nodup a ls)"
 
-instantiation "infrastructure" :: state
-begin
-instance 
-  by (rule MC.class.MC.state.of_class.intro)
 
 definition move_graph_a :: "[identity, location, location, igraph] \<Rightarrow> igraph"
 where "move_graph_a n l l' g \<equiv> Lgraph (gra g) 
@@ -248,18 +245,27 @@ where
           \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
   
     
-  
+instantiation "infrastructure" :: state
+begin
+
+definition 
+   state_transition_infra_def: "(i \<rightarrow>\<^sub>i i') =  (i \<rightarrow>\<^sub>n (i' :: infrastructure))"
+
+instance
+  by (rule MC.class.MC.state.of_class.intro)
+
 definition state_transition_in_refl ("(_ \<rightarrow>\<^sub>n* _)" 50)
 where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
 
 (* instantiation should give that for free -- this is a bug
   in the Isabelle classes implementation version 2016-1 to be fixed in 2018 *)    
 lemma state_trans_inst_eq : "((s :: infrastructure) \<rightarrow>\<^sub>i s') = (s \<rightarrow>\<^sub>n s')"
-  apply (unfold state_transition_in.simps)
+  by (rule state_transition_infra_def)
+(*  apply (unfold state_transition_in.simps)
   apply (rule iffI)
    apply auto
   sorry  
-  
+*)  
 end
   
     
