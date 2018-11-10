@@ -223,18 +223,19 @@ lemma gdpr_ref: "[\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsu
   by simp
          
 lemma att_gdpr: "\<turnstile>[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
-     apply (simp add: att_and)
+  apply (subst att_and, simp)
   apply (rule conjI)
-    apply (simp add: Igdpr_def GDPR'_def att_base)
-  apply (subst state_trans_inst_eq)
-   apply (rule step1)
-    apply (simp add: GDPR'_def sgdpr_def att_base)
-  apply (subst state_trans_inst_eq)
+  apply (simp add: Igdpr_def GDPR'_def att_base)
+  apply (subst state_transition_infra_def)
+  apply (rule step1)
+  apply (subst att_and, simp)
+  apply (simp add: GDPR'_def sgdpr_def att_base)
+  apply (subst state_transition_infra_def)
   apply (rule_tac x = gdpr_scenario'' in exI)
   apply (rule conjI)
-   apply (simp add: global_policy'_def gdpr_scenario''_def gdpr_actors_def 
+  apply (simp add: global_policy'_def gdpr_scenario''_def gdpr_actors_def 
                     enables_def local_policies_def cloud_def sphone_def)
-by (rule step2)
+  by (rule step2)
 
 lemma gdpr_abs_att: "\<turnstile>\<^sub>V [\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
 by (rule ref_valI, rule gdpr_ref, rule att_gdpr)
