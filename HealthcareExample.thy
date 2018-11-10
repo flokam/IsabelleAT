@@ -224,11 +224,13 @@ lemma in_danger: "\<not> (global_policy hc_scenario''' ''Carer'')"
                   
                 
 lemma att_hc: "\<turnstile>[\<N>\<^bsub>(Ihc,HC')\<^esub>, \<N>\<^bsub>(HC',HC'')\<^esub>, \<N>\<^bsub>(HC'',shc)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Ihc,shc)\<^esup>"
-  apply (simp add: att_and)
+  apply (subst att_and, simp)
+(*  apply (simp add: att_and) *)
     apply (rule conjI)
    apply (simp add: Ihc_def HC'_def att_base) 
    apply (subst state_trans_inst_eq)
    apply (rule step1)
+  apply (subst att_and, simp)
   apply (rule conjI)
    apply (simp add: Ihc_def HC'_def HC''_def att_base) 
      apply (subst state_trans_inst_eq)
