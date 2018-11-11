@@ -1,5 +1,5 @@
 theory Infrastructure
-imports AT "/Applications/Isabelle2016-1.app/Isabelle/src/HOL/Hoare/Hoare_Logic"
+imports AT "/Applications/Isabelle2018.app/Isabelle/src/HOL/Hoare/Hoare_Logic"
 begin
 datatype action = get | move | eval |put
 typedecl actor 
@@ -13,11 +13,11 @@ where "ID a s \<equiv> (a = Actor s)"
 (* a simple definition of data and instantiating 
 the generic types of the Hoare logic to pairs of owner and data as 
 basic data type for specification. This enables the unique marking
-(module insider impersonation) of data within the system. 
+(modulo insider impersonation) of data within the system. 
 The manipulation of the data (using simple while language) can thus 
 be modelled but additionally taking the ownership into account. We use 
 eval below and anchor the access control in restricing base functions
-for the Basic com type *)
+for the basic com type *)
 type_synonym data = nat  
   (* Inspired by Myers DLM mode: first is the owner of a data item, second is the
      set of all actors that may access the data item *)
@@ -25,7 +25,7 @@ type_synonym dlm = "actor * actor set"
   (* the following type constructors are from Hoare_logic:
      bexp and assn are just synonyms for set, and
      com is a simple datatype repesenting while command language
-     over some Basic 'a \<Rightarrow> 'a functions, while 'a sem is
+     over some basic 'a \<Rightarrow> 'a functions, while 'a sem is
      just the type of relations 'a \<Rightarrow> 'a \<Rightarrow> bool representing relational
      semantics *)
 type_synonym acond = "(dlm * data) bexp"
@@ -83,11 +83,6 @@ definition owner :: "dlm * data \<Rightarrow> actor" where "owner d \<equiv> fst
 definition owns :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"    
   where "owns G l a d \<equiv> owner d = a"
     
-    
-(*    
-definition has_access :: "[igraph, location, actor, data] \<Rightarrow> bool"    
-  where "has_access G l a d \<equiv> (\<exists> as a'. ((a',as),d) \<in> snd(lgra G l) \<and> a \<in> as)"
-*)
 definition readers :: "dlm * data \<Rightarrow> actor set"
   where "readers d \<equiv> snd (fst d)"
 
@@ -97,15 +92,16 @@ where "has_access G l a d \<equiv> owns G l a d \<or> a \<in> readers d"
 definition actor_can_delete ::   "[infrastructure, actor, location] \<Rightarrow> bool"
 where actor_can_delete_def: "actor_can_delete I h l \<equiv>  
                    (\<forall> as n. ((h, as), n) \<notin> (snd (lgra (graphI I) l)))"
-    
-    
+        
 (* type of functions that preserves the security labeling *)    
 typedef label_fun = "{f :: dlm * data \<Rightarrow> dlm * data. 
                         \<forall> x:: dlm * data. fst x = fst (f x)}"  
-  apply auto
-  apply (rule_tac x = id in exI)
-  by simp
-    
+proof (auto)
+  show "\<exists>x::(actor \<times> actor set) \<times> nat \<Rightarrow> (actor \<times> actor set) \<times> nat.
+       \<forall>(a::actor) (b::actor set) ba::nat. (a, b) = fst (x ((a, b), ba))"
+  by (rule_tac x = id in exI, simp)
+qed
+
 definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" ("_ \<Updown> _" 50)
   where "f  \<Updown> d \<equiv> (Rep_label_fun f) d" 
     
@@ -121,39 +117,22 @@ where "motivation  (Actor_state p m) =  m"
 primrec psy_state :: "actor_state \<Rightarrow> psy_states" 
 where "psy_state  (Actor_state p m) = p"
 
-
 definition tipping_point :: "actor_state \<Rightarrow> bool" where
   "tipping_point a \<equiv> ((motivation a \<noteq> {}) \<and> (happy \<noteq> psy_state a))"
 
-(* idea:: predicate to flag that an actor is isolated *)
-consts Isolation :: "[actor_state, (identity * identity) set ] \<Rightarrow> bool"
+consts astate :: "identity \<Rightarrow> actor_state"
 
-
-(* use above to redefine infrastructure -- adapt policies in nodes
-   so that layed off workers cannot access any more *)
-definition lay_off :: "[infrastructure,actor set] \<Rightarrow> infrastructure"
-where "lay_off G A \<equiv> G"
-
-(* idea: social graph is derived from activities in infrastructure.
-   Since actors are nodes in the infrastructure graph, we need to 
-   have a second graph only on actors reflecting their interaction. *)
-consts social_graph :: "(identity * identity) set"
-(* This social graph is a parameter to the theory. It depends on
-   actual measured activities. We will use it to derive meta-theorems. *)
-
+(* Two versions of an impersonation predicate "a can act as b". 
+   The first one is stronger and allows substitution of the insider in any context; 
+   the second one is parameterized over a context predicate to describe this.   *)
 definition UasI ::  "[identity, identity] \<Rightarrow> bool " 
 where "UasI a b \<equiv> (Actor a = Actor b) \<and> (\<forall> x y. x \<noteq> a \<and> y \<noteq> a \<and> Actor x = Actor y \<longrightarrow> x = y)"
 
 definition UasI' ::  "[actor => bool, identity, identity] \<Rightarrow> bool " 
 where "UasI' P a b \<equiv> P (Actor b) \<longrightarrow> P (Actor a)"
 
-(* derive theorems about UasI being a equivalence relation *)
-
-consts astate :: "identity \<Rightarrow> actor_state"
-
 definition Insider :: "[identity, identity set] \<Rightarrow> bool" 
 where "Insider a C \<equiv> (tipping_point (astate a) \<longrightarrow> (\<forall> b\<in>C. UasI a b))"
-
 
 definition Insider' :: "[actor \<Rightarrow> bool, identity, identity set] \<Rightarrow> bool" 
 where "Insider' P a C \<equiv> (tipping_point (astate a) \<longrightarrow> (\<forall> b\<in>C. UasI' P a b \<and> inj_on Actor C))"
@@ -165,7 +144,6 @@ definition enables :: "[infrastructure, location, actor, action] \<Rightarrow> b
 where
 "enables I l a a' \<equiv>  (\<exists> (p,e) \<in> delta I (graphI I) l. a' \<in> e \<and> p a)"
 
-
 (* behaviour is the good behaviour, i.e. everything allowed by policy *)
 definition behaviour :: "infrastructure \<Rightarrow> (location * actor * action)set"
 where "behaviour I \<equiv> {(t,a,a'). enables I t a a'}"
@@ -175,8 +153,6 @@ definition misbehaviour :: "infrastructure \<Rightarrow> (location * actor * act
 where "misbehaviour I \<equiv> -(behaviour I)"
 
 (* state transition on infrastructures *)
-declare [[show_types]]
-
 
 primrec jonce :: "['a, 'a list] \<Rightarrow> bool"
 where
@@ -187,7 +163,6 @@ primrec nodup :: "['a, 'a list] \<Rightarrow> bool"
   where 
     nodup_nil: "nodup a [] = True" |
     nodup_step: "nodup a (x # ls) = (if x = a then (a \<notin> (set ls)) else nodup a ls)"
-
 
 definition move_graph_a :: "[identity, location, location, igraph] \<Rightarrow> igraph"
 where "move_graph_a n l l' g \<equiv> Lgraph (gra g) 
@@ -256,15 +231,6 @@ instance
 definition state_transition_in_refl ("(_ \<rightarrow>\<^sub>n* _)" 50)
 where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
 
-(* instantiation should give that for free -- this is a bug
-  in the Isabelle classes implementation version 2016-1 to be fixed in 2018 *)    
-lemma state_trans_inst_eq : "((s :: infrastructure) \<rightarrow>\<^sub>i s') = (s \<rightarrow>\<^sub>n s')"
-  by (rule state_transition_infra_def)
-(*  apply (unfold state_transition_in.simps)
-  apply (rule iffI)
-   apply auto
-  sorry  
-*)  
 end
   
     
