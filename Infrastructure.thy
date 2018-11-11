@@ -232,14 +232,11 @@ definition state_transition_in_refl ("(_ \<rightarrow>\<^sub>n* _)" 50)
 where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
 
 end
-  
-    
+      
 lemma move_graph_eq: "move_graph_a a l l g = g"  
-  apply (simp add: move_graph_a_def)
-  apply (case_tac g)
-  by force
-     
-   
+proof (simp add: move_graph_a_def, case_tac g, force)
+qed     
+       
 end
 
   

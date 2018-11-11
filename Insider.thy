@@ -168,25 +168,18 @@ where
 (* show that this infrastructure is a state as given in MC.thy *)
 instantiation "infrastructure" :: state
 begin
-instance 
+
+definition 
+   state_transition_infra_def: "(i \<rightarrow>\<^sub>i i') =  (i \<rightarrow>\<^sub>n (i' :: infrastructure))"
+
+instance
   by (rule MC.class.MC.state.of_class.intro)
-    
-(*
-instance   "infrastructure" :: state
-  by (rule MC.class.MC.state.of_class.intro)
-*)    
 
 definition state_transition_in_refl ("(_ \<rightarrow>\<^sub>n* _)" 50)
-  where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
-    
-(* instantiation should give that for free -- there is something weird *)    
-lemma state_trans_inst_eq : "(s \<rightarrow>\<^sub>i s') = (s \<rightarrow>\<^sub>n s')"
-  apply (unfold state_transition_in.simps)
-  apply (rule iffI)
-   apply auto
-  sorry
-    
+where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
+
 end
+
   
   
 (* del related results not needed since we use sets here for credentials etc  
@@ -257,10 +250,8 @@ lemma nodup_down_notin[rule_format]: "nodup a l \<longrightarrow> nodup a (del a
 *)
     
 lemma move_graph_eq: "move_graph_a a l l g = g"  
-  apply (simp add: move_graph_a_def)
-  apply (case_tac g)
-  by force
-     
+proof (simp add: move_graph_a_def, case_tac g, force)
+qed     
     
 
 end
