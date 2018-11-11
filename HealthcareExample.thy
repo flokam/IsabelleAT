@@ -131,122 +131,160 @@ defines "shc \<equiv> {x. \<not> (global_policy x ''Carer'')}"
 begin
 
 lemma step1: "hc_scenario  \<rightarrow>\<^sub>n hc_scenario'"
-  apply (rule_tac l = room and a' = "''Carer''" and a = "''Patient''" and z = "''skey''" in get)
-  apply (rule refl)
-  apply (simp add: hc_scenario_def atI_def ex_graph_def)+
-      apply (simp add: ex_graph_def hc_scenario_def ex_creds_def has_def credentials_def)
-  apply (simp add: hc_scenario_def enables_def local_policies_def ex_creds_def)
-  apply (simp add: hc_scenario'_def hc_scenario_def ex_creds'_def 
+proof (rule_tac l = room and a' = "''Carer''" and a = "''Patient''" and z = "''skey''" in get, rule refl)
+  show "''Patient'' @\<^bsub>graphI hc_scenario\<^esub> room" 
+    by (simp add: hc_scenario_def atI_def ex_graph_def)
+next show "''Carer'' @\<^bsub>graphI hc_scenario\<^esub> room"
+    by (simp add: hc_scenario_def atI_def ex_graph_def)
+next show "has (graphI hc_scenario) (Actor ''Patient'', ''skey'')"
+    by (simp add: ex_graph_def hc_scenario_def ex_creds_def has_def credentials_def)
+next show "enables hc_scenario room (Actor ''Patient'') get"
+    by (simp add: hc_scenario_def enables_def local_policies_def ex_creds_def)
+next show "hc_scenario' =
+        Infrastructure
+                (Lgraph (gra (graphI hc_scenario)) (agra (graphI hc_scenario))
+                ((cgra (graphI hc_scenario))
+        (Actor ''Carer'' :=
+           (insert ''skey'' (fst (cgra (graphI hc_scenario) (Actor ''Carer''))),
+            snd (cgra (graphI hc_scenario) (Actor ''Carer'')))))
+       (lgra (graphI hc_scenario)))
+     (delta hc_scenario)"
+    apply (simp add: hc_scenario'_def hc_scenario_def ex_creds'_def 
          ex_graph'_def ex_graph_def ex_creds_def)
     apply (rule conjI)
     apply (rule impI)
-   apply (rule ext)
-   apply simp
-   apply (rule impI)
-   apply (rule equalityI)
+    apply (rule ext)
+    apply simp
+    apply (rule impI)
+    apply (rule equalityI)
     apply simp+
     apply (rule impI)
     apply (rule ext)
-   apply simp
-   apply (rule impI)+
-   apply (rule equalityI)
-by simp+
-   
+    apply simp
+    apply (rule impI)+
+    apply (rule equalityI)
+    by simp+
+qed
+
 lemma step1r: "hc_scenario \<rightarrow>\<^sub>n*  hc_scenario'"
-apply (simp add: state_transition_in_refl_def)
-  apply (insert step1)    
-by auto
+proof (simp add: state_transition_in_refl_def, insert step1, auto)
+qed
 
 lemma step2: "hc_scenario' \<rightarrow>\<^sub>n hc_scenario''"
-  apply (rule_tac l = room and a = "''Carer''" and l' = sphone in move)
-  apply (rule refl)
-       apply (simp add: hc_scenario'_def atI_def nodes_def ex_graph_def room_def sphone_def
-               ex_graph'_def bankapp_def healthapp_def)+
-     apply blast
-    apply (simp add: hc_scenario'_def actors_graph_def ex_graph_def ex_graph'_def
+proof (rule_tac l = room and a = "''Carer''" and l' = sphone in move, rule refl)
+  show "''Carer'' @\<^bsub>graphI hc_scenario'\<^esub> room" 
+    by (simp add: hc_scenario'_def atI_def nodes_def ex_graph_def room_def sphone_def
+               ex_graph'_def bankapp_def healthapp_def)
+next show "room \<in> nodes (graphI hc_scenario')"
+    by (simp add: hc_scenario'_def atI_def nodes_def ex_graph_def room_def sphone_def
+               ex_graph'_def bankapp_def healthapp_def)
+next show "sphone \<in> nodes (graphI hc_scenario')"
+    by (simp add: hc_scenario'_def atI_def nodes_def ex_graph_def room_def sphone_def
+               ex_graph'_def bankapp_def healthapp_def, blast)
+next show "''Carer'' \<in> actors_graph (graphI hc_scenario')"
+    by (simp add: hc_scenario'_def actors_graph_def ex_graph_def ex_graph'_def
                 nodes_def sphone_def room_def healthapp_def bankapp_def)
-   apply (simp add: hc_scenario'_def enables_def local_policies_def ex_graph'_def 
+next show "enables hc_scenario' sphone (Actor ''Carer'') move"
+    by (simp add: hc_scenario'_def enables_def local_policies_def ex_graph'_def 
                     ex_creds'_def has_def credentials_def)
-  apply (simp add: hc_scenario''_def hc_scenario'_def ex_creds'_def ex_creds_def
+next show "hc_scenario'' =
+    Infrastructure (move_graph_a ''Carer'' room sphone (graphI hc_scenario')) (delta hc_scenario')"
+    apply (simp add: hc_scenario''_def hc_scenario'_def ex_creds'_def ex_creds_def
                    ex_graph'_def ex_graph''_def move_graph_a_def ex_graph_def sphone_def
                    room_def has_def credentials_def)
-  apply (rule ext)
-  apply (simp add: sphone_def)
-by blast
+    apply (rule ext)
+    apply (simp add: sphone_def)
+    by blast
+qed
 
 lemma step2r: "hc_scenario'  \<rightarrow>\<^sub>n* hc_scenario''"
-apply (simp add: state_transition_in_refl_def)
-apply (insert step2)
-by auto
-
+proof (simp add: state_transition_in_refl_def, insert step2, auto)
+qed
 
 lemma step3: "hc_scenario''  \<rightarrow>\<^sub>n hc_scenario'''"
-  apply (rule_tac l = sphone and a = "''Carer''" and l' = bankapp in move)
-  apply (rule refl)
-       apply (simp add: hc_scenario''_def atI_def nodes_def ex_graph'_def room_def sphone_def
-               ex_graph''_def bankapp_def healthapp_def)+
-     apply blast
-    apply (simp add: hc_scenario''_def actors_graph_def ex_graph'_def
-                ex_graph''_def nodes_def sphone_def room_def healthapp_def bankapp_def)+
-              apply blast
-   apply (simp add: hc_scenario''_def enables_def local_policies_def ex_creds'_def
-                  bankapp_def healthapp_def sphone_def room_def sphone_def 
+proof (rule_tac l = sphone and a = "''Carer''" and l' = bankapp in move, rule refl)
+  show "''Carer'' @\<^bsub>graphI hc_scenario''\<^esub> sphone"
+    by (simp add: hc_scenario''_def atI_def nodes_def ex_graph'_def room_def sphone_def
+               ex_graph''_def bankapp_def healthapp_def)
+next show "sphone \<in> nodes (graphI hc_scenario'')"
+    by (simp add: hc_scenario''_def atI_def nodes_def ex_graph'_def room_def sphone_def
+               ex_graph''_def bankapp_def healthapp_def, blast)
+next show "bankapp \<in> nodes (graphI hc_scenario'')"
+    by (simp add: hc_scenario''_def actors_graph_def ex_graph'_def
+                ex_graph''_def nodes_def sphone_def room_def healthapp_def bankapp_def)
+next show "''Carer'' \<in> actors_graph (graphI hc_scenario'')"
+    by (simp add: hc_scenario''_def actors_graph_def ex_graph'_def
+                ex_graph''_def nodes_def sphone_def room_def healthapp_def bankapp_def, blast)
+next show "enables hc_scenario'' bankapp (Actor ''Carer'') move"
+    by (simp add: hc_scenario''_def enables_def local_policies_def ex_creds'_def
+                  bankapp_def healthapp_def sphone_def room_def 
                   atI_def ex_locs_def ex_graph'_def ex_graph''_def has_def 
                   credentials_def)
-  apply (simp add: hc_scenario''_def hc_scenario'''_def ex_creds'_def ex_creds_def
+next show "hc_scenario''' =
+    Infrastructure (move_graph_a ''Carer'' sphone bankapp (graphI hc_scenario'')) (delta hc_scenario'')"
+     apply (simp add: hc_scenario''_def hc_scenario'''_def ex_creds'_def ex_creds_def
                    ex_graph'_def move_graph_a_def ex_graph''_def sphone_def
                    room_def bankapp_def has_def credentials_def ex_graph'''_def
           )
-        apply (rule ext)
-by (simp add: sphone_def bankapp_def)
-  
+     apply (rule ext)
+     by (simp add: sphone_def bankapp_def)
+qed
+
 lemma step3r: "hc_scenario''  \<rightarrow>\<^sub>n* hc_scenario'''"
-apply (simp add: state_transition_in_refl_def)
-apply (insert step3)
-by auto
-  
+proof (simp add: state_transition_in_refl_def, insert step3, auto)
+qed  
   
 lemma stepr: "hc_scenario   \<rightarrow>\<^sub>n* hc_scenario'''"
-apply (insert step1r step2r step3r)
-by (simp add: state_transition_in_refl_def)
-  
+proof(insert step1r step2r step3r, simp add: state_transition_in_refl_def)
+qed  
     
 (* The following attacks can be shown without using the 
    strong impersonation property of Insider *) 
 
 lemma in_danger: "\<not> (global_policy hc_scenario''' ''Carer'')"
-  apply (unfold global_policy_def)
-    apply simp
-  by (simp add: hc_scenario'''_def
+proof (unfold global_policy_def, simp)
+  show "enables hc_scenario''' bankapp (Actor ''Carer'') eval"
+    by (simp add: hc_scenario'''_def
                   ex_graph''_def ex_graph'''_def ex_locs_def ex_creds'_def
                   atI_def local_policies_def enables_def
                   bankapp_def healthapp_def sphone_def room_def has_def credentials_def)
-                  
-                
+qed                  
+
 lemma att_hc: "\<turnstile>[\<N>\<^bsub>(Ihc,HC')\<^esub>, \<N>\<^bsub>(HC',HC'')\<^esub>, \<N>\<^bsub>(HC'',shc)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Ihc,shc)\<^esup>"
-  apply (subst att_and, simp)
-(*  apply (simp add: att_and) *)
-    apply (rule conjI)
-   apply (simp add: Ihc_def HC'_def att_base) 
-   apply (subst state_trans_inst_eq)
-   apply (rule step1)
-  apply (subst att_and, simp)
-  apply (rule conjI)
-   apply (simp add: Ihc_def HC'_def HC''_def att_base) 
-     apply (subst state_trans_inst_eq)
-   apply (rule step2)
-   apply (simp add: Ihc_def HC'_def HC''_def att_base) 
-     apply (subst state_trans_inst_eq)
-by (rule step2)
-    
+proof (subst att_and, simp, rule conjI)
+  show "\<turnstile>\<N>\<^bsub>(Ihc, HC')\<^esub>"
+    apply (simp add: Ihc_def HC'_def att_base) 
+    apply (subst state_transition_infra_def)
+    by (rule step1)
+next show " \<turnstile>[\<N>\<^bsub>(HC', HC'')\<^esub>, \<N>\<^bsub>(HC'', shc)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(HC', shc)\<^esup>"
+   apply (subst att_and, simp)
+  proof (rule conjI)
+    show " \<turnstile>\<N>\<^bsub>(HC', HC'')\<^esub>"
+     apply (simp add: Ihc_def HC'_def HC''_def att_base) 
+     apply (subst state_transition_infra_def)
+     by (rule step2)
+  next show " \<turnstile>[\<N>\<^bsub>(HC'', shc)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(HC'', shc)\<^esup>"
+     apply (simp add: Ihc_def HC'_def HC''_def  att_base) 
+     apply (subst att_and, simp add: att_base)
+     apply (rule_tac x = "hc_scenario'''" in bexI)
+     apply (subst state_transition_infra_def)
+     apply (rule step3)
+     apply (simp add: shc_def)
+     by (rule in_danger)
+  qed
+qed
 
 theorem hc_EF: "hc_Kripke \<turnstile> EF shc"
-  apply (insert att_hc)
-    apply (subgoal_tac "(Ihc, shc) = attack ([\<N>\<^bsub>(Ihc,HC')\<^esub>, \<N>\<^bsub>(HC',HC'')\<^esub>, \<N>\<^bsub>(HC'',shc)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Ihc,shc)\<^esup>)")
-  apply (drule AT_EF)
-    apply simp
-   apply  (simp add: hc_Kripke_def hc_states_def Ihc_def)
-  by simp
+proof -
+  have a: "\<turnstile>[\<N>\<^bsub>(Ihc, HC')\<^esub>, \<N>\<^bsub>(HC', HC'')\<^esub>, \<N>\<^bsub>(HC'', shc)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Ihc, shc)\<^esup>" by (rule att_hc)
+  have b: "(Ihc, shc) = attack ([\<N>\<^bsub>(Ihc,HC')\<^esub>, \<N>\<^bsub>(HC',HC'')\<^esub>, \<N>\<^bsub>(HC'',shc)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Ihc,shc)\<^esup>)"
+    by simp
+  have "Kripke {s::infrastructure. \<exists>i::infrastructure\<in>Ihc. i \<rightarrow>\<^sub>i* s} Ihc \<turnstile> EF shc " 
+    apply (rule AT_EF)
+     apply (rule a)
+    by simp
+  thus "hc_Kripke \<turnstile> EF shc"
+    by  (simp add: hc_Kripke_def hc_states_def Ihc_def)
+qed
     
-
 end
