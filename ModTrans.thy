@@ -59,50 +59,6 @@ theorem prop_pres:  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> (\<forall> s' 
 by simp
 
 
-(*
-theorem prop_pres:  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> (\<forall> s' \<in> (Pow (states K')). (K' \<turnstile> EF s') \<longrightarrow> (K \<turnstile> EF (E ` s')))" 
-  apply clarify
-  apply (unfold mod_trans_def)
-  apply (erule conjE)+
-  apply (simp add: check_def)
-  apply (rule subsetI)
-  apply (rule CollectI)
-  apply (rule conjI)
-  apply (rotate_tac 2)
-   apply (erule subsetD, assumption)
-     apply (rule_tac y = x in EF_step_star)
-   apply (simp add: state_transition_refl_def)
-  apply (subgoal_tac "\<exists> y. y \<in> (init K')")
-  prefer 2
-   apply force
-   apply (erule exE)
-   apply (rotate_tac 1)
-   apply (drule subsetD, assumption)
-  apply (rotate_tac -1)
-   apply (erule CollectE)
-  apply (erule conjE)
-   apply (drule EF_step_star_rev)
-  apply (erule bexE)
-  apply (drule_tac x = "ya" in bspec)
-  thm subsetD
-   apply (rule_tac A = s' in subsetD, assumption+)
-  apply (drule_tac x = "y" in bspec)
-
-
-   apply (subgoal_tac "states K' \<noteq> {}")
-    apply (subgoal_tac "? x. x \<in> states K'")
-     apply (erule exE)
-     apply (drule_tac x = xa in bspec, assumption)
-  apply (drule_tac x = x in bspec, assumption)
-
-
-   apply (erule subsetD, assumption)
-  
-
-  apply (drule mp)
-
-*)
-
 
 theorem strong_mt[rule_format]: "E ` (init K') \<subseteq> (init K) \<and> (\<forall> s s'. s \<rightarrow>\<^sub>i s' \<longrightarrow> (E s) \<rightarrow>\<^sub>i (E s')) \<Longrightarrow>
                                 K \<sqsubseteq>\<^sub>E K'"
