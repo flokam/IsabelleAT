@@ -373,7 +373,7 @@ definition EU where "EU f1 f2 \<equiv> lfp(\<lambda> Z. f2 \<union> (f1 \<inter>
 definition AR where "AR f1 f2 \<equiv> gfp(\<lambda> Z. f2 \<inter> (f1 \<union> AX Z))"
 definition ER where "ER f1 f2 \<equiv> gfp(\<lambda> Z. f2 \<inter> (f1 \<union> EX' Z))"
 
-(* Kripke and Modelchecking  *)
+(* Kripke and Modelchecking  -- FIXME:  typedef to incorporate init K \<subseteq> states K *)
 datatype 'a kripke = 
   Kripke "'a set" "'a set"
 
