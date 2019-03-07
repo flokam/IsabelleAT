@@ -56,9 +56,9 @@ theorem prop_pres:  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> (\<forall> s' 
    apply (erule subst, assumption)
 by simp
 
-(* In this version, the init_ref condition stronger so it will be disallowed to "delete" 
-   initial states during refinement. Then the second more complex Kripke structure
-   in prop_pres would become just K *)
+(* In this version of the property preservation theorem, the init_ref condition is
+   stronger so it will be disallowed to "delete" initial states during refinement. 
+   Then the second more complex Kripke structure in prop_pres becomes simply K *)
 lemma Kripke_self: "K = Kripke (states K) (init K)"
   apply (case_tac K)
 by simp
