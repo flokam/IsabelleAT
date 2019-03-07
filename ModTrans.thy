@@ -23,9 +23,7 @@ lemma init_ref: "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> E ` (init K') \<su
   apply (simp add: state_transition_refl_def)
 by (erule conjE, assumption)
 
-(* Improvement(?): make the init_ref condition stronger so it will be disallowed to "delete" 
-   initial states during refinement. Then the second more complex Kripke structure
-   in prop_pres would become just K*)
+(* This version allows that the init in the refinement "deletes" some initial states *)
 theorem prop_pres:  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> (\<forall> s' \<in> (Pow (states K')). 
                       (K' \<turnstile> EF s') \<longrightarrow> (Kripke (states K)(E ` (init K')) \<turnstile> EF (E ` s')))" 
   apply clarify
@@ -58,11 +56,48 @@ theorem prop_pres:  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> (\<forall> s' 
    apply (erule subst, assumption)
 by simp
 
+(* In this version, the init_ref condition stronger so it will be disallowed to "delete" 
+   initial states during refinement. Then the second more complex Kripke structure
+   in prop_pres would become just K *)
+lemma Kripke_self: "K = Kripke (states K) (init K)"
+  apply (case_tac K)
+by simp
+
+theorem prop_pres':  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> init K \<subseteq> E ` (init K') \<Longrightarrow> (\<forall> s' \<in> (Pow (states K')). 
+                      (K' \<turnstile> EF s') \<longrightarrow> (K \<turnstile> EF (E ` s')))" 
+  apply (subgoal_tac "init K = E ` (init K')")
+   apply (subgoal_tac "K = Kripke (states K)(init K)")
+  apply (rotate_tac -1)
+  apply (erule ssubst)
+    apply (erule ssubst)
+  apply (rule prop_pres, assumption)
+   apply (rule Kripke_self)
+  apply (rule subset_antisym, assumption)
+by (erule init_ref)
 
 
-theorem strong_mt[rule_format]: "E ` (init K') \<subseteq> (init K) \<and> (\<forall> s s'. s \<rightarrow>\<^sub>i s' \<longrightarrow> (E s) \<rightarrow>\<^sub>i (E s')) \<Longrightarrow>
+theorem strong_mt[rule_format]: 
+"init K' \<subseteq> states K' \<and> init K \<subseteq> states K \<and> E ` (init K') \<subseteq> (init K) \<and> (\<forall> s s'. s \<rightarrow>\<^sub>i s' \<longrightarrow> (E s) \<rightarrow>\<^sub>i (E s')) \<Longrightarrow>
                                 K \<sqsubseteq>\<^sub>E K'"
-  sorry
+  apply (unfold mod_trans_def)
+  apply simp
+  apply (erule conjE)+
+  apply (rule ballI)+
+  apply (rule impI)
+  apply (rule conjI)
+   apply (erule subsetD)
+   apply (erule imageI)
+  apply (subgoal_tac "(\<forall>s::'a. s \<rightarrow>\<^sub>i s' \<longrightarrow> E s \<rightarrow>\<^sub>i E s') \<longrightarrow> s \<rightarrow>\<^sub>i* s' \<longrightarrow> E s \<rightarrow>\<^sub>i* E s'")
+   apply simp
+  apply (simp add: state_transition_refl_def)
+  apply (erule_tac rtrancl_induct)
+   apply simp
+  apply (drule_tac x = y in spec)
+  apply (drule_tac x = z in spec)
+  apply (drule mp, simp)
+  apply (erule rtrancl_into_rtrancl)
+  apply (rule CollectI)
+  by simp
 
 end
 
