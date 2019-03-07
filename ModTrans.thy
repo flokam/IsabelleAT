@@ -2,8 +2,8 @@ theory ModTrans
 imports AT
 begin
 
-(* FIXME:
-The first two condition in mod_trans should be part of Kripke type_def and thus become implicit *)
+(* Improvement possibility:
+The first two conditions in mod_trans could be part of Kripke type_def and thus become implicit *)
 definition mod_trans :: "[('a::state) kripke,('a'::state) \<Rightarrow> 'a, 'a' kripke] \<Rightarrow> bool" ("(_ \<sqsubseteq>\<^sub>_ _)" 50)  
   where "K \<sqsubseteq>\<^sub>E K' = (init K' \<subseteq> states K' \<and> init K \<subseteq> states K \<and>
     (\<forall> s' \<in> (states K'). (\<forall> s \<in> (init K'). (s \<rightarrow>\<^sub>i* s') \<longrightarrow> (E s) \<in> (init K) \<and> (E s) \<rightarrow>\<^sub>i* (E s'))))"
