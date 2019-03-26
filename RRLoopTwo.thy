@@ -186,5 +186,8 @@ definition ref_map :: "[RRLoopTwo.infrastructure,
                                         (\<lambda> l. {fst(RRLoopTwo.lgra (graphI I) l)}))
                                  lp"
                    
-
+lemma delta_invariant: "\<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z')"    
+  apply clarify
+  apply (erule state_transition_in.cases)
+ by simp+
 end
