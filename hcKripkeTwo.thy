@@ -28,10 +28,10 @@ defines ex_credsT_def: "ex_credsT \<equiv> (\<lambda> x. if x = Actor ''Patient'
                             (if x = Actor ''Doctor'' then
                                 ({''PIN''},{}) else ({},{})))"
 
-fixes ex_locsT :: "location \<Rightarrow> string * acond"
+fixes ex_locsT :: "location \<Rightarrow> acond"
 defines "ex_locsT \<equiv>  (\<lambda> x.  if x = cloudT then
-             (''free'',{((Actor ''Patient'',{Actor ''Doctor''}),42)}) 
-             else ('''',{}))"
+             ({((Actor ''Patient'',{Actor ''Doctor''}),''42'')}) 
+             else ({}))"
 
 fixes ex_locT_ass :: "location \<Rightarrow> identity set"
 defines ex_locT_ass_def: "ex_locT_ass \<equiv>
@@ -110,97 +110,6 @@ defines "shcT \<equiv> {x. \<not> (global_policyT x ''Eve'')}"
 
 begin
 
-lemma refmapOne_lem: " \<forall>(s::RRLoopTwo.infrastructure) s'::RRLoopTwo.infrastructure. s \<rightarrow>\<^sub>n s' \<longrightarrow> rmapT s \<rightarrow>\<^sub>n rmapT s'"
-  apply clarify
-  apply (erule state_transition_in.cases) 
-  apply (rule_tac I = "rmapT s" and I' = "rmapT s'" and l = l and l' = l' 
-                             and a = a 
- in RRLoopOne.state_transition_in.move)
-  apply (rule refl)
-            apply (simp add: rmapT_def ref_map_def atI_def RRLoopOne.atI_def)
-           apply (simp add: rmapT_def ref_map_def nodes_def RRLoopOne.nodes_def)
-           apply (simp add: rmapT_def ref_map_def nodes_def RRLoopOne.nodes_def)
-         apply (simp add: rmapT_def ref_map_def actors_graph_def RRLoopOne.actors_graph_def)
-         apply (rule_tac x = l in exI)
-         apply (simp add: nodes_def RRLoopOne.nodes_def atI_def)
-  prefer 2
-        apply (simp add: rmapT_def ref_map_def move_graph_a_def RRLoopOne.move_graph_a_def)
-(* Critical case: we don't know how the policies of refined and old model relate, i.e.
-   how do we prove:
-   RRLoopTwo.enables I l' (Actor a) move \<Rightarrow> RRLoopOne.enables (rmapT s) l' (Actor a) move ? 
-   In this version of the rmap_def, rmapT basically just replaces with local_policiesT
-   but we need to know at least that delta I is local_policiesT. So an additional assumption
-   that  for all states (that are reachable?) the policy local_policiesT applies, i.e.
-   delta s = local_policiesT *)
-(* For now only as a local assumption: *)
-  apply (subgoal_tac "delta I = local_policiesT")
-  apply (simp add: rmapT_def ref_map_def enables_def RRLoopOne.enables_def)
-        apply (erule bexE)
-  apply (rule_tac x = x in bexI, assumption)
-  apply(simp add: local_policies_def local_policiesT_def hospital_def sphone_def
-                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def
-                 atI_def RRLoopOne.atI_def)
-        apply (rule conjI)
-         apply (rule impI)
-  apply (simp add: hospital_def sphone_def
-                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def)
-         apply (erule exE)
-         apply (erule conjE)+
-         apply (simp add: has_def RRLoopOne.has_def atI_def 
-                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
-         apply (rule impI)+
-        apply (rule conjI)
-         apply (rule impI)+
-         apply (simp add: sphoneT_def cloudT_def)
-         apply (rule impI)+
-        apply (rule conjI)
-         apply (rule impI)
-         apply (simp add: sphoneT_def cloudT_def has_def RRLoopOne.has_def
-                          RRLoopOne.credentials_def RRLoopTwo.credentials_def)
-         apply (rule impI)+
-        apply (rule conjI)
-         apply (rule impI)
-         apply (simp add: sphoneT_def cloudT_def has_def RRLoopOne.has_def
-                          RRLoopOne.credentials_def RRLoopTwo.credentials_def)
-  apply (subgoal_tac " RRLoopTwo.nodes (RRLoopTwo.graphI I) = 
-                      {Location (0::nat),Location (1::nat),Location (2::nat),Location (3::nat)}")
-
-         apply simp
-  apply (simp add: nodes_def)
-  sorry
-
-(*
-  apply (simp add: rmapT_def ref_map_def)
-   apply (rule_tac I = "RRLoopOne.infrastructure.Infrastructure
-        (RRLoopOne.igraph.Lgraph (RRLoopTwo.gra (RRLoopTwo.graphI I))
-          (RRLoopTwo.agra (RRLoopTwo.graphI I)) (RRLoopTwo.cgra (RRLoopTwo.graphI I))
-          (\<lambda>l::location. {fst (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)}))
-        local_policies" and I' = "RRLoopOne.infrastructure.Infrastructure
-                             (RRLoopOne.igraph.Lgraph
-                               (RRLoopTwo.gra (RRLoopTwo.move_graph_a a l l' (RRLoopTwo.graphI I)))
-                               (RRLoopTwo.agra (RRLoopTwo.move_graph_a a l l' (RRLoopTwo.graphI I)))
-                               (RRLoopTwo.cgra (RRLoopTwo.move_graph_a a l l' (RRLoopTwo.graphI I)))
-                               (\<lambda>la::location.
-                                   {fst (RRLoopTwo.lgra
-                                          (RRLoopTwo.move_graph_a a l l' (RRLoopTwo.graphI I)) la)}))
-                             local_policies" and l = l and l' = l' 
-                             and a = a 
- in RRLoopOne.state_transition_in.move)
-  apply (rule refl)
-            apply (simp add: atI_def RRLoopOne.atI_def)
-           apply (simp add: nodes_def RRLoopOne.nodes_def)
-           apply (simp add: nodes_def RRLoopOne.nodes_def)
-         apply (simp add: actors_graph_def RRLoopOne.actors_graph_def)
-         apply (rule_tac x = l in exI)
-         apply (simp add: nodes_def RRLoopOne.nodes_def atI_def)
-        apply (simp add: enables_def RRLoopOne.enables_def)
-        apply (erule bexE)
-        apply (rule_tac x = x in bexI, assumption)
-  apply (simp add: local_policies_def sphone_def home_def hospital_def cloud_def)
-        apply (rule conjI)
-  apply (rule_tac I = "rmapT s" and I' = "rmapT s'" in  RRLoopOne.state_transition_in.move)
-  apply simp
-*)
  lemma same_nodes0[rule_format]: "\<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow> nodes(graphI z) = nodes(graphI z')"   
     apply clarify
   apply (erule RRLoopTwo.state_transition_in.cases)
@@ -214,6 +123,53 @@ lemma same_nodes: "(hc_scenarioT, s) \<in> {(x::RRLoopTwo.infrastructure, y::RRL
     apply simp
     apply (drule same_nodes0)
   by simp  
+
+lemma finite_data_imp0: 
+"(hc_scenarioT, I) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
+(\<forall>l::location. finite (RRLoopTwo.lgra (RRLoopTwo.graphI hc_scenarioT) l)) \<longrightarrow>
+(\<forall>l::location. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l))"
+    apply (erule rtrancl_induct)  
+   apply simp+
+  apply clarify
+  apply (erule state_transition_in.cases) 
+  apply (simp add: move_graph_a_def)
+by simp+
+
+(* needs domain def:
+lemma finite_data_imp: 
+"(hc_scenarioT, I) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
+(\<forall>l::location\<in>domain (RRLoopTwo.lgra (RRLoopTwo.graphI hc_scenarioT)).
+          finite (RRLoopTwo.lgra (RRLoopTwo.graphI hc_scenarioT) l)) \<longrightarrow>
+(\<forall>l::location\<in>domain (RRLoopTwo.lgra (RRLoopTwo.graphI I)).
+          finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l))"
+  apply (erule rtrancl_induct)  
+   apply simp+
+  apply clarify
+  apply (erule state_transition_in.cases) 
+  apply (simp add: move_graph_a_def)
+     apply (simp add: domain_def)
+     apply (rule conjI)
+      apply (rule impI)
+      apply simp
+  apply (rotate_tac 2)
+      apply (drule_tac x = la in spec)
+  apply (erule mp)
+  sorry
+
+lemma finite_data: 
+"(hc_scenarioT, I) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
+\<forall>l::location\<in>domain (RRLoopTwo.lgra (RRLoopTwo.graphI I)).
+          finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)"
+  apply (drule finite_data_imp)
+by (simp add: hc_scenarioT_def ex_graphT_def ex_locsT_def)
+*)
+
+
+lemma finite_data0: 
+"(hc_scenarioT, I) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
+\<forall>l::location. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)"
+  apply (drule finite_data_imp0)
+by (simp add: hc_scenarioT_def ex_graphT_def ex_locsT_def)
 
 lemma init_state_policy0: "\<lbrakk> \<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z'); 
                           (x,y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<rbrakk> \<Longrightarrow> 
@@ -245,7 +201,7 @@ lemma init_state_policy: "\<lbrakk> (x,y) \<in> {(x::infrastructure, y::infrastr
     apply (rule delta_invariant)
   by assumption
 
-lemma refmapOne_lem': "\<forall>s::RRLoopTwo.infrastructure.
+lemma refmapOne_lem: "\<forall>s::RRLoopTwo.infrastructure.
        (hc_scenarioT, s) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<longrightarrow>
        (\<forall>s'::RRLoopTwo.infrastructure. s \<rightarrow>\<^sub>n s' \<longrightarrow> rmapT s \<rightarrow>\<^sub>n rmapT s')"
   apply clarify
@@ -256,6 +212,26 @@ lemma refmapOne_lem': "\<forall>s::RRLoopTwo.infrastructure.
   prefer 2
   apply (erule init_state_policy)
   apply (erule state_transition_in.cases) 
+proof -
+(* move *)
+  show "\<And>(s::RRLoopTwo.infrastructure) (s'::RRLoopTwo.infrastructure) (G::RRLoopTwo.igraph)
+       (I::RRLoopTwo.infrastructure) (a::char list) (l::location) (l'::location)
+       I'::RRLoopTwo.infrastructure.
+       (hc_scenarioT, s) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       RRLoopTwo.nodes (RRLoopTwo.graphI hc_scenarioT) = RRLoopTwo.nodes (RRLoopTwo.graphI s) \<Longrightarrow>
+       RRLoopTwo.delta hc_scenarioT = RRLoopTwo.delta s \<Longrightarrow>
+       s = I \<Longrightarrow>
+       s' = I' \<Longrightarrow>
+       G = RRLoopTwo.graphI I \<Longrightarrow>
+       a @\<^bsub>G\<^esub> l \<Longrightarrow>
+       l \<in> RRLoopTwo.nodes G \<Longrightarrow>
+       l' \<in> RRLoopTwo.nodes G \<Longrightarrow>
+       a \<in> RRLoopTwo.actors_graph (RRLoopTwo.graphI I) \<Longrightarrow>
+       RRLoopTwo.enables I l' (Actor a) move \<Longrightarrow>
+       I' =
+       RRLoopTwo.infrastructure.Infrastructure (RRLoopTwo.move_graph_a a l l' (RRLoopTwo.graphI I))
+        (RRLoopTwo.delta I) \<Longrightarrow>
+       rmapT s \<rightarrow>\<^sub>n rmapT s'"
   apply (rule_tac I = "rmapT s" and I' = "rmapT s'" and l = l and l' = l' 
                              and a = a 
  in RRLoopOne.state_transition_in.move)
@@ -318,13 +294,354 @@ apply (drule sym)
   apply (simp add: hc_scenarioT_def local_policiesT_def ex_graphT_def RRLoopTwo.nodes_def)
   apply (simp add: hospital_def sphone_def
                   home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
-  apply blast
+  by blast
+(* get *)
+next show "\<And>(s::RRLoopTwo.infrastructure) (s'::RRLoopTwo.infrastructure) (G::RRLoopTwo.igraph)
+       (I::RRLoopTwo.infrastructure) (h::char list) (l::location) (l'::location) (h'::char list)
+       (hs::actor set) (n::char list) I'::RRLoopTwo.infrastructure.
+       (hc_scenarioT, s) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       RRLoopTwo.nodes (RRLoopTwo.graphI hc_scenarioT) = RRLoopTwo.nodes (RRLoopTwo.graphI s) \<Longrightarrow>
+       RRLoopTwo.delta hc_scenarioT = RRLoopTwo.delta s \<Longrightarrow>
+       s = I \<Longrightarrow>
+       s' = I' \<Longrightarrow>
+       G = RRLoopTwo.graphI I \<Longrightarrow>
+       h @\<^bsub>G\<^esub> l \<Longrightarrow>
+       l \<in> RRLoopTwo.nodes G \<Longrightarrow>
+       l' \<in> RRLoopTwo.nodes G \<Longrightarrow>
+       RRLoopTwo.enables I l (Actor h) get \<Longrightarrow>
+       ((Actor h', hs), n) \<in> RRLoopTwo.lgra G l' \<Longrightarrow>
+       Actor h \<in> hs \<or> h = h' \<Longrightarrow>
+       I' =
+       RRLoopTwo.infrastructure.Infrastructure
+        (RRLoopTwo.igraph.Lgraph (RRLoopTwo.gra G) (RRLoopTwo.agra G) (RRLoopTwo.cgra G)
+          ((RRLoopTwo.lgra G)(l := RRLoopTwo.lgra G l \<union> {((Actor h', hs), n)})))
+        (RRLoopTwo.delta I) \<Longrightarrow>
+       rmapT s \<rightarrow>\<^sub>n rmapT s'"
+  apply (rule_tac I = "rmapT s" and I' = "rmapT s'" and l = l and h = h and l' = l' and s = n
+         in RRLoopOne.state_transition_in.get)
+  apply (rule refl)
+        apply (simp add: rmapT_def ref_map_def atI_def RRLoopOne.atI_def)
+                apply (simp add: rmapT_def ref_map_def nodes_def RRLoopOne.nodes_def)
+           apply (simp add: rmapT_def ref_map_def nodes_def RRLoopOne.nodes_def)
+      prefer 2
+      apply (simp add: rmapT_def ref_map_def)
+      apply (subgoal_tac "finite(RRLoopTwo.lgra (RRLoopTwo.graphI I) l')")
+       apply (drule_tac n = "((Actor h', hs), n)" and f = "snd" in fmap_lem_map)
+        apply assumption
+       apply simp
+      apply (subgoal_tac "\<forall> l. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (erule spec)
+      apply (erule finite_data0)
 (* *)
-  sorry
+      prefer 2
+      apply (simp add: rmapT_def ref_map_def)
+     apply (rule ext)
+     apply simp
+    apply (rule impI)
+     apply (subst fmap_lem)
+      prefer 2
+      apply simp
+      apply (subgoal_tac "\<forall> l. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (erule spec)
+      apply (erule finite_data0)
+(* enables get*)
+ apply (simp add: rmapT_def ref_map_def enables_def RRLoopOne.enables_def)
+        apply (erule bexE)
+  apply (rule_tac x = x in bexI, assumption)
+  apply(simp add: local_policies_def local_policiesT_def hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def
+                 atI_def RRLoopOne.atI_def)
+        apply (rule conjI)
+        apply (rule impI)
+        apply (drule sym)
+  apply (drule sym)
+  apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+        apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+        apply (simp add: hc_scenarioT_def local_policiesT_def ex_graphT_def RRLoopTwo.nodes_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+  apply (subgoal_tac "RRLoopTwo.nodes (RRLoopTwo.graphI I) = {Location 0, Location 1, Location 2, Location 3}")
+  apply simp
+  apply (drule sym)
+  apply (simp add: hc_scenarioT_def local_policiesT_def ex_graphT_def RRLoopTwo.nodes_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+by blast
+(* eval *)
+next show "\<And>(s::RRLoopTwo.infrastructure) (s'::RRLoopTwo.infrastructure) (G::RRLoopTwo.igraph)
+       (I::RRLoopTwo.infrastructure) (h::char list) (l::location) (h'::char list) (hs::actor set)
+       (n::char list) (I'::RRLoopTwo.infrastructure) f::char list \<Rightarrow> char list.
+       (hc_scenarioT, s) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       RRLoopTwo.nodes (RRLoopTwo.graphI hc_scenarioT) = RRLoopTwo.nodes (RRLoopTwo.graphI s) \<Longrightarrow>
+       RRLoopTwo.delta hc_scenarioT = RRLoopTwo.delta s \<Longrightarrow>
+       s = I \<Longrightarrow>
+       s' = I' \<Longrightarrow>
+       G = RRLoopTwo.graphI I \<Longrightarrow>
+       h @\<^bsub>G\<^esub> l \<Longrightarrow>
+       l \<in> RRLoopTwo.nodes G \<Longrightarrow>
+       RRLoopTwo.enables I l (Actor h) eval \<Longrightarrow>
+       ((Actor h', hs), n) \<in> RRLoopTwo.lgra G l \<Longrightarrow>
+       Actor h \<in> hs \<or> h = h' \<Longrightarrow>
+       I' =
+       RRLoopTwo.infrastructure.Infrastructure
+        (RRLoopTwo.igraph.Lgraph (RRLoopTwo.gra G) (RRLoopTwo.agra G) (RRLoopTwo.cgra G)
+          ((RRLoopTwo.lgra G)
+           (l := RRLoopTwo.lgra G l - {((Actor h', hs), n)} \<union> {((Actor h', hs), f n)})))
+        (RRLoopTwo.delta I) \<Longrightarrow>
+       rmapT s \<rightarrow>\<^sub>n rmapT s'"
+    apply (rule_tac I = "rmapT s" and I' = "rmapT s'" and l = l and h = h and n = n and 
+                    f = f in RRLoopOne.state_transition_in.process)
+  apply (rule refl)
+        apply (simp add: rmapT_def ref_map_def atI_def RRLoopOne.atI_def)
+                apply (simp add: rmapT_def ref_map_def nodes_def RRLoopOne.nodes_def)
+      prefer 2
+      apply (simp add: rmapT_def ref_map_def)
+      apply (subgoal_tac "finite(RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (drule_tac n = "((Actor h', hs), n)" and f = "snd" in fmap_lem_map)
+        apply assumption
+       apply simp
+      apply (subgoal_tac "\<forall> l. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (erule spec)
+      apply (erule finite_data0)
+(* *)
+      prefer 2
+      apply (simp add: rmapT_def ref_map_def)
+     apply (rule ext)
+     apply simp
+    apply (rule impI)
+     apply (subst fmap_lem)
+      prefer 2
+      apply (subgoal_tac "(fmap snd (RRLoopTwo.lgra (RRLoopTwo.graphI I) l - {((Actor h', hs), n)}) =
+                        (fmap snd (RRLoopTwo.lgra (RRLoopTwo.graphI I) l) - {n}))")
+    apply (rotate_tac -1)
+    apply (erule ssubst)
+       apply simp
+    apply (subst fmap_lem_del)
+       prefer 2
+    apply simp
+      apply (subgoal_tac "\<forall> l. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (erule spec)
+      apply (erule finite_data0)
+    thm finite_subset
+     apply (rule_tac B = "RRLoopTwo.lgra (RRLoopTwo.graphI I) l" in finite_subset)
+    apply blast
+apply (subgoal_tac "\<forall> l. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (erule spec)
+     apply (erule finite_data0)
+(* enables eval *)
+ apply (simp add: rmapT_def ref_map_def enables_def RRLoopOne.enables_def)
+        apply (erule bexE)
+  apply (rule_tac x = x in bexI, assumption)
+  apply(simp add: local_policies_def local_policiesT_def hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def
+                 atI_def RRLoopOne.atI_def)
+        apply (rule conjI)
+        apply (rule impI)
+        apply (drule sym)
+  apply (drule sym)
+  apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+        apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+        apply (simp add: hc_scenarioT_def local_policiesT_def ex_graphT_def RRLoopTwo.nodes_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+  apply (subgoal_tac "RRLoopTwo.nodes (RRLoopTwo.graphI I) = {Location 0, Location 1, Location 2, Location 3}")
+  apply simp
+  apply (drule sym)
+  apply (simp add: hc_scenarioT_def local_policiesT_def ex_graphT_def RRLoopTwo.nodes_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+by blast
+(* del_data *)
+next show "\<And>(s::RRLoopTwo.infrastructure) (s'::RRLoopTwo.infrastructure) (G::RRLoopTwo.igraph)
+       (I::RRLoopTwo.infrastructure) (h::char list) (l::location) (hs::actor set) (n::char list)
+       I'::RRLoopTwo.infrastructure.
+       (hc_scenarioT, s) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       RRLoopTwo.nodes (RRLoopTwo.graphI hc_scenarioT) = RRLoopTwo.nodes (RRLoopTwo.graphI s) \<Longrightarrow>
+       RRLoopTwo.delta hc_scenarioT = RRLoopTwo.delta s \<Longrightarrow>
+       s = I \<Longrightarrow>
+       s' = I' \<Longrightarrow>
+       G = RRLoopTwo.graphI I \<Longrightarrow>
+       h \<in> RRLoopTwo.actors_graph G \<Longrightarrow>
+       l \<in> RRLoopTwo.nodes G \<Longrightarrow>
+       ((Actor h, hs), n) \<in> RRLoopTwo.lgra G l \<Longrightarrow>
+       I' =
+       RRLoopTwo.infrastructure.Infrastructure
+        (RRLoopTwo.igraph.Lgraph (RRLoopTwo.gra G) (RRLoopTwo.agra G) (RRLoopTwo.cgra G)
+          ((RRLoopTwo.lgra G)(l := RRLoopTwo.lgra G l - {((Actor h, hs), n)})))
+        (RRLoopTwo.delta I) \<Longrightarrow>
+       rmapT s \<rightarrow>\<^sub>n rmapT s'"
+    apply (rule_tac I = "rmapT s" and I' = "rmapT s'" and l = l and h = h and n = n
+                     in RRLoopOne.state_transition_in.del_data)
+  apply (rule refl)
+       apply (simp add: rmapT_def ref_map_def atI_def RRLoopOne.actors_graph_def actors_graph_def
+                        RRLoopOne.nodes_def nodes_def)
+                apply (simp add: rmapT_def ref_map_def nodes_def RRLoopOne.nodes_def)
+      prefer 2
+     apply (simp add: rmapT_def ref_map_def)
+     apply (rule ext)
+     apply simp
+    apply (rule impI)
+     apply (subst fmap_lem_del)
+      apply (subgoal_tac "\<forall> l. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (erule spec)
+      apply (erule finite_data0)
+    apply simp
+     apply (simp add: rmapT_def ref_map_def)
+      apply (subgoal_tac "finite(RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (drule_tac n = "((Actor h, hs), n)" and f = "snd" in fmap_lem_map)
+        apply assumption
+       apply simp
+      apply (subgoal_tac "\<forall> l. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (erule spec)
+by (erule finite_data0)
+(* put *)
+next show "\<And>(s::RRLoopTwo.infrastructure) (s'::RRLoopTwo.infrastructure) (G::RRLoopTwo.igraph)
+       (I::RRLoopTwo.infrastructure) (h::char list) (l::location) (I'::RRLoopTwo.infrastructure)
+       (hs::actor set) n::char list.
+       (hc_scenarioT, s) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       RRLoopTwo.nodes (RRLoopTwo.graphI hc_scenarioT) = RRLoopTwo.nodes (RRLoopTwo.graphI s) \<Longrightarrow>
+       RRLoopTwo.delta hc_scenarioT = RRLoopTwo.delta s \<Longrightarrow>
+       s = I \<Longrightarrow>
+       s' = I' \<Longrightarrow>
+       G = RRLoopTwo.graphI I \<Longrightarrow>
+       h @\<^bsub>G\<^esub> l \<Longrightarrow>
+       l \<in> RRLoopTwo.nodes G \<Longrightarrow>
+       l \<in> RRLoopTwo.nodes G \<Longrightarrow>
+       RRLoopTwo.enables I l (Actor h) put \<Longrightarrow>
+       I' =
+       RRLoopTwo.infrastructure.Infrastructure
+        (RRLoopTwo.igraph.Lgraph (RRLoopTwo.gra G) (RRLoopTwo.agra G) (RRLoopTwo.cgra G)
+          ((RRLoopTwo.lgra G)(l := RRLoopTwo.lgra G l \<union> {((Actor h, hs), n)})))
+        (RRLoopTwo.delta I) \<Longrightarrow>
+       rmapT s \<rightarrow>\<^sub>n rmapT s'"
+    apply (rule_tac I = "rmapT s" and I' = "rmapT s'" and l = l and h = h and n = n
+                     in RRLoopOne.state_transition_in.put)
+  apply (rule refl)
+       apply (simp add: rmapT_def ref_map_def atI_def RRLoopOne.atI_def)
+      prefer 2
+     apply (simp add: rmapT_def ref_map_def)
+     apply (rule ext)
+     apply simp
+    apply (rule impI)
+     apply (subst fmap_lem)
+      apply (subgoal_tac "\<forall> l. finite (RRLoopTwo.lgra (RRLoopTwo.graphI I) l)")
+       apply (erule spec)
+      apply (erule finite_data0)
+    apply simp
+    apply (simp add: rmapT_def ref_map_def)
+(* enables put*)
+ apply (simp add: rmapT_def ref_map_def enables_def RRLoopOne.enables_def)
+        apply (erule bexE)
+  apply (rule_tac x = x in bexI, assumption)
+  apply(simp add: local_policies_def local_policiesT_def hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def
+                 atI_def RRLoopOne.atI_def)
+        apply (rule conjI)
+        apply (rule impI)
+        apply (drule sym)
+  apply (drule sym)
+  apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+         apply (simp add: has_def RRLoopOne.has_def atI_def 
+                RRLoopOne.credentials_def RRLoopTwo.credentials_def)
+         apply (rule impI)+
+        apply (rule conjI)
+        apply (rule impI)+
+        apply (drule sym)
+  apply (drule sym)
+        apply (simp add: hc_scenarioT_def local_policiesT_def)
+        apply (simp add: hc_scenarioT_def local_policiesT_def ex_graphT_def RRLoopTwo.nodes_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+  apply (subgoal_tac "RRLoopTwo.nodes (RRLoopTwo.graphI I) = {Location 0, Location 1, Location 2, Location 3}")
+  apply simp
+  apply (drule sym)
+  apply (simp add: hc_scenarioT_def local_policiesT_def ex_graphT_def RRLoopTwo.nodes_def)
+  apply (simp add: hospital_def sphone_def
+                  home_def cloud_def cloudT_def homeT_def sphoneT_def hospitalT_def hc_scenarioT_def)
+by blast
+qed
 
-
-
-theorem refmapOne': "hc_Kripke  \<sqsubseteq>\<^sub>rmapT hc_KripkeT" 
+theorem refmapOne: "hc_Kripke  \<sqsubseteq>\<^sub>rmapT hc_KripkeT" 
 proof (rule strong_mt', simp add: hc_KripkeT_def hc_Kripke_def hc_states_def hc_statesT_def state_transition_refl_def, rule conjI)
   show "rmapT hc_scenarioT = hc_scenario"
     apply (simp add: rmapT_def ref_map_def hc_scenarioT_def hc_scenario_def ex_graphT_def ex_graph_def
@@ -332,15 +649,22 @@ proof (rule strong_mt', simp add: hc_KripkeT_def hc_Kripke_def hc_states_def hc_
            ex_locT_ass_def ex_loc_ass_def ex_credsT_def ex_creds_def
            ex_locsT_def ex_locs_def) 
     apply (rule conjI)
-    apply (unfold hospitalT_def hospital_def, rule refl)
-    by force
+     apply (unfold hospitalT_def hospital_def, rule refl)
+    apply (rule ext)
+    apply simp
+    apply (rule conjI)
+    apply (rule impI)
+     apply (simp add: fmap_def fold_one)
+    apply (rule impI)
+    by (simp add: fmap_def)
 next show "\<forall>s::RRLoopTwo.infrastructure.
        (hc_scenarioT, s) \<in> {(x::RRLoopTwo.infrastructure, y::RRLoopTwo.infrastructure). x \<rightarrow>\<^sub>i y}\<^sup>* \<longrightarrow>
        (\<forall>s'::RRLoopTwo.infrastructure. s \<rightarrow>\<^sub>i s' \<longrightarrow> rmapT s \<rightarrow>\<^sub>i rmapT s')"
     apply (unfold state_transition_infra_def RRLoopOne.state_transition_infra_def)
-    by (rule refmapOne_lem')
+    by (rule refmapOne_lem)
 qed
 
+(*
 theorem refmapOne: "hc_Kripke  \<sqsubseteq>\<^sub>rmapT hc_KripkeT" 
 proof (rule strong_mt, simp add: hc_KripkeT_def hc_Kripke_def hc_states_def hc_statesT_def state_transition_refl_def, rule conjI)
   show "rmapT hc_scenarioT = hc_scenario"
@@ -355,6 +679,8 @@ next show "\<forall>(s::RRLoopTwo.infrastructure) s'::RRLoopTwo.infrastructure. 
     apply (unfold state_transition_infra_def RRLoopOne.state_transition_infra_def)
     by (rule refmapOne_lem)
 qed
+*)
+
 
 (* show attack "Eve can do eval at cloud"  *)
 lemma step1: "hc_scenarioT \<rightarrow>\<^sub>n hc_scenarioT'"

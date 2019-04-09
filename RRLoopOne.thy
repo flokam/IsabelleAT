@@ -152,28 +152,42 @@ where
   move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
           (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
          I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
-| get : "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; a' @\<^bsub>G\<^esub> l; has G (Actor a, z);
-        enables I l (Actor a) get;
+| get : "\<lbrakk> G = graphI I; h @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
+        enables I l (Actor h) get; s \<in> lgra G l';
         I' = Infrastructure 
-                   (Lgraph (gra G)(agra G)
-                           ((cgra G)(Actor a' := 
-                                (insert z (fst(cgra G (Actor a'))), snd(cgra G (Actor a')))))
-                           (lgra G))
+                   (Lgraph (gra G)(agra G)(cgra G)
+                           ((lgra G)(l := lgra G l \<union> {s})))
                    (delta I)
          \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-| put : "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; enables I l (Actor a) put;
+| process : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
+        enables I l (Actor h) eval \<Longrightarrow>  n \<in> lgra G l \<Longrightarrow> 
+        I' = Infrastructure 
+                   (Lgraph (gra G)(agra G)(cgra G)
+                   ((lgra G)(l := ((lgra G l)  - {n}
+                    \<union> {f n}))))
+                   (delta I)
+         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"  
+| del_data : "G = graphI I \<Longrightarrow> h \<in> actors_graph G \<Longrightarrow> l \<in> nodes G \<Longrightarrow>
+       n \<in> lgra G l \<Longrightarrow> 
+        I' = Infrastructure 
+                   (Lgraph (gra G)(agra G)(cgra G)
+                   ((lgra G)(l :=  (lgra G l) - {n})))
+                   (delta I)
+         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
+| put : "\<lbrakk> G = graphI I; h @\<^bsub>G\<^esub> l; enables I l (Actor h) put;
         I' = Infrastructure 
                   (Lgraph (gra G)(agra G)(cgra G)
-                          ((lgra G)(l := {z})))
+                          ((lgra G)(l := (lgra G l) \<union> {n})))
                    (delta I)
          \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
   
 (* show that this infrastructure is a state as given in MC.thy *)
 instantiation "infrastructure" :: state
 begin
-
+(*
 definition 
    state_transition_infra_def: "(i \<rightarrow>\<^sub>i i') =  (i \<rightarrow>\<^sub>n (i' :: infrastructure))"
+*)
 
 instance
   by (rule MC.class.MC.state.of_class.intro)

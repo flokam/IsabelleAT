@@ -144,7 +144,6 @@ where
          \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l' (Actor a) get \<Longrightarrow> 
-(* naive version omits the following two checks of the DLM labels *)
         (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow> l' \<in> L  \<Longrightarrow> a \<in> as \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)

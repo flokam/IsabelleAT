@@ -26,7 +26,7 @@ where "ID a s \<equiv> (a = Actor s)"
 datatype location = Location nat
 *)
 
-type_synonym data = nat
+type_synonym data = string
   (* Inspired by Myers DLM mode: first is the owner of a data item, second is the
      set of all actors that may access the data item *)
 type_synonym dlm = "actor * actor set"
@@ -42,7 +42,7 @@ type_synonym acom = "(dlm * data) com"
 type_synonym asem = "(dlm * data) sem"
 
 datatype igraph = Lgraph "(location * location)set" "location \<Rightarrow> identity set"
-                         "actor \<Rightarrow> (string set * string set)"  "location \<Rightarrow> string * acond"
+                         "actor \<Rightarrow> (string set * string set)"  "location \<Rightarrow> acond"
 datatype infrastructure = 
          Infrastructure "igraph" 
                         "[igraph ,location] \<Rightarrow> policy set" 
@@ -54,7 +54,7 @@ primrec agra :: "igraph \<Rightarrow> (location \<Rightarrow> identity set)"
 where  "agra(Lgraph g a c l) = a"
 primrec cgra :: "igraph \<Rightarrow> (actor \<Rightarrow> string set * string set)"
 where  "cgra(Lgraph g a c l) = c"
-primrec lgra :: "igraph \<Rightarrow> (location \<Rightarrow> string * acond)"
+primrec lgra :: "igraph \<Rightarrow> (location \<Rightarrow> acond)"
 where  "lgra(Lgraph g a c l) = l"
 
 definition nodes :: "igraph \<Rightarrow> location set" 
@@ -69,7 +69,7 @@ primrec delta :: "[infrastructure, igraph, location] \<Rightarrow> policy set"
 where "delta (Infrastructure g d) = d"
 primrec tspace :: "[infrastructure, actor ] \<Rightarrow> string set * string set"
   where "tspace (Infrastructure g d) = cgra g"
-primrec lspace :: "[infrastructure, location ] \<Rightarrow> string * acond"
+primrec lspace :: "[infrastructure, location ] \<Rightarrow> acond"
 where "lspace (Infrastructure g d) = lgra g"
 definition credentials :: "string set * string set \<Rightarrow> string set"
   where  "credentials lxl \<equiv> (fst lxl)"
@@ -80,8 +80,10 @@ definition roles :: "string set * string set \<Rightarrow> string set"
 definition role :: "[igraph, actor * string] \<Rightarrow> bool"
   where "role G ac \<equiv> snd ac \<in> roles(cgra G (fst ac))"
 
+(*
 definition isin :: "[igraph,location, string] \<Rightarrow> bool" 
   where "isin G l s \<equiv> s = fst (lgra G l)"
+*)
 
 definition owner :: "dlm * data \<Rightarrow> actor" where "owner d \<equiv> fst(fst d)"
     
@@ -96,7 +98,7 @@ where "has_access G l a d \<equiv> owns G l a d \<or> a \<in> readers d"
   
 definition actor_can_delete ::   "[infrastructure, actor, location] \<Rightarrow> bool"
 where actor_can_delete_def: "actor_can_delete I h l \<equiv>  
-                   (\<forall> as n. ((h, as), n) \<notin> (snd (lgra (graphI I) l)))"
+                   (\<forall> as n. ((h, as), n) \<notin> (lgra (graphI I) l))"
         
 
 definition atI :: "[identity, igraph, location] \<Rightarrow> bool" ("_ @\<^bsub>(_)\<^esub> _" 50)
@@ -116,7 +118,10 @@ where
   move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
           (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
          I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
-| get : "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; a' @\<^bsub>G\<^esub> l; has G (Actor a, z);
+(*
+| get : "\<lbrakk> G = graphI I; l \<in> nodes G;
+          a \<in> actors_graph(graphI I); a' \<in> actors_graph(graphI I); 
+        a @\<^bsub>G\<^esub> l; a' @\<^bsub>G\<^esub> l; has G (Actor a, z);
         enables I l (Actor a) get;
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)
@@ -124,38 +129,36 @@ where
                                 (insert z (fst(cgra G (Actor a'))), snd(cgra G (Actor a')))))
                            (lgra G))
                    (delta I)
-         \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-| get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
-        enables I l' (Actor a) get \<Longrightarrow> 
-(* naive version omits the following two checks of the DLM labels *)
-       ((Actor a', as), n) \<in> snd (lgra G l') \<Longrightarrow> Actor a \<in> as \<or> a = a' \<Longrightarrow> 
+         \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" *)
+| get_data : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow>  l \<in> nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow> 
+        enables I l (Actor h) get \<Longrightarrow> 
+       ((Actor h', hs), n) \<in> lgra G l' \<Longrightarrow> Actor h \<in> hs \<or> h = h' \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
-                   ((lgra G)(l := (fst (lgra G l), 
-                                   snd (lgra G l)  \<union> {((Actor a', as), n)}))))
+                   ((lgra G)(l := (lgra G l)  \<union> {((Actor h', hs), n)})))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-| process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
-        enables I l (Actor a) eval \<Longrightarrow> 
-       ((Actor a', as), n) \<in> snd (lgra G l) \<Longrightarrow> Actor a \<in> as \<Longrightarrow>
+| process : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
+        enables I l (Actor h) eval \<Longrightarrow> 
+       ((Actor h', hs), n) \<in> lgra G l \<Longrightarrow> Actor h \<in> hs \<or> h = h' \<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
-                   ((lgra G)(l := (fst (lgra G l), 
-                    snd (lgra G l)  - {((Actor a', as), n)}
-                    \<union> {(f) ((Actor a', as), n)}))))
+                   ((lgra G)(l := ((lgra G l)  - {((Actor h', hs), n)}
+                    \<union> {((Actor h', hs), f n)}))))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"  
-| del_data : "G = graphI I \<Longrightarrow> a \<in> actors G \<Longrightarrow> l \<in> nodes G \<Longrightarrow>
-       ((Actor a, as), n) \<in> snd (lgra G l) \<Longrightarrow> 
+| del_data : "G = graphI I \<Longrightarrow> h \<in> actors_graph G \<Longrightarrow> l \<in> nodes G \<Longrightarrow>
+       ((Actor h, hs), n) \<in> lgra G l \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
-                   ((lgra G)(l := (fst (lgra G l), snd (lgra G l) - {((Actor a, as), n)}))))
+                   ((lgra G)(l :=  (lgra G l) - {((Actor h, hs), n)})))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-| put : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> enables I l (Actor a) put \<Longrightarrow>
+| put : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
+        enables I l (Actor h) put \<Longrightarrow>
         I' = Infrastructure 
                   (Lgraph (gra G)(agra G)(cgra G)
-                          ((lgra G)(l := (s, snd (lgra G l) \<union> {((Actor a, as), n)}))))
+                          ((lgra G)(l := (lgra G l) \<union> {((Actor h, hs), n)})))
                    (delta I)
           \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 instantiation "infrastructure" :: state
@@ -176,6 +179,54 @@ lemma move_graph_eq: "move_graph_a a l l g = g"
 proof (simp add: move_graph_a_def, case_tac g, force)
 qed     
 
+(* domain of set valued functions 
+definition domain :: "('a \<Rightarrow> 'b set) \<Rightarrow> 'a set"
+  where "domain f = {x. f x \<noteq> {}}"
+*)
+
+(* general scheme for map over finite sets *)
+definition fmap :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b set"
+  where "fmap f S = Finite_Set.fold (\<lambda> x y. insert (f x) y) {} S"
+
+lemma fmap_insert: "finite S \<Longrightarrow> x \<in> fmap f S \<longrightarrow> x \<in> fmap f (insert y S)"
+  apply (erule_tac x= S in finite.induct)
+   apply (simp add: fmap_def)+
+  apply clarify
+  apply (simp add: folding.insert_remove)
+  apply (subgoal_tac "folding (\<lambda>x::'a. insert (f x))")
+  apply (fold folding.eq_fold)
+  apply (rule impI)
+  oops
+
+lemma fmap_lem_map[rule_format]: "finite S \<Longrightarrow> n \<in> S \<longrightarrow> (f n) \<in> (fmap f S)"
+  apply (erule_tac x= S in finite.induct)
+   apply simp
+  apply (rule impI)
+  apply simp
+  apply (erule disjE)
+   apply (erule ssubst)
+  apply (simp add: fmap_def)
+  sorry
+
+lemma fold_one0: "Finite_Set.fold f z {n} = (THE y. fold_graph f z {n} y)"
+by (simp add: Finite_Set.fold_def)
+
+thm comp_fun_commute_def
+
+lemma fold_one: "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} {n} = {f n}"
+  apply (simp add: Finite_Set.fold_def)
+  sorry
+
+lemma fmap_lem: "finite S \<Longrightarrow> (fmap f (insert n S)) = (insert (f n) (fmap f S))"
+  thm finite.induct
+  apply (erule_tac x= S in finite.induct)
+   apply (simp add: fmap_def)
+(* Finite_Set.fold_def Finite_set.fold_graph_def *)
+  sorry
+
+lemma fmap_lem_del: "finite S \<Longrightarrow> fmap f (S - {n}) = (fmap f S) - {f n}"
+  sorry
+
 definition ref_map :: "[RRLoopTwo.infrastructure, 
                         [RRLoopOne.igraph, RRLoopOne.location] \<Rightarrow> policy set]
                         \<Rightarrow> RRLoopOne.infrastructure"
@@ -183,9 +234,13 @@ definition ref_map :: "[RRLoopTwo.infrastructure,
                                  (RRLoopOne.Lgraph
                                         (RRLoopTwo.gra (graphI I))(RRLoopTwo.agra (graphI I))
                                         (RRLoopTwo.cgra (graphI I))
-                                        (\<lambda> l. {fst(RRLoopTwo.lgra (graphI I) l)}))
-                                 lp"
-                   
+                                        (\<lambda> l. fmap snd (RRLoopTwo.lgra (graphI I) l)))
+                                                                         lp"
+(* archive, older approaches that are similar:
+ (\<lambda> l. Finite_Set.fold (\<lambda> x y. insert (snd x) y){}(RRLoopTwo.lgra (graphI I) l)))
+(\<lambda> l. {x. ? y. (y,x) \<in> (RRLoopTwo.lgra (graphI I) l)}))
+*)
+
 lemma delta_invariant: "\<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z')"    
   apply clarify
   apply (erule state_transition_in.cases)
