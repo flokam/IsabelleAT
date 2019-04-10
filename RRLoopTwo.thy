@@ -188,16 +188,6 @@ definition domain :: "('a \<Rightarrow> 'b set) \<Rightarrow> 'a set"
 definition fmap :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b set"
   where "fmap f S = Finite_Set.fold (\<lambda> x y. insert (f x) y) {} S"
 
-lemma fmap_insert: "finite S \<Longrightarrow> x \<in> fmap f S \<longrightarrow> x \<in> fmap f (insert y S)"
-  apply (erule_tac x= S in finite.induct)
-   apply (simp add: fmap_def)+
-  apply clarify
-  apply (simp add: folding.insert_remove)
-  apply (subgoal_tac "folding (\<lambda>x::'a. insert (f x))")
-  apply (fold folding.eq_fold)
-  apply (rule impI)
-  oops
-
 lemma fmap_lem_map[rule_format]: "finite S \<Longrightarrow> n \<in> S \<longrightarrow> (f n) \<in> (fmap f S)"
   apply (erule_tac x= S in finite.induct)
    apply simp
@@ -208,21 +198,56 @@ lemma fmap_lem_map[rule_format]: "finite S \<Longrightarrow> n \<in> S \<longrig
   apply (simp add: fmap_def)
   sorry
 
-lemma fold_one0: "Finite_Set.fold f z {n} = (THE y. fold_graph f z {n} y)"
-by (simp add: Finite_Set.fold_def)
-
-thm comp_fun_commute_def
-
 lemma fold_one: "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} {n} = {f n}"
-  apply (simp add: Finite_Set.fold_def)
-  sorry
+  thm Finite_Set.comp_fun_commute.fold_insert
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+   apply (drule_tac A = "{}" in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp+
+  apply (simp add: comp_fun_commute_def)
+by force
 
-lemma fmap_lem: "finite S \<Longrightarrow> (fmap f (insert n S)) = (insert (f n) (fmap f S))"
+
+lemma fmap_lem[rule_format]: "finite S \<Longrightarrow> \<forall> n. (fmap f (insert n S)) = (insert (f n) (fmap f S))"
   thm finite.induct
-  apply (erule_tac x= S in finite.induct)
+  apply (erule_tac F = S in finite_induct)
+   apply (rule allI)
    apply (simp add: fmap_def)
+   apply (rule fold_one)
+(* *)
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+   apply (rule allI)
+   apply (drule_tac x = x in spec)
+   apply (erule ssubst)
+   apply (subgoal_tac "fmap f (insert n (insert x F)) = insert (f n) (fmap f (insert x F))")
+  apply (erule ssubst)
+    apply (subgoal_tac "fmap f (insert x F) = insert (f x) (fmap f F)")
+     apply simp
+    apply (drule_tac A = "F" in Finite_Set.comp_fun_commute.fold_insert)
+      apply assumption
+     apply assumption
+    apply (unfold fmap_def, assumption)
+   apply (case_tac "n \<in> insert x F")
+    defer
+    apply (drule_tac A = "insert x F" in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp
+  apply assumption+
+  apply (simp add: comp_fun_commute_def)
+  apply force
+(* n \<in> insert x F *)
+  apply (simp add: Finite_Set.comp_fun_commute.fold_rec)
+  apply (subgoal_tac "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} (insert n (insert x F)) =
+                     Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} (insert x F)")
+   prefer 2
+   apply (subgoal_tac "insert n (insert x F) = insert x F")
+    apply simp
+  apply blast
 (* Finite_Set.fold_def Finite_set.fold_graph_def *)
-  sorry
+  apply (erule ssubst)
+  apply (rule Finite_Set.comp_fun_commute.fold_rec)
+apply (simp add: comp_fun_commute_def)
+   apply force
+  by simp
+
 
 lemma fmap_lem_del: "finite S \<Longrightarrow> fmap f (S - {n}) = (fmap f S) - {f n}"
   sorry
