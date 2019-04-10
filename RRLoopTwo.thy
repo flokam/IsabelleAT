@@ -189,14 +189,18 @@ definition fmap :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b set"
   where "fmap f S = Finite_Set.fold (\<lambda> x y. insert (f x) y) {} S"
 
 lemma fmap_lem_map[rule_format]: "finite S \<Longrightarrow> n \<in> S \<longrightarrow> (f n) \<in> (fmap f S)"
-  apply (erule_tac x= S in finite.induct)
+  apply (erule_tac F = S in finite_induct)
    apply simp
-  apply (rule impI)
-  apply simp
-  apply (erule disjE)
-   apply (erule ssubst)
+  apply clarify
   apply (simp add: fmap_def)
-  sorry
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+   apply (drule_tac A = "F" in Finite_Set.comp_fun_commute.fold_insert)
+     apply assumption+
+   apply (erule ssubst)
+   apply (erule disjE)
+  apply force+
+apply (simp add: comp_fun_commute_def)
+by force
 
 lemma fold_one: "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} {n} = {f n}"
   thm Finite_Set.comp_fun_commute.fold_insert
