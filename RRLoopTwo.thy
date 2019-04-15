@@ -3,7 +3,7 @@ theory RRLoopTwo
    Corresponding definitions are defined again for the new type. They co-exist with
    the previous definitions. This is possible thanks to Isabelle's overloading and 
    theory name spacing possibilities! *)
-imports hcKripkeOne "/Applications/Isabelle2018.app/Isabelle/src/HOL/Hoare/Hoare_Logic"
+imports hcKripkeOne (* "/Applications/Isabelle2018.app/Isabelle/src/HOL/Hoare/Hoare_Logic" *)
 begin
 (* a simple definition of data and instantiating 
 the generic types of the Hoare logic to pairs of owner and data as 
@@ -13,7 +13,7 @@ The manipulation of the data (using simple while language) can thus
 be modelled but additionally taking the ownership into account. We use 
 eval below and anchor the access control in restricing base functions
 for the basic com type *)
-(*
+(* taken over from previous level:
 datatype action = get | move | eval |put
 typedecl actor 
 type_synonym identity = string
@@ -36,10 +36,13 @@ type_synonym dlm = "actor * actor set"
      over some basic 'a \<Rightarrow> 'a functions, while 'a sem is
      just the type of relations 'a \<Rightarrow> 'a \<Rightarrow> bool representing relational
      semantics *)
-type_synonym acond = "(dlm * data) bexp"
+
+type_synonym acond = "(dlm * data) set"
+(*
 type_synonym aassn = "(dlm * data) assn"
 type_synonym acom = "(dlm * data) com"
 type_synonym asem = "(dlm * data) sem"
+*)
 
 datatype igraph = Lgraph "(location * location)set" "location \<Rightarrow> identity set"
                          "actor \<Rightarrow> (string set * string set)"  "location \<Rightarrow> acond"
@@ -80,10 +83,6 @@ definition roles :: "string set * string set \<Rightarrow> string set"
 definition role :: "[igraph, actor * string] \<Rightarrow> bool"
   where "role G ac \<equiv> snd ac \<in> roles(cgra G (fst ac))"
 
-(*
-definition isin :: "[igraph,location, string] \<Rightarrow> bool" 
-  where "isin G l s \<equiv> s = fst (lgra G l)"
-*)
 
 definition owner :: "dlm * data \<Rightarrow> actor" where "owner d \<equiv> fst(fst d)"
     
@@ -118,40 +117,12 @@ where
   move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
           (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
          I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
-(*
-| get : "\<lbrakk> G = graphI I; l \<in> nodes G;
-          a \<in> actors_graph(graphI I); a' \<in> actors_graph(graphI I); 
-        a @\<^bsub>G\<^esub> l; a' @\<^bsub>G\<^esub> l; has G (Actor a, z);
-        enables I l (Actor a) get;
-        I' = Infrastructure 
-                   (Lgraph (gra G)(agra G)
-                           ((cgra G)(Actor a' := 
-                                (insert z (fst(cgra G (Actor a'))), snd(cgra G (Actor a')))))
-                           (lgra G))
-                   (delta I)
-         \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" *)
 | get_data : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow>  l \<in> nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow> 
         enables I l (Actor h) get \<Longrightarrow> 
        ((Actor h', hs), n) \<in> lgra G l' \<Longrightarrow> Actor h \<in> hs \<or> h = h' \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
                    ((lgra G)(l := (lgra G l)  \<union> {((Actor h', hs), n)})))
-                   (delta I)
-         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-| process : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
-        enables I l (Actor h) eval \<Longrightarrow> 
-       ((Actor h', hs), n) \<in> lgra G l \<Longrightarrow> Actor h \<in> hs \<or> h = h' \<Longrightarrow>
-        I' = Infrastructure 
-                   (Lgraph (gra G)(agra G)(cgra G)
-                   ((lgra G)(l := ((lgra G l)  - {((Actor h', hs), n)}
-                    \<union> {((Actor h', hs), f n)}))))
-                   (delta I)
-         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"  
-| del_data : "G = graphI I \<Longrightarrow> h \<in> actors_graph G \<Longrightarrow> l \<in> nodes G \<Longrightarrow>
-       ((Actor h, hs), n) \<in> lgra G l \<Longrightarrow> 
-        I' = Infrastructure 
-                   (Lgraph (gra G)(agra G)(cgra G)
-                   ((lgra G)(l :=  (lgra G l) - {((Actor h, hs), n)})))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | put : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
@@ -179,12 +150,10 @@ lemma move_graph_eq: "move_graph_a a l l g = g"
 proof (simp add: move_graph_a_def, case_tac g, force)
 qed     
 
-(* domain of set valued functions 
-definition domain :: "('a \<Rightarrow> 'b set) \<Rightarrow> 'a set"
-  where "domain f = {x. f x \<noteq> {}}"
-*)
 
-(* general scheme for map over finite sets *)
+(* general scheme for map over finite sets.
+   This would be a useful provision for the Finite_Set library: everyone needs
+   a simple map on Finite Sets all the time! *)
 definition fmap :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b set"
   where "fmap f S = Finite_Set.fold (\<lambda> x y. insert (f x) y) {} S"
 
@@ -199,6 +168,25 @@ lemma fmap_lem_map[rule_format]: "finite S \<Longrightarrow> n \<in> S \<longrig
    apply (erule ssubst)
    apply (erule disjE)
   apply force+
+apply (simp add: comp_fun_commute_def)
+by force
+
+
+lemma fmap_lem_map_rev[rule_format]: "finite S \<Longrightarrow> inj f \<Longrightarrow> (f n) \<in> (fmap f S) \<longrightarrow> n \<in> S"
+  apply (erule_tac F = S in finite_induct)
+   apply (simp add: fmap_def)
+  apply clarify
+  apply (simp add: fmap_def)
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+   apply (drule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
+     apply assumption+
+   apply (subgoal_tac "f n \<in> insert (f x) (Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} F)")
+    prefer 2
+    apply simp
+   apply (subgoal_tac "f n = f x")
+    prefer 2
+    apply simp
+   apply (erule injD, assumption) 
 apply (simp add: comp_fun_commute_def)
 by force
 
@@ -245,7 +233,6 @@ lemma fmap_lem[rule_format]: "finite S \<Longrightarrow> \<forall> n. (fmap f (i
    apply (subgoal_tac "insert n (insert x F) = insert x F")
     apply simp
   apply blast
-(* Finite_Set.fold_def Finite_set.fold_graph_def *)
   apply (erule ssubst)
   apply (rule Finite_Set.comp_fun_commute.fold_rec)
 apply (simp add: comp_fun_commute_def)
@@ -253,8 +240,144 @@ apply (simp add: comp_fun_commute_def)
   by simp
 
 
-lemma fmap_lem_del: "finite S \<Longrightarrow> fmap f (S - {n}) = (fmap f S) - {f n}"
-  sorry
+lemma insert_delete: "x \<notin> S \<Longrightarrow> (insert x S) - {x} = S"
+by simp
+
+lemma fmap_lem_del[rule_format]: "finite S \<Longrightarrow> inj f \<Longrightarrow> \<forall> n \<in> S. fmap f (S - {n}) = (fmap f S) - {f n}"
+  apply (erule_tac F = S in finite_induct)
+   apply (rule ballI)
+   apply (simp add: fmap_def)
+(* *)
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+   apply (rule ballI)
+apply simp
+   apply (erule disjE)
+(* n = x *)
+    apply simp
+    apply (drule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
+      apply assumption+
+    apply (unfold fmap_def)
+    apply (rotate_tac -1)
+  apply (erule ssubst)
+  apply (rule sym)
+    apply (rule insert_delete)
+    apply (erule contrapos_nn)
+  apply (rule fmap_lem_map_rev, assumption, assumption)
+  apply (simp add: fmap_def)
+(* n \<in> F *)
+    apply (frule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert, assumption, assumption)
+   apply (rotate_tac -1)
+   apply (erule ssubst)
+  apply (subgoal_tac "insert (f x) (Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} F) - {f n} =
+                      insert (f x) ((Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} F) - {f n})")
+   apply (rotate_tac -1)
+   apply (erule ssubst)
+   apply (drule_tac x = n in bspec,assumption)
+   apply (rotate_tac -1)
+   apply (erule subst)
+    apply (drule_tac A = "F - {n}" and z = "{}" and x = x in Finite_Set.comp_fun_commute.fold_insert)
+      apply simp+
+    apply (subgoal_tac "insert x (F - {n}) = insert x F - {n}")
+     apply simp
+    apply blast
+   apply (subgoal_tac "f x \<noteq> f n")
+    apply force
+   apply (subgoal_tac "x \<noteq> n")
+  apply (rotate_tac -1)
+  apply (erule contrapos_nn)
+    apply (erule injD, assumption)
+  apply blast
+apply (simp add: comp_fun_commute_def)
+by force
+
+
+(* not valid if not injective!
+lemma fmap_lem_del[rule_format]: "finite S \<Longrightarrow> \<forall> n \<in> S. fmap f (S - {n}) = (fmap f S) - {f n}"
+  apply (erule_tac F = S in finite_induct)
+   apply (rule ballI)
+   apply (simp add: fmap_def)
+(* *)
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+   apply (rule ballI)
+apply simp
+    apply (erule disjE)
+    apply simp
+    apply (drule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
+      apply assumption+
+    apply (unfold fmap_def)
+    apply (rotate_tac -1)
+  apply (erule ssubst)
+  apply (rule sym)
+  apply (rule insert_delete)
+
+     apply (drule_tac x = n in bspec)
+     apply simp
+     apply (drule_tac A = "F" in Finite_Set.comp_fun_commute.fold_insert)
+       apply assumption+
+     apply (unfold fmap_def)
+  apply (rotate_tac -1)
+     apply (erule ssubst)
+     apply simp
+(*
+  apply (erule_tac F = S in finite_induct)
+   apply (rule allI)
+   apply (simp add: fmap_def)
+(* *)
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+   apply (rule allI)
+   apply (case_tac "n \<in> insert x F")
+    apply simp
+    apply (erule disjE)
+     apply simp
+     apply (drule_tac x = x in spec)
+     apply simp
+     apply (drule_tac A = "F" in Finite_Set.comp_fun_commute.fold_insert)
+       apply assumption+
+     apply (unfold fmap_def)
+  apply (rotate_tac -1)
+     apply (erule ssubst)
+     apply simp
+(* *)
+    apply (drule_tac x = n in spec)
+    apply (frule_tac A = "F - {n}" and z = "{}" and x = x in Finite_Set.comp_fun_commute.fold_insert_remove)
+     apply simp
+  apply (subgoal_tac "insert x F - {n} = insert x (F - {n})")
+  apply (rotate_tac -1)
+  apply (erule ssubst)
+    apply (rotate_tac -1)
+    apply (erule ssubst)
+  apply (erule subst)
+   apply (subgoal_tac "fmap f (insert n (insert x F)) = insert (f n) (fmap f (insert x F))")
+  apply (erule ssubst)
+    apply (subgoal_tac "fmap f (insert x F) = insert (f x) (fmap f F)")
+     apply simp
+    apply (drule_tac A = "F" in Finite_Set.comp_fun_commute.fold_insert)
+      apply assumption
+     apply assumption
+    apply (unfold fmap_def, assumption)
+   apply (case_tac "n \<in> insert x F")
+    defer
+    apply (drule_tac A = "insert x F" in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp
+  apply assumption+
+  apply (simp add: comp_fun_commute_def)
+  apply force
+(* n \<in> insert x F *)
+  apply (simp add: Finite_Set.comp_fun_commute.fold_rec)
+  apply (subgoal_tac "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} (insert n (insert x F)) =
+                     Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} (insert x F)")
+   prefer 2
+   apply (subgoal_tac "insert n (insert x F) = insert x F")
+    apply simp
+  apply blast
+(* Finite_Set.fold_def Finite_set.fold_graph_def *)
+  apply (erule ssubst)
+  apply (rule Finite_Set.comp_fun_commute.fold_rec)
+apply (simp add: comp_fun_commute_def)
+   apply force
+  by simp
+*)
+*)
 
 definition ref_map :: "[RRLoopTwo.infrastructure, 
                         [RRLoopOne.igraph, RRLoopOne.location] \<Rightarrow> policy set]

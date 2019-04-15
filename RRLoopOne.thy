@@ -184,10 +184,10 @@ where
 (* show that this infrastructure is a state as given in MC.thy *)
 instantiation "infrastructure" :: state
 begin
-(*
+
 definition 
    state_transition_infra_def: "(i \<rightarrow>\<^sub>i i') =  (i \<rightarrow>\<^sub>n (i' :: infrastructure))"
-*)
+
 
 instance
   by (rule MC.class.MC.state.of_class.intro)

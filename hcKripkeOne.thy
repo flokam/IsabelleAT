@@ -31,8 +31,8 @@ defines ex_creds_def: "ex_creds \<equiv> (\<lambda> x. if x = Actor ''Patient'' 
 
 fixes ex_locs :: "location \<Rightarrow> string set"
 defines "ex_locs \<equiv> (\<lambda> x.  if x = cloud then
-             {''free''}  
-             else ({''''}))"
+             {''42''}  
+             else ({}))"
 
 
 fixes ex_loc_ass :: "location \<Rightarrow> identity set"

@@ -1,5 +1,5 @@
 theory RRLoopThree
-(* Third instance of the RRLoop: her we add the type label_fun
+(* Third instance of the RRLoop: here we add the type label_fun
    to the model to avoid the attack that Eve can change labels using eval *)
   imports hcKripkeTwo
 begin
