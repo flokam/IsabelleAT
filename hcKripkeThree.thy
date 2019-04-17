@@ -30,7 +30,7 @@ defines ex_credsR_def: "ex_credsR \<equiv> (\<lambda> x. if x = Actor ''Patient'
 
 fixes ex_locsR :: "location \<Rightarrow> acond"
 defines "ex_locsR \<equiv>  (\<lambda> x.  if x = cloudR then
-             ({((Actor ''Patient'',{Actor ''Doctor''}),''42'')}) 
+             ({((Actor ''Patient'',[Actor ''Doctor'']),''42'')}) 
              else ({}))"
 
 fixes ex_locR_ass :: "location \<Rightarrow> identity set"
@@ -276,7 +276,7 @@ apply (drule sym)
 (* get *)
 next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure) (G::RRLoopThree.igraph)
        (I::RRLoopThree.infrastructure) (h::char list) (l::location) (l'::location) (h'::char list)
-       (hs::actor set) (n::char list) I'::RRLoopThree.infrastructure.
+       (hs::actor list) (n::char list) I'::RRLoopThree.infrastructure.
        (hc_scenarioR, s)
        \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
        RRLoopThree.nodes (RRLoopThree.graphI hc_scenarioR) = RRLoopThree.nodes (RRLoopThree.graphI s) \<Longrightarrow>
@@ -289,7 +289,7 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
        l' \<in> RRLoopThree.nodes G \<Longrightarrow>
        RRLoopThree.enables I l (Actor h) get \<Longrightarrow>
        ((Actor h', hs), n) \<in> RRLoopThree.lgra G l' \<Longrightarrow>
-       Actor h \<in> hs \<Longrightarrow>
+       Actor h \<in> set hs \<Longrightarrow>
        I' =
        RRLoopThree.infrastructure.Infrastructure
         (RRLoopThree.igraph.Lgraph (RRLoopThree.gra G) (RRLoopThree.agra G) (RRLoopThree.cgra G)
@@ -380,7 +380,7 @@ apply (drule sym)
     by blast 
 (* eval *)
 next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure) (G::RRLoopThree.igraph)
-       (I::RRLoopThree.infrastructure) (h::char list) (l::location) (h'::char list) (hs::actor set)
+       (I::RRLoopThree.infrastructure) (h::char list) (l::location) (h'::char list) (hs::actor list)
        (n::char list) (I'::RRLoopThree.infrastructure) f::label_fun.
        (hc_scenarioR, s)
        \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
@@ -393,7 +393,7 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
        l \<in> RRLoopThree.nodes G \<Longrightarrow>
        RRLoopThree.enables I l (Actor h) eval \<Longrightarrow>
        ((Actor h', hs), n) \<in> RRLoopThree.lgra G l \<Longrightarrow>
-       Actor h \<in> hs \<or> h = h' \<Longrightarrow>
+       Actor h \<in> set hs \<or> h = h' \<Longrightarrow>
        I' =
        RRLoopThree.infrastructure.Infrastructure
         (RRLoopThree.igraph.Lgraph (RRLoopThree.gra G) (RRLoopThree.agra G) (RRLoopThree.cgra G)
@@ -495,7 +495,7 @@ apply (drule sym)
 (* delete *)
 next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure) (G::RRLoopThree.igraph)
        (I::RRLoopThree.infrastructure) (h::char list) (actors::RRLoopThree.igraph \<Rightarrow> char list set)
-       (l::location) (hs::actor set) (n::char list) I'::RRLoopThree.infrastructure.
+       (l::location) (hs::actor list) (n::char list) I'::RRLoopThree.infrastructure.
        (hc_scenarioR, s)
        \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
        RRLoopThree.nodes (RRLoopThree.graphI hc_scenarioR) = RRLoopThree.nodes (RRLoopThree.graphI s) \<Longrightarrow>
@@ -540,7 +540,7 @@ by (erule finite_data0)
 (* put *)
 next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure) (G::RRLoopThree.igraph)
        (I::RRLoopThree.infrastructure) (h::char list) (l::location) (I'::RRLoopThree.infrastructure)
-       (hs::actor set) n::char list.
+       (hs::actor list) n::char list.
        (hc_scenarioR, s)
        \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
        RRLoopThree.nodes (RRLoopThree.graphI hc_scenarioR) = RRLoopThree.nodes (RRLoopThree.graphI s) \<Longrightarrow>

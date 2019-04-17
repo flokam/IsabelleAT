@@ -19,7 +19,7 @@ datatype location = Location nat
 type_synonym data = string
   (* Inspired by Myers DLM mode: first is the owner of a data item, second is the
      set of all actors that may access the data item *)
-type_synonym dlm = "actor * actor set"
+type_synonym dlm = "actor * actor list"
   (* the following type constructors are from Hoare_logic:
      bexp and assn are just synonyms for set, and
      com is a simple datatype repesenting while command language
@@ -77,7 +77,7 @@ definition owns :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"
   where "owns G l a d \<equiv> owner d = a"
     
 definition readers :: "dlm * data \<Rightarrow> actor set"
-  where "readers d \<equiv> snd (fst d)"
+  where "readers d \<equiv> set(snd (fst d))"
 
 definition has_access :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"    
 where "has_access G l a d \<equiv> owns G l a d \<or> a \<in> readers d"
@@ -105,8 +105,8 @@ where "move_graph_a n l l' g \<equiv> Lgraph (gra g)
 typedef label_fun = "{f :: dlm * data \<Rightarrow> dlm * data. 
                         \<forall> x:: dlm * data. fst x = fst (f x)}"  
 proof (auto)
-  show "\<exists>x::(actor \<times> actor set) \<times> string \<Rightarrow> (actor \<times> actor set) \<times> string.
-       \<forall>(a::actor) (b::actor set) ba::string. (a, b) = fst (x ((a, b), ba))"
+  show "\<exists>x::(actor \<times> actor list) \<times> string \<Rightarrow> (actor \<times> actor list) \<times> string.
+       \<forall>(a::actor) (b::actor list) ba::string. (a, b) = fst (x ((a, b), ba))"
   by (rule_tac x = id in exI, simp)
 qed
 
@@ -129,7 +129,7 @@ where
          I' = Infrastructure (move_graph_a h l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
 | get_data : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow> 
         enables I l (Actor h) get \<Longrightarrow> 
-       ((Actor h', hs), n) \<in> lgra G l' \<Longrightarrow> Actor h \<in> hs \<Longrightarrow> 
+       ((Actor h', hs), n) \<in> lgra G l' \<Longrightarrow> Actor h \<in> set hs \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
                    ((lgra G)(l := (lgra G l)  \<union> {((Actor h', hs), n)})))
@@ -137,7 +137,7 @@ where
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | process : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
         enables I l (Actor h) eval \<Longrightarrow> 
-       ((Actor h', hs), n) \<in> lgra G l \<Longrightarrow> Actor h \<in> hs \<or> h = h' \<Longrightarrow>
+       ((Actor h', hs), n) \<in> lgra G l \<Longrightarrow> Actor h \<in> set hs \<or> h = h' \<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
                    ((lgra G)(l := ((lgra G l)  - {((Actor h', hs), n)}
@@ -173,22 +173,14 @@ where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transiti
 
 end
 
-(*
-lemma move_graph_eq: "move_graph_a a l l g = g"  
-proof (simp add: move_graph_a_def, case_tac g, force)
-qed     
-*)
 definition str :: "actor \<Rightarrow> string"
-(*  where "str a = (THE s. Actor s = a)" *)
   where "str = inv Actor"
 
-definition strl :: "actor set \<Rightarrow> string"
-  where "strl hs = (Finite_Set.fold (\<lambda> x y. concat ((str x) # [y])) ('''') hs)"
-
+definition strl :: "actor list \<Rightarrow> string"
+  where "strl hs = List.maps str hs"
 
 definition flat_label :: "dlm \<Rightarrow> string"
   where "flat_label ld = (concat ((str(fst ld)) # [strl (snd ld)]))"
-
 
 lemma inj_inv_Actor: "inj Actor \<Longrightarrow> inv Actor (Actor s) = s"
   by (erule Hilbert_Choice.inv_f_f)
@@ -196,20 +188,17 @@ lemma inj_inv_Actor: "inj Actor \<Longrightarrow> inv Actor (Actor s) = s"
 definition dmap :: "dlm \<times> data \<Rightarrow> data"
   where "dmap dln = concat ((flat_label (fst dln)) # [snd dln])" 
 
-lemma dmap_ex: "inj Actor \<Longrightarrow> dmap ((Actor ''Patient'', {Actor ''Doctor''}), ''42'') = ''PatientDoctor42''"
-     apply (simp add: dmap_def flat_label_def str_def strl_def inj_inv_Actor) 
-     apply (subgoal_tac "comp_fun_commute (\<lambda>x::actor. (@) (inv Actor x))")
-      apply (drule_tac A = "{}" and z = "[]" in Finite_Set.comp_fun_commute.fold_insert)
-     apply simp+
-      apply (rotate_tac -1) 
-      apply (erule ssubst)
-      apply (rule inj_inv_Actor)
-      apply assumption
-apply (simp add: comp_fun_commute_def)
-  sorry
+lemma dmap_ex: "inj Actor \<Longrightarrow> dmap ((Actor ''Patient'', [Actor ''Doctor'']), ''42'') = ''PatientDoctor42''"
+by (simp add: dmap_def flat_label_def str_def strl_def inj_inv_Actor List.maps_def) 
 
 lemma dmap_inj: "inj Actor \<Longrightarrow> inj dmap"
-  sorry
+(*
+  apply (simp add: inj_def dmap_def)
+  apply (rule allI)
+  apply (simp add: append)
+*)
+sorry
+
 
 definition trunc :: "data \<Rightarrow> data \<Rightarrow> data"
   where "trunc s s' = take(length s) s'"
