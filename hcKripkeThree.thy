@@ -30,7 +30,7 @@ defines ex_credsR_def: "ex_credsR \<equiv> (\<lambda> x. if x = Actor ''Patient'
 
 fixes ex_locsR :: "location \<Rightarrow> acond"
 defines "ex_locsR \<equiv>  (\<lambda> x.  if x = cloudR then
-             ({((Actor ''Patient'',[Actor ''Doctor'']),''42'')}) 
+             ({((Actor ''Patient'',{Actor ''Doctor''}),''42'')}) 
              else ({}))"
 
 fixes ex_locR_ass :: "location \<Rightarrow> identity set"
@@ -276,7 +276,7 @@ apply (drule sym)
 (* get *)
 next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure) (G::RRLoopThree.igraph)
        (I::RRLoopThree.infrastructure) (h::char list) (l::location) (l'::location) (h'::char list)
-       (hs::actor list) (n::char list) I'::RRLoopThree.infrastructure.
+       (hs::actor set) (n::char list) I'::RRLoopThree.infrastructure.
        (hc_scenarioR, s)
        \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
        RRLoopThree.nodes (RRLoopThree.graphI hc_scenarioR) = RRLoopThree.nodes (RRLoopThree.graphI s) \<Longrightarrow>
@@ -289,7 +289,7 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
        l' \<in> RRLoopThree.nodes G \<Longrightarrow>
        RRLoopThree.enables I l (Actor h) get \<Longrightarrow>
        ((Actor h', hs), n) \<in> RRLoopThree.lgra G l' \<Longrightarrow>
-       Actor h \<in> set hs \<Longrightarrow>
+       Actor h \<in> hs \<Longrightarrow>
        I' =
        RRLoopThree.infrastructure.Infrastructure
         (RRLoopThree.igraph.Lgraph (RRLoopThree.gra G) (RRLoopThree.agra G) (RRLoopThree.cgra G)
@@ -297,7 +297,7 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
         (RRLoopThree.delta I) \<Longrightarrow>
        rmapR s \<rightarrow>\<^sub>n rmapR s'"
     apply (rule_tac I = "rmapR s" and I' = "rmapR s'" and l = l and h = h and l' = l' and 
-                                  s = "dmap ((Actor h', hs), n)"
+                                  s = n
          in RRLoopOne.state_transition_in.get)
   apply (rule refl)
         apply (simp add: rmapR_def ref_map_def atI_def RRLoopOne.atI_def)
@@ -306,7 +306,7 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
       prefer 2
       apply (simp add: rmapR_def ref_map_def)
       apply (subgoal_tac "finite(RRLoopThree.lgra (RRLoopThree.graphI I) l')")
-       apply (drule_tac n = "((Actor h', hs), n)" and f = "dmap" in fmap_lem_map)
+       apply (drule_tac n = "((Actor h', hs), n)" and f = "snd" in fmap_lem_map)
         apply assumption
     apply simp
       apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
@@ -380,10 +380,9 @@ apply (drule sym)
     by blast 
 (* eval *)
 next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure) (G::RRLoopThree.igraph)
-       (I::RRLoopThree.infrastructure) (h::char list) (l::location) (h'::char list) (hs::actor list)
+       (I::RRLoopThree.infrastructure) (h::char list) (l::location) (h'::char list) (hs::actor set)
        (n::char list) (I'::RRLoopThree.infrastructure) f::label_fun.
-       (hc_scenarioR, s)
-       \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       (hc_scenarioR, s) \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
        RRLoopThree.nodes (RRLoopThree.graphI hc_scenarioR) = RRLoopThree.nodes (RRLoopThree.graphI s) \<Longrightarrow>
        RRLoopThree.delta hc_scenarioR = RRLoopThree.delta s \<Longrightarrow>
        s = I \<Longrightarrow>
@@ -393,17 +392,17 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
        l \<in> RRLoopThree.nodes G \<Longrightarrow>
        RRLoopThree.enables I l (Actor h) eval \<Longrightarrow>
        ((Actor h', hs), n) \<in> RRLoopThree.lgra G l \<Longrightarrow>
-       Actor h \<in> set hs \<or> h = h' \<Longrightarrow>
+       Actor h \<in> hs \<or> h = h' \<Longrightarrow>
        I' =
        RRLoopThree.infrastructure.Infrastructure
         (RRLoopThree.igraph.Lgraph (RRLoopThree.gra G) (RRLoopThree.agra G) (RRLoopThree.cgra G)
           ((RRLoopThree.lgra G)
-           (l := RRLoopThree.lgra G l - {((Actor h', hs), n)} \<union> {f \<Updown> ((Actor h', hs), n)})))
+           (l := RRLoopThree.lgra G l - {(y::actor \<times> actor set, x::char list). x = n} \<union>
+                 {f \<Updown> ((Actor h', hs), n)})))
         (RRLoopThree.delta I) \<Longrightarrow>
        rmapR s \<rightarrow>\<^sub>n rmapR s'"
     apply (rule_tac I = "rmapR s" and I' = "rmapR s'" and l = l and h = h and 
-                     n = "dmap ((Actor h', hs), n)"  and 
-                 f = "\<lambda> x. dmap (f  \<Updown> ((Actor h', hs), trunc (flat_label (Actor h', hs)) x))"
+                     n = n  and f = "\<lambda> x. snd(f  \<Updown> ((Actor h', hs), x))"
            in RRLoopOne.state_transition_in.process)
   apply (rule refl)
         apply (simp add: rmapR_def ref_map_def atI_def RRLoopOne.atI_def)
@@ -411,9 +410,9 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
       prefer 2
       apply (simp add: rmapR_def ref_map_def)
       apply (subgoal_tac "finite(RRLoopThree.lgra (RRLoopThree.graphI I) l)")
-       apply (drule_tac n = "((Actor h', hs), n)" and f = "dmap" in fmap_lem_map)
-        apply assumption+
-
+       apply (drule_tac n = " ((Actor h', hs), n)" and f = snd in fmap_lem_map)
+        apply assumption
+    apply simp
        apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
     apply simp
        apply (erule finite_data0)
@@ -427,19 +426,37 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
        apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
     apply simp
       apply (erule finite_data0)
-      apply (subgoal_tac "(fmap dmap (RRLoopThree.lgra (RRLoopThree.graphI I) l - {((Actor h', hs), n)}) =
-                        (fmap dmap (RRLoopThree.lgra (RRLoopThree.graphI I) l) - {dmap ((Actor h', hs), n)}))")
+      apply (subgoal_tac "(fmap snd
+          (RRLoopThree.lgra (RRLoopThree.graphI I) l -
+           {(y::actor \<times> actor set, x::char list). x = n })) =
+                        (fmap snd (RRLoopThree.lgra (RRLoopThree.graphI I) l) - {n})")
     apply (rotate_tac -1)
       apply (erule ssubst)
-      apply (subst trunc_dmap)
-    apply (rule refl)
-     apply (subst fmap_lem_del)
+      apply (rule refl)
+(* was zu beweisen waere: 
+fmap snd
+        (RRLoopThree.lgra (RRLoopThree.graphI I) l -
+         {(y::actor \<times> actor set, x::char list). x = n }) =
+       fmap snd (RRLoopThree.lgra (RRLoopThree.graphI I) l) - {n}
+*)
+           apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
+      apply (drule_tac x = l in spec)
+    thm fmap_lem_del_set1
+      apply (frule_tac n = "((Actor h', hs), n) " and f = snd in fmap_lem_del_set1, assumption)
+      apply simp
+    apply (rotate_tac -1)
+      apply (erule subst)
+    apply (subgoal_tac "{a::(actor \<times> actor set) \<times> char list.
+          case a of
+          (y::actor \<times> actor set, x::char list) \<Rightarrow> x = n} = 
+          {y::(actor \<times> actor set) \<times> char list. snd y = n}")
+       apply simp
+      apply (rule equalityI)
+       apply force
+    apply force
        apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
     apply simp
       apply (erule finite_data0)
-    apply (rule dmap_inj, rule no_insider)
-      apply assumption
-    apply (rule refl)
 (* enables eval *)
  apply (simp add: rmapR_def ref_map_def enables_def RRLoopOne.enables_def)
         apply (erule bexE)
@@ -494,25 +511,24 @@ apply (drule sym)
     by blast 
 (* delete *)
 next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure) (G::RRLoopThree.igraph)
-       (I::RRLoopThree.infrastructure) (h::char list) (actors::RRLoopThree.igraph \<Rightarrow> char list set)
-       (l::location) (hs::actor list) (n::char list) I'::RRLoopThree.infrastructure.
-       (hc_scenarioR, s)
-       \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       (I::RRLoopThree.infrastructure) (h::char list) (l::location) (hs::actor set) (n::char list)
+       I'::RRLoopThree.infrastructure.
+       (hc_scenarioR, s) \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
        RRLoopThree.nodes (RRLoopThree.graphI hc_scenarioR) = RRLoopThree.nodes (RRLoopThree.graphI s) \<Longrightarrow>
        RRLoopThree.delta hc_scenarioR = RRLoopThree.delta s \<Longrightarrow>
        s = I \<Longrightarrow>
        s' = I' \<Longrightarrow>
        G = RRLoopThree.graphI I \<Longrightarrow>
-       h \<in> actors_graph G \<Longrightarrow>
+       h \<in> RRLoopThree.actors_graph G \<Longrightarrow>
        l \<in> RRLoopThree.nodes G \<Longrightarrow>
        ((Actor h, hs), n) \<in> RRLoopThree.lgra G l \<Longrightarrow>
        I' =
        RRLoopThree.infrastructure.Infrastructure
         (RRLoopThree.igraph.Lgraph (RRLoopThree.gra G) (RRLoopThree.agra G) (RRLoopThree.cgra G)
-          ((RRLoopThree.lgra G)(l := RRLoopThree.lgra G l - {((Actor h, hs), n)})))
+          ((RRLoopThree.lgra G)(l := RRLoopThree.lgra G l - {(y::actor \<times> actor set, x::char list). x = n})))
         (RRLoopThree.delta I) \<Longrightarrow>
        rmapR s \<rightarrow>\<^sub>n rmapR s'"
-    apply (rule_tac I = "rmapR s" and I' = "rmapR s'" and l = l and h = h and n = "dmap ((Actor h, hs), n)"
+    apply (rule_tac I = "rmapR s" and I' = "rmapR s'" and l = l and h = h and n = n
                      in RRLoopOne.state_transition_in.del_data)
   apply (rule refl)
        apply (simp add: rmapR_def ref_map_def atI_def RRLoopOne.actors_graph_def actors_graph_def
@@ -522,16 +538,31 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
      apply (simp add: rmapR_def ref_map_def)
      apply (rule ext)
      apply simp
-    apply (rule impI)
-     apply (subst fmap_lem_del)
-      apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
-       apply (erule spec)
-        apply (erule finite_data0)
-    apply (rule dmap_inj, rule no_insider)
+     apply (rule impI)
+(* *)
+           apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
+      apply (drule_tac x = l in spec)
+    thm fmap_lem_del_set1
+      apply (frule_tac n = "((Actor h, hs), n) " and f = snd in fmap_lem_del_set1, assumption)
+      apply simp
+    apply (rotate_tac -1)
+      apply (erule subst)
+    apply (subgoal_tac "{a::(actor \<times> actor set) \<times> char list.
+          case a of
+          (y::actor \<times> actor set, x::char list) \<Rightarrow> x = n } = 
+          {y::(actor \<times> actor set) \<times> char list. snd y = n}")
+       apply simp
+      apply (rule equalityI)
+       apply force
+    apply force
+       apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
+    apply simp
+     apply (erule finite_data0)
+(* *)
     apply simp+
      apply (simp add: rmapR_def ref_map_def)
       apply (subgoal_tac "finite(RRLoopThree.lgra (RRLoopThree.graphI I) l)")
-       apply (drule_tac n = "((Actor h, hs), n)" and f = "dmap" in fmap_lem_map)
+       apply (drule_tac n = "((Actor h, hs), n)" and f = snd in fmap_lem_map)
         apply assumption
        apply simp
       apply (subgoal_tac "\<forall> l. finite (RRLoopThree.lgra (RRLoopThree.graphI I) l)")
@@ -540,9 +571,8 @@ by (erule finite_data0)
 (* put *)
 next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure) (G::RRLoopThree.igraph)
        (I::RRLoopThree.infrastructure) (h::char list) (l::location) (I'::RRLoopThree.infrastructure)
-       (hs::actor list) n::char list.
-       (hc_scenarioR, s)
-       \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       (hs::actor set) n::char list.
+       (hc_scenarioR, s) \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
        RRLoopThree.nodes (RRLoopThree.graphI hc_scenarioR) = RRLoopThree.nodes (RRLoopThree.graphI s) \<Longrightarrow>
        RRLoopThree.delta hc_scenarioR = RRLoopThree.delta s \<Longrightarrow>
        s = I \<Longrightarrow>
@@ -557,7 +587,7 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
           ((RRLoopThree.lgra G)(l := RRLoopThree.lgra G l \<union> {((Actor h, hs), n)})))
         (RRLoopThree.delta I) \<Longrightarrow>
        rmapR s \<rightarrow>\<^sub>n rmapR s'"
-    apply (rule_tac I = "rmapR s" and I' = "rmapR s'" and l = l and h = h and n = "dmap ((Actor h, hs), n)"
+    apply (rule_tac I = "rmapR s" and I' = "rmapR s'" and l = l and h = h and n = n
                      in RRLoopOne.state_transition_in.put)
   apply (rule refl)
        apply (simp add: rmapR_def ref_map_def atI_def RRLoopOne.atI_def)
@@ -640,7 +670,6 @@ proof (rule strong_mt', simp add: hc_KripkeR_def hc_Kripke_def hc_states_def hc_
     apply (rule conjI)
      apply (rule impI)
      apply (simp add: fmap_def fold_one)
-         apply (rule dmap_ex, rule no_insider)
     by (simp add: fmap_def)
 next show "\<forall>s::RRLoopThree.infrastructure.
        (hc_scenarioR, s) \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>i y}\<^sup>* \<longrightarrow>
