@@ -173,7 +173,7 @@ where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transiti
 
 end
 
-
+(*
 lemma fmap_lem_map_rev0[rule_format]: "finite S \<Longrightarrow> (\<forall>y\<in>S. f y \<noteq> f n) \<longrightarrow> (f n) \<in> (fmap f S) \<longrightarrow> n \<in> S"
   apply (erule_tac F = S in finite_induct)
    apply (simp add: fmap_def)
@@ -257,6 +257,7 @@ apply (simp add: comp_fun_commute_def)
     apply simp
    apply simp
 by (simp add: comp_fun_commute_def)
+*)
 
 definition ref_map :: "[RRLoopThree.infrastructure, 
                         [RRLoopOne.igraph, location] \<Rightarrow> policy set]
