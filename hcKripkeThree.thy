@@ -679,8 +679,117 @@ next show "\<forall>s::RRLoopThree.infrastructure.
 qed
 
 (* show attack "Eve can do put at cloud"  *)
+lemma step1: "hc_scenarioR \<rightarrow>\<^sub>n hc_scenarioR'"
+proof (rule_tac l = homeR and h = "''Patient''" and l' = cloudR in move)
+  show "graphI hc_scenarioR = graphI hc_scenarioR" by (rule refl)
+next show "''Patient'' @\<^bsub>graphI hc_scenarioR\<^esub> homeR" 
+    by (simp add: hc_scenarioR_def ex_graphR_def ex_locR_ass_def atI_def nodes_def)
+next show "homeR \<in> nodes (graphI hc_scenarioR)"
+    by (simp add: hc_scenarioR_def ex_graphR_def ex_locR_ass_def atI_def nodes_def, blast)
+next show "cloudR \<in> nodes (graphI hc_scenarioR)"
+    by (simp add: hc_scenarioR_def nodes_def ex_graphR_def, blast)
+next show "''Patient'' \<in> actors_graph (graphI hc_scenarioR)"
+    by (simp add: actors_graph_def hc_scenarioR_def ex_graphR_def ex_locR_ass_def nodes_def, blast)
+next show "enables hc_scenarioR cloudR (Actor ''Patient'') move"
+    by (simp add: enables_def hc_scenarioR_def ex_graphR_def local_policiesR_def
+                    ex_credsR_def ex_locsR_def has_def credentials_def)
+next show "hc_scenarioR' =
+    Infrastructure (move_graph_a ''Patient'' homeR cloudR (graphI hc_scenarioR)) (delta hc_scenarioR)"
+    apply (simp add: hc_scenarioR'_def ex_graphR'_def move_graph_a_def 
+                   hc_scenarioR_def ex_graphR_def homeR_def cloudR_def hospitalR_def
+                    ex_locR_ass_def ex_credsR_def)
+    apply (rule ext)
+    by (simp add: hospitalR_def)
+qed
+
+lemma step1r: "hc_scenarioR  \<rightarrow>\<^sub>n* hc_scenarioR'"
+proof (simp add: state_transition_in_refl_def)
+  show " (hc_scenarioR, hc_scenarioR') \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*"
+  by (insert step1, auto)
+qed
+
+lemma step2: "hc_scenarioR'  \<rightarrow>\<^sub>n hc_scenarioR''"
+proof (rule_tac l = hospitalR and h = "''Eve''" and l' = cloudR in move, rule refl)
+  show "''Eve'' @\<^bsub>graphI hc_scenarioR'\<^esub> hospitalR"
+   by (simp add: hc_scenarioR'_def ex_graphR'_def hospitalR_def cloudR_def atI_def nodes_def)
+next show "hospitalR \<in> nodes (graphI hc_scenarioR')"
+    by (simp add: hc_scenarioR'_def ex_graphR'_def hospitalR_def cloudR_def atI_def nodes_def, blast)
+next show "cloudR \<in> nodes (graphI hc_scenarioR')"
+    by (simp add: hc_scenarioR'_def nodes_def ex_graphR'_def, blast)
+next show "''Eve'' \<in> actors_graph (graphI hc_scenarioR')"
+    by (simp add: actors_graph_def hc_scenarioR'_def ex_graphR'_def nodes_def
+                     hospitalR_def cloudR_def, blast)
+next show "enables hc_scenarioR' cloudR (Actor ''Eve'') move"
+    by (simp add: enables_def hc_scenarioR'_def ex_graphR_def local_policiesR_def
+                  ex_credsR_def ex_locsR_def has_def credentials_def cloudR_def sphoneR_def)
+next show "hc_scenarioR'' =
+    Infrastructure (move_graph_a ''Eve'' hospitalR cloudR (graphI hc_scenarioR')) (delta hc_scenarioR')"
+    apply (simp add: hc_scenarioR'_def ex_graphR''_def move_graph_a_def hc_scenarioR''_def 
+                     ex_graphR'_def homeR_def cloudR_def hospitalR_def ex_credsR_def)
+    apply (rule ext)
+    apply (simp add: hospitalR_def)
+    by blast
+qed
+
+lemma step2r: "hc_scenarioR'  \<rightarrow>\<^sub>n* hc_scenarioR''"
+proof (simp add: state_transition_in_refl_def)
+  show "(hc_scenarioR', hc_scenarioR'') \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*"
+    by (insert step2, auto)
+qed
+
+(* Second attack: Eve can go to cloud and override Bob's data
+   (that she got from outide the sysmte) and ass it as her own 
+   (labeling it as hers) because the policy allows Eve to put on cloud. *)
+(* Note the first bunch of lemmas develops the attack refinement *)
+lemma hcR_ref: "[\<N>\<^bsub>(IhcR,shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcR,shcR)\<^esup> \<sqsubseteq>
+                  [\<N>\<^bsub>(IhcR,HCR')\<^esub>, \<N>\<^bsub>(HCR',shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcR,shcR)\<^esup>"  
+proof (rule_tac l = "[]" and l' = "[\<N>\<^bsub>(IhcR,HCR')\<^esub>, \<N>\<^bsub>(HCR',shcR)\<^esub>]" and
+                  l'' = "[]" and si = IhcR and si' = IhcR and 
+                  si'' = shcR and si''' = shcR in refI, simp, rule refl)
+  show "([\<N>\<^bsub>(IhcR, HCR')\<^esub>, \<N>\<^bsub>(HCR', shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcR, shcR)\<^esup>) =
+    ([] @ [\<N>\<^bsub>(IhcR, HCR')\<^esub>, \<N>\<^bsub>(HCR', shcR)\<^esub>] @ [] \<oplus>\<^sub>\<and>\<^bsup>(IhcR, shcR)\<^esup>)"
+  by simp
+qed
+
+lemma att_hcR: "\<turnstile>[\<N>\<^bsub>(IhcR,HCR')\<^esub>, \<N>\<^bsub>(HCR',shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcR,shcR)\<^esup>"
+proof (subst att_and, simp, rule conjI)
+  show " \<turnstile>\<N>\<^bsub>(IhcR, HCR')\<^esub>"
+   apply (simp add: IhcR_def HCR'_def att_base)
+   apply (subst state_transition_infra_def)
+   by (rule step1)
+next show "\<turnstile>[\<N>\<^bsub>(HCR', shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(HCR', shcR)\<^esup>"
+   apply (subst att_and, simp)
+   apply (simp add: HCR'_def shcR_def att_base)
+   apply (subst state_transition_infra_def)
+   apply (rule_tac x = hc_scenarioR'' in exI)
+   apply (rule conjI)
+   apply (simp add: global_policyR_def hc_scenarioR''_def hc_actorsR_def 
+                    enables_def local_policiesR_def cloudR_def sphoneR_def)
+    by (rule step2)
+qed
+
+lemma hcR_abs_att: "\<turnstile>\<^sub>V [\<N>\<^bsub>(IhcR,shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcR,shcR)\<^esup>"
+proof (rule ref_valI, rule hcR_ref, rule att_hcR)
+qed
+
+lemma hcR_att: "hc_KripkeR \<turnstile> EF {x. \<not>(global_policyR x ''Eve'')}"
+proof -
+  have a: " \<turnstile>[\<N>\<^bsub>(IhcR, HCR')\<^esub>, \<N>\<^bsub>(HCR', shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcR, shcR)\<^esup>"
+    by (rule att_hcR)
+  hence "(IhcR,shcR) = attack ([\<N>\<^bsub>(IhcR, HCR')\<^esub>, \<N>\<^bsub>(HCR', shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcR, shcR)\<^esup>)"
+    by simp
+  hence "Kripke {s::infrastructure. \<exists>i::infrastructure\<in>IhcR. i \<rightarrow>\<^sub>i* s} IhcR \<turnstile> EF shcR"
+    apply (insert a)
+    apply (erule AT_EF)
+    by simp
+  thus  "hc_KripkeR \<turnstile> EF {x::infrastructure. \<not> global_policyR x ''Eve''}"
+    by (simp add: hc_KripkeR_def hc_statesR_def IhcR_def shcR_def)
+qed
+
+
 theorem hc_EFR: "hc_KripkeR \<turnstile> EF shcR"  
-  sorry
+proof (insert hcR_att, simp add: shcR_def) 
+qed
 
 end
 end
