@@ -34,7 +34,7 @@ defines "ex_locsF \<equiv>  (\<lambda> x.  if x = cloudF then ''free'' else ''''
 fixes ex_ledger :: "ledger"
 defines ex_ledger_def: "ex_ledger \<equiv>
           (Abs_ledger 
-          (\<lambda> (l, d). if (d = 42 \<and> l = (''Patient'',{''Doctor''})) then {homeF} else {}))"
+          (\<lambda> (l, d). if (d = ''42'' \<and> l = (''Patient'',{''Doctor''})) then {homeF} else {}))"
 
 
 fixes ex_locF_ass :: "location \<Rightarrow> identity set"

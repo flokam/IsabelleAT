@@ -5,7 +5,7 @@ theory RRLoopFour
    overwrite the entry made by Bob. *)
 imports hcKripkeThree
 begin
-type_synonym data = nat
+type_synonym data = string
   (* Inspired by Myers DLM mode: first is the owner of a data item, second is the
      set of all actors that may access the data item *)
 (* Here in this iteration of the RR-Loop the dlm needs to be refined replacing
@@ -23,10 +23,12 @@ type_synonym dlm = "identity * identity set"
      over some basic 'a \<Rightarrow> 'a functions, while 'a sem is
      just the type of relations 'a \<Rightarrow> 'a \<Rightarrow> bool representing relational
      semantics *)
-type_synonym acond = "(dlm * data) bexp"
+type_synonym acond = "(dlm * data) set"
+(*
 type_synonym aassn = "(dlm * data) assn"
 type_synonym acom = "(dlm * data) com"
 type_synonym asem = "(dlm * data) sem"
+*)
 
 typedef ledger = "{ ld :: dlm \<times> data \<Rightarrow> location set. \<forall> d. (\<forall> l. ld (l, d) = {}) \<or>
 (\<exists>! l. ld (l, d) \<noteq> {})}"
@@ -113,16 +115,18 @@ where "move_graph_a n l l' g \<equiv> Lgraph (gra g)
 typedef label_fun = "{f :: dlm * data \<Rightarrow> dlm * data. 
                         \<forall> x:: dlm * data. fst x = fst (f x)}"  
 proof (auto)
-  show "\<exists>x::(identity \<times> identity set) \<times> nat \<Rightarrow> (identity \<times> identity set) \<times> nat.
-       \<forall>(a::identity) (b::identity set) ba::nat. (a, b) = fst (x ((a, b), ba))"
+  show "\<exists>x::(identity \<times> identity set) \<times> string \<Rightarrow> (identity \<times> identity set) \<times> string.
+       \<forall>(a::identity) (b::identity set) ba::string. (a, b) = fst (x ((a, b), ba))"
   by (rule_tac x = id in exI, simp)
 qed
 
 definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" ("_ \<Updown> _" 50)
   where "f  \<Updown> d \<equiv> (Rep_label_fun f) d" 
     
+(* from the earlier use of Hoare triples - now obsolete 
 definition valid_proc :: "acond \<Rightarrow> label_fun \<Rightarrow> acond \<Rightarrow> bool"    
   where "valid_proc a f b \<equiv> Valid a (Basic (Rep_label_fun f)) b"
+*)
 
 lemma move_graph_eq: "move_graph_a a l l g = g"  
 proof (simp add: move_graph_a_def, case_tac g, force)
@@ -133,15 +137,6 @@ where
   move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
           (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
          I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
-| get : "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; a' @\<^bsub>G\<^esub> l; has G (Actor a, z);
-        enables I l (Actor a) get;
-        I' = Infrastructure 
-                   (Lgraph (gra G)(agra G)
-                           ((cgra G)(Actor a' := 
-                                (insert z (fst(cgra G (Actor a'))), snd(cgra G (Actor a')))))
-                           (lgra G)(ledgra G))
-                   (delta I)
-         \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l' (Actor a) get \<Longrightarrow> 
         (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow> l' \<in> L  \<Longrightarrow> a \<in> as \<Longrightarrow> 
@@ -194,20 +189,20 @@ thm Finite_Set.fold_def
 
 definition dlm_to_dlm:: "RRLoopFour.dlm \<Rightarrow> RRLoopThree.dlm"
   where
-  "dlm_to_dlm  \<equiv> (\<lambda> ((s :: string), (sl :: string set)).
-       (Actor s, Finite_Set.fold (\<lambda> y z. insert (Actor y) z)({} :: actor set)sl))"
+  "dlm_to_dlm  \<equiv> (\<lambda> ((s :: string), (sl :: string set)). (Actor s, fmap Actor sl))"
+(* old version, explicit: Finite_Set.fold (\<lambda> y z. insert (Actor y) z)({} :: actor set)sl))" *)
 
 definition data_trans :: "RRLoopFour.dlm \<times> data \<Rightarrow> RRLoopThree.dlm \<times> data"
-  where "data_trans  \<equiv> (\<lambda> (l :: (string *  string set),d :: nat). (dlm_to_dlm l, d))"
+  where "data_trans  \<equiv> (\<lambda> (l :: (string *  string set),d :: string). (dlm_to_dlm l, d))"
 
 definition ledger_to_loc:: "[ledger, location] \<Rightarrow> RRLoopThree.acond" (* acond is abbrev for (dlm \<times> data) set *)
   where 
    "ledger_to_loc ld l \<equiv> if l \<in> \<Union> range(Rep_ledger ld) 
                          then {data_trans(THE dl. l \<in> (ld \<nabla> dl))} else {}" 
-
+(* simpler now with the extra string obsolete in lgra
 definition lgra_three :: "[ledger, location \<Rightarrow> string, location] \<Rightarrow> string * RRLoopThree.acond"
   where "lgra_three ld lg l \<equiv> (lg l, ledger_to_loc ld l)"
-
+*)
 definition ref_map :: "[RRLoopFour.infrastructure, 
                         [RRLoopThree.igraph, location] \<Rightarrow> policy set]
                         \<Rightarrow> RRLoopThree.infrastructure"
@@ -215,7 +210,10 @@ definition ref_map :: "[RRLoopFour.infrastructure,
                                  (RRLoopThree.Lgraph
                                         (gra (graphI I))(agra (graphI I))
                                         (cgra (graphI I))
+                                        (ledger_to_loc (ledgra (graphI I))))
+                                 lp"
+(* old version:
                                         (lgra_three (ledgra (graphI I))(lgra (graphI I))))
                                  lp"
-                   
+*)                   
 end
