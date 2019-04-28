@@ -34,7 +34,7 @@ defines "ex_locsV \<equiv>  (\<lambda> x.  if x = cloudV then ''free'' else ''''
 fixes ex_ledgerV :: "ledger"
 defines ex_ledgerV_def: "ex_ledgerV \<equiv>
           (Abs_ledger 
-          (\<lambda> (l, d). if (d = 42 \<and> l = (''Patient'',{''Doctor''})) then {homeV} else {}))"
+          (\<lambda> (l, d). if (d = ''42'' \<and> l = (''Patient'',{''Doctor''})) then {homeV} else {}))"
 
 
 fixes ex_locV_ass :: "location \<Rightarrow> identity set"
@@ -124,12 +124,13 @@ theorem refmapFour: "hc_KripkeF  \<sqsubseteq>\<^sub>rmapV hc_KripkeV"
 theorem hc_EFV: "hc_KripkeV \<turnstile> EF shcV"  
   sorry
 
-
+(* See hcKripkeFour
 theorem Ledger_con: "h \<in> hc_actorsV \<Longrightarrow> h' \<in> hc_actorsV \<Longrightarrow> l \<in> hc_locationsV \<Longrightarrow>
     l' \<in> hc_locationsV \<Longrightarrow> 
     l \<in> (ledgra G \<nabla> ((h, hs),n)) \<Longrightarrow> l' \<in> (ledgra G \<nabla> ((h', hs'),n)) \<Longrightarrow> 
     (h, hs) = (h', hs')"
   sorry
+*)
 
 end
 

@@ -9,20 +9,12 @@ theory RRLoopFive
    *)
 imports hcKripkeFour
 begin
-type_synonym data = nat
+type_synonym data = string
   (* Inspired by Myers DLM mode: first is the owner of a data item, second is the
      set of all actors that may access the data item *)
 type_synonym dlm = "identity * identity set"
-  (* the following type constructors are from Hoare_logic:
-     bexp and assn are just synonyms for set, and
-     com is a simple datatype repesenting while command language
-     over some basic 'a \<Rightarrow> 'a functions, while 'a sem is
-     just the type of relations 'a \<Rightarrow> 'a \<Rightarrow> bool representing relational
-     semantics *)
-type_synonym acond = "(dlm * data) bexp"
-type_synonym aassn = "(dlm * data) assn"
-type_synonym acom = "(dlm * data) com"
-type_synonym asem = "(dlm * data) sem"
+type_synonym acond = "(dlm * data) set"
+
 (* Similar to the label_fun from RRLoopThree to RRLoopFour:
    a new type must not be redefined in the refined theory
 typedef ledger = "{ ld :: dlm \<times> data \<Rightarrow> location set. \<forall> d. (\<forall> l. ld (l, d) = {}) \<or>
@@ -112,16 +104,14 @@ where "move_graph_a n l l' g \<equiv> Lgraph (gra g)
 typedef label_fun = "{f :: dlm * data \<Rightarrow> dlm * data. 
                         \<forall> x:: dlm * data. fst x = fst (f x)}"  
 proof (auto)
-  show "\<exists>x::(identity \<times> identity set) \<times> nat \<Rightarrow> (identity \<times> identity set) \<times> nat.
-       \<forall>(a::identity) (b::identity set) ba::nat. (a, b) = fst (x ((a, b), ba))"
+  show "\<exists>x::(identity \<times> identity set) \<times> string \<Rightarrow> (identity \<times> identity set) \<times> string.
+       \<forall>(a::identity) (b::identity set) ba::string. (a, b) = fst (x ((a, b), ba))"
   by (rule_tac x = id in exI, simp)
 qed
 
 definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" ("_ \<Updown> _" 50)
   where "f  \<Updown> d \<equiv> (Rep_label_fun f) d" 
     
-definition valid_proc :: "acond \<Rightarrow> label_fun \<Rightarrow> acond \<Rightarrow> bool"    
-  where "valid_proc a f b \<equiv> Valid a (Basic (Rep_label_fun f)) b"
 
 lemma move_graph_eq: "move_graph_a a l l g = g"  
 proof (simp add: move_graph_a_def, case_tac g, force)
@@ -132,15 +122,6 @@ where
   move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
           (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
          I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
-| get : "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; a' @\<^bsub>G\<^esub> l; has G (Actor a, z);
-        enables I l (Actor a) get;
-        I' = Infrastructure 
-                   (Lgraph (gra G)(agra G)
-                           ((cgra G)(Actor a' := 
-                                (insert z (fst(cgra G (Actor a'))), snd(cgra G (Actor a')))))
-                           (lgra G)(ledgra G))
-                   (delta I)
-         \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l' (Actor a) get \<Longrightarrow> 
 (* naive version omits the following two checks of the DLM labels *)
