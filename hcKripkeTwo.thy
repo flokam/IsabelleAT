@@ -787,5 +787,27 @@ theorem hc_EFT: "hc_KripkeT \<turnstile> EF shcT"
 proof (insert hcT_att, simp add: shcT_def) 
 qed
 
+(* Privacy preservation *)
+lemma priv_pres: "h \<in> hc_actorsT \<Longrightarrow> l \<in> hc_locationsT \<Longrightarrow>
+         owns (Igraph hc_scenarioT) l (Actor h) d \<Longrightarrow>
+         hc_KripkeT \<turnstile> AG {x. \<forall> l \<in> hc_locationsT. owns (Igraph x) l (Actor h) d }"  
+proof (simp add: hc_KripkeT_def check_def, rule conjI)
+  show "hc_scenarioT \<in> hc_statesT" by (simp add: hc_statesT_def state_transition_refl_def)
+next show "h \<in> hc_actorsT \<Longrightarrow>
+    l \<in> hc_locationsT \<Longrightarrow>
+    owns (Igraph hc_scenarioT) l (Actor h) d \<Longrightarrow>
+    hc_scenarioT \<in> AG {x::infrastructure. \<forall>l::location\<in>hc_locationsT. owns (Igraph x) l (Actor h) d}"
+      apply (unfold AG_def)
+      apply (simp add: gfp_def)
+      apply (rule_tac x = "{x::infrastructure. \<forall>l::location\<in>hc_locationsT. owns (Igraph x) l (Actor h) d}" in exI)
+      apply (rule conjI)
+      apply (rule subset_refl)
+      apply (rule conjI)
+      apply (unfold AX_def)
+      apply (simp add: owns_def)
+      by (simp add: hc_scenarioT_def owns_def)
+  qed
+
+
 end
 end
