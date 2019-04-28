@@ -123,6 +123,23 @@ theorem refmapThree: "hc_KripkeR  \<sqsubseteq>\<^sub>rmapF hc_KripkeF"
 theorem hc_EFF: "hc_KripkeF \<turnstile> EF shcF"  
   sorry
 
+theorem Ledger_con: "h \<in> hc_actorsF \<Longrightarrow> h' \<in> hc_actorsF \<Longrightarrow> l \<in> hc_locationsF \<Longrightarrow> 
+                   l' \<in> hc_locationsF \<Longrightarrow> l \<in> (ledgra G  \<nabla> ((h, hs), n)) \<Longrightarrow> 
+                   l' \<in> (ledgra G  \<nabla> ((h', hs'), n)) \<Longrightarrow> (h, hs) = (h', hs')"
+  apply (simp add: ledgra_at_def)
+  apply (subgoal_tac "Rep_ledger (ledgra G) \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+        \<forall>d::char list.
+           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+           (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+  prefer 2
+   apply (rule Rep_ledger)
+  apply simp
+  apply (frule_tac x = n in spec)
+  apply (erule disjE)
+   apply blast
+  apply (erule ex1E)
+by blast
+
 end
 
 end

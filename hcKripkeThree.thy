@@ -796,7 +796,7 @@ lemma priv_pres: "h \<in> hc_actorsR \<Longrightarrow> l \<in> hc_locationsR \<L
          owns (Igraph hc_scenarioR) l (Actor h) d \<Longrightarrow>
          hc_KripkeR \<turnstile> AG {x. \<forall> l \<in> hc_locationsR. owns (Igraph x) l (Actor h) d }"  
 proof (simp add: hc_KripkeR_def check_def, rule conjI)
-  show "hc_scenarioR \<in> hc_statesR" by (simp add: hc_statesT_def state_transition_refl_def)
+  show "hc_scenarioR \<in> hc_statesR" by (simp add: hc_statesR_def state_transition_refl_def)
 next show "h \<in> hc_actorsR \<Longrightarrow>
     l \<in> hc_locationsR \<Longrightarrow>
     owns (Igraph hc_scenarioR) l (Actor h) d \<Longrightarrow>
