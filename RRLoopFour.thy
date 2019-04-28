@@ -9,7 +9,7 @@ type_synonym data = string
   (* Inspired by Myers DLM mode: first is the owner of a data item, second is the
      set of all actors that may access the data item *)
 (* Here in this iteration of the RR-Loop the dlm needs to be refined replacing
-   actors by identities since otherwise the uniquess of the label imposed
+   actors by identities since otherwise the uniqueness of the label imposed
    in the ledger typedef cannot be proved for actors (note that we intentionally
    didn't stipulate Actor to be injective to allow for insider attacks) 
 before:
@@ -17,18 +17,8 @@ type_synonym dlm = "actor * actor set"
 now: *)
 type_synonym dlm = "identity * identity set"
 
-  (* the following type constructors are from Hoare_logic:
-     bexp and assn are just synonyms for set, and
-     com is a simple datatype repesenting while command language
-     over some basic 'a \<Rightarrow> 'a functions, while 'a sem is
-     just the type of relations 'a \<Rightarrow> 'a \<Rightarrow> bool representing relational
-     semantics *)
 type_synonym acond = "(dlm * data) set"
-(*
-type_synonym aassn = "(dlm * data) assn"
-type_synonym acom = "(dlm * data) com"
-type_synonym asem = "(dlm * data) sem"
-*)
+
 
 typedef ledger = "{ ld :: dlm \<times> data \<Rightarrow> location set. \<forall> d. (\<forall> l. ld (l, d) = {}) \<or>
 (\<exists>! l. ld (l, d) \<noteq> {})}"
