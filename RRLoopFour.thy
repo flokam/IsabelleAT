@@ -23,6 +23,11 @@ type_synonym acond = "(dlm * data) set"
 typedef ledger = "{ ld :: dlm \<times> data \<Rightarrow> location set. \<forall> d. (\<forall> l. ld (l, d) = {}) \<or>
 (\<exists>! l. ld (l, d) \<noteq> {})}"
   by auto
+(*
+typedef ledger = "{ ld :: dlm \<times> data \<Rightarrow> location set. \<forall> d. (\<forall> l. ld (l, d) = {}) \<or>
+(\<exists>! dl. ld dl \<noteq> {})}"
+  by auto
+*)
 
 datatype igraph = Lgraph "(location * location)set" "location \<Rightarrow> identity set"
                          "actor \<Rightarrow> (string set * string set)"  "location \<Rightarrow> string"
@@ -188,11 +193,129 @@ definition data_trans :: "RRLoopFour.dlm \<times> data \<Rightarrow> RRLoopThree
 definition ledger_to_loc:: "[ledger, location] \<Rightarrow> RRLoopThree.acond" (* acond is abbrev for (dlm \<times> data) set *)
   where 
    "ledger_to_loc ld l \<equiv> if l \<in> \<Union> range(Rep_ledger ld) 
-                         then {data_trans(THE dl. l \<in> (ld \<nabla> dl))} else {}" 
+                          then fmap data_trans {dl. l \<in> (ld \<nabla> dl)} else {}"
+(*                         then {data_trans(THE dl. l \<in> (ld \<nabla> dl))} else {}" *)
 (* simpler now with the extra string obsolete in lgra
 definition lgra_three :: "[ledger, location \<Rightarrow> string, location] \<Rightarrow> string * RRLoopThree.acond"
   where "lgra_three ld lg l \<equiv> (lg l, ledger_to_loc ld l)"
 *)
+
+lemma ledger_to_loc_data_unique: "Rep_ledger ld (dl,d) \<noteq> {} \<Longrightarrow> 
+                                  Rep_ledger ld (dl',d) \<noteq> {} \<Longrightarrow> dl = dl'"
+  apply (subgoal_tac "Rep_ledger (ld)
+    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+        \<forall>d::char list.
+           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+           (\<exists>! l:: (char list \<times> char list set). ld (l,d) \<noteq> {})}")
+   apply simp
+   apply (drule_tac x = d in spec)
+   apply (erule disjE)
+    apply (drule_tac x = "fst dl" in spec)
+    apply (drule_tac x = "snd dl" in spec)
+    apply simp
+   apply (erule ex1E)
+  apply (frule_tac x = dl in spec)
+   apply (drule mp, assumption)
+  apply (frule_tac x = dl' in spec)
+   apply (drule mp, assumption)
+   apply (erule ssubst)+
+  apply (rule refl)
+by (rule Rep_ledger)
+
+(*(l, d) \<noteq> {})
+lemma ledger_to_loc_ex0: "l \<in> \<Union> range(Rep_ledger ld) \<Longrightarrow> \<exists>! dl. l \<in> (ld \<nabla> dl)"
+  apply (simp add: Rep_ledger)
+  apply (erule exE)+
+  apply (rule_tac a = "((a, b), ba)" in ex1I)
+  apply (subgoal_tac "Rep_ledger (ld)
+    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+        \<forall>d::char list.
+           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+           (\<exists>! dl:: (char list \<times> char list set) \<times> char list. ld dl \<noteq> {})}")
+    apply simp
+    apply (erule disjE)
+     apply blast
+  apply (erule ex1E)
+    apply (drule_tac x = "((a,b),ba)" in spec)
+  apply (drule mp)
+     apply blast
+    apply (simp add: ledgra_at_def)
+   apply (rule Rep_ledger)
+(* *)
+  apply (subgoal_tac "Rep_ledger (ld)
+    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+        \<forall>d::char list.
+           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+           (\<exists>! dl:: (char list \<times> char list set) \<times> char list. ld dl \<noteq> {})}")
+    apply simp
+    apply (erule disjE)
+     apply blast
+  apply (erule ex1E)
+    apply (frule_tac x = "((a,b),ba)" in spec)
+  apply (drule mp)
+    apply blast
+    apply (drule_tac x = "x" in spec)
+  apply (drule mp)
+    apply (simp add: ledgra_at_def)
+    apply blast
+  apply simp
+by (rule Rep_ledger)
+*)
+
+
+(*
+lemma ledger_to_loc_ex: "l \<in> \<Union> range(Rep_ledger ld) \<Longrightarrow> \<exists>! dl. l \<in> (ld \<nabla> dl)"
+  apply (simp add: Rep_ledger)
+  apply (erule exE)+
+  thm ex1I
+  apply (rule_tac a = "((a, b), ba)" in ex1I)
+  apply (subgoal_tac "Rep_ledger (ld)
+    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+        \<forall>d::char list.
+           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+           (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+    apply simp
+    apply (drule_tac x = ba in spec)
+    apply (erule disjE)
+     apply blast
+  apply (erule ex1E)
+    apply (drule_tac x = "(a,b)" in spec)
+  apply (drule mp)
+     apply blast
+    apply (simp add: ledgra_at_def)
+   apply (rule Rep_ledger)
+(* *)
+  apply (subgoal_tac "Rep_ledger (ld)
+    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+        \<forall>d::char list.
+           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+           (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+    apply simp
+    apply (frule_tac x = ba in spec)
+    apply (erule disjE)
+    apply blast
+  apply (case_tac x)
+   apply (case_tac aa)
+   apply (simp add:ledgra_at_def)
+   apply (drule_tac x = bb in spec)
+  apply (erule disjE)
+    apply blast
+  apply (erule ex1E)+
+    apply (frule_tac x = "(a,b)" in spec)
+  apply (drule mp)
+    apply blast
+    apply (drule_tac x = "fst x" in spec)
+   apply (drule mp)
+    apply (simp add: ledgra_at_def)
+    prefer 2
+    apply (case_tac x)
+    apply (drule_tac x = "(ab,bc)" in spec)
+  apply (drule mp)
+     apply force
+   
+   apply (rule Rep_ledger)
+*)
+
 definition ref_map :: "[RRLoopFour.infrastructure, 
                         [RRLoopThree.igraph, location] \<Rightarrow> policy set]
                         \<Rightarrow> RRLoopThree.infrastructure"

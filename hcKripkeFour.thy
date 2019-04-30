@@ -114,9 +114,43 @@ defines "shcF \<equiv> {x. \<not> (global_policyF x ''Eve'')}"
 
 begin
 
-theorem refmapThree: "hc_KripkeR  \<sqsubseteq>\<^sub>rmapF hc_KripkeF" 
-  apply (rule strong_mt)
+lemma refmapThree_lem: "\<forall>s::RRLoopFour.infrastructure.
+       (hc_scenarioF, s) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<longrightarrow>
+       (\<forall>s'::RRLoopFour.infrastructure. s \<rightarrow>\<^sub>n s' \<longrightarrow> rmapF s \<rightarrow>\<^sub>n rmapF s')"
+  apply clarify
+
   sorry
+
+theorem refmapThree: "hc_KripkeR  \<sqsubseteq>\<^sub>rmapF hc_KripkeF" 
+proof (rule strong_mt', simp add: hc_KripkeF_def hc_KripkeR_def hc_statesR_def hc_statesF_def state_transition_refl_def, rule conjI)
+  show "rmapF hc_scenarioF = hc_scenarioR"
+    apply (simp add: rmapF_def ref_map_def hc_scenarioF_def hc_scenarioR_def ex_graphF_def ex_graphR_def
+           homeF_def homeR_def cloudF_def cloudR_def sphoneF_def sphoneR_def hospitalF_def hospitalR_def
+           ex_locF_ass_def ex_locR_ass_def ex_credsF_def ex_credsR_def ex_ledger_def ex_locsR_def)
+    apply (rule conjI)
+     apply (rule ext)
+    apply (simp add: hospitalF_def hospitalR_def)
+    apply (unfold ledger_to_loc_def data_trans_def dlm_to_dlm_def ledgra_at_def)
+    apply (rule ext)
+    apply simp
+    apply (rule conjI)
+     apply (rule impI)
+     apply (erule exE)+
+     apply (rule conjI)
+      apply (rule impI)+
+      apply (erule exE)+
+     apply (rule conjI)
+      apply (rule impI)+
+    apply simp
+    apply (rule_tac x = "''Patient''" in exI)
+ 
+    sorry
+next show " \<forall>s::RRLoopFour.infrastructure.
+       (hc_scenarioF, s) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>i y}\<^sup>* \<longrightarrow>
+       (\<forall>s'::RRLoopFour.infrastructure. s \<rightarrow>\<^sub>i s' \<longrightarrow> rmapF s \<rightarrow>\<^sub>i rmapF s')"
+apply (unfold state_transition_infra_def RRLoopThree.state_transition_infra_def)
+    by (rule refmapThree_lem)
+qed
 
 (* show attack "Eve can still do put at cloud and since we haven't
    forbidden it, she can overwrite Bob's entry "  *)
@@ -130,11 +164,10 @@ theorem Ledger_con: "h \<in> hc_actorsF \<Longrightarrow> h' \<in> hc_actorsF \<
   apply (subgoal_tac "Rep_ledger (ledgra G) \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
         \<forall>d::char list.
            (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
-           (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+           (\<exists>!dl:: (char list \<times> char list set) \<times> char list. ld dl \<noteq> {})}")
   prefer 2
    apply (rule Rep_ledger)
   apply simp
-  apply (frule_tac x = n in spec)
   apply (erule disjE)
    apply blast
   apply (erule ex1E)
