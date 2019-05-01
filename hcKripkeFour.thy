@@ -142,8 +142,6 @@ proof (rule strong_mt', simp add: hc_KripkeF_def hc_KripkeR_def hc_statesR_def h
      apply (rule conjI)
       apply (rule impI)+
     apply simp
-    apply (rule_tac x = "''Patient''" in exI)
- 
     sorry
 next show " \<forall>s::RRLoopFour.infrastructure.
        (hc_scenarioF, s) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>i y}\<^sup>* \<longrightarrow>
@@ -164,10 +162,11 @@ theorem Ledger_con: "h \<in> hc_actorsF \<Longrightarrow> h' \<in> hc_actorsF \<
   apply (subgoal_tac "Rep_ledger (ledgra G) \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
         \<forall>d::char list.
            (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
-           (\<exists>!dl:: (char list \<times> char list set) \<times> char list. ld dl \<noteq> {})}")
+           (\<exists>!l:: (char list \<times> char list set). ld (l,d) \<noteq> {})}")
   prefer 2
    apply (rule Rep_ledger)
   apply simp
+  apply (drule_tac x = n in spec)
   apply (erule disjE)
    apply blast
   apply (erule ex1E)

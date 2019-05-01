@@ -118,10 +118,6 @@ qed
 definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" ("_ \<Updown> _" 50)
   where "f  \<Updown> d \<equiv> (Rep_label_fun f) d" 
     
-(* from the earlier use of Hoare triples - now obsolete 
-definition valid_proc :: "acond \<Rightarrow> label_fun \<Rightarrow> acond \<Rightarrow> bool"    
-  where "valid_proc a f b \<equiv> Valid a (Basic (Rep_label_fun f)) b"
-*)
 
 lemma move_graph_eq: "move_graph_a a l l g = g"  
 proof (simp add: move_graph_a_def, case_tac g, force)
@@ -140,7 +136,6 @@ where
                            ((ledgra G)((a', as), n) := (L \<union> {l})))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-(*   (ledgra_upd (ledgra G) ((Actor a’, as), n) (L \<union> {l})) *)
 | process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l (Actor a) eval \<Longrightarrow> 
         (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow>
@@ -185,7 +180,6 @@ thm Finite_Set.fold_def
 definition dlm_to_dlm:: "RRLoopFour.dlm \<Rightarrow> RRLoopThree.dlm"
   where
   "dlm_to_dlm  \<equiv> (\<lambda> ((s :: string), (sl :: string set)). (Actor s, fmap Actor sl))"
-(* old version, explicit: Finite_Set.fold (\<lambda> y z. insert (Actor y) z)({} :: actor set)sl))" *)
 
 definition data_trans :: "RRLoopFour.dlm \<times> data \<Rightarrow> RRLoopThree.dlm \<times> data"
   where "data_trans  \<equiv> (\<lambda> (l :: (string *  string set),d :: string). (dlm_to_dlm l, d))"
@@ -194,11 +188,6 @@ definition ledger_to_loc:: "[ledger, location] \<Rightarrow> RRLoopThree.acond" 
   where 
    "ledger_to_loc ld l \<equiv> if l \<in> \<Union> range(Rep_ledger ld) 
                           then fmap data_trans {dl. l \<in> (ld \<nabla> dl)} else {}"
-(*                         then {data_trans(THE dl. l \<in> (ld \<nabla> dl))} else {}" *)
-(* simpler now with the extra string obsolete in lgra
-definition lgra_three :: "[ledger, location \<Rightarrow> string, location] \<Rightarrow> string * RRLoopThree.acond"
-  where "lgra_three ld lg l \<equiv> (lg l, ledger_to_loc ld l)"
-*)
 
 lemma ledger_to_loc_data_unique: "Rep_ledger ld (dl,d) \<noteq> {} \<Longrightarrow> 
                                   Rep_ledger ld (dl',d) \<noteq> {} \<Longrightarrow> dl = dl'"
@@ -222,99 +211,7 @@ lemma ledger_to_loc_data_unique: "Rep_ledger ld (dl,d) \<noteq> {} \<Longrightar
   apply (rule refl)
 by (rule Rep_ledger)
 
-(*(l, d) \<noteq> {})
-lemma ledger_to_loc_ex0: "l \<in> \<Union> range(Rep_ledger ld) \<Longrightarrow> \<exists>! dl. l \<in> (ld \<nabla> dl)"
-  apply (simp add: Rep_ledger)
-  apply (erule exE)+
-  apply (rule_tac a = "((a, b), ba)" in ex1I)
-  apply (subgoal_tac "Rep_ledger (ld)
-    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
-        \<forall>d::char list.
-           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
-           (\<exists>! dl:: (char list \<times> char list set) \<times> char list. ld dl \<noteq> {})}")
-    apply simp
-    apply (erule disjE)
-     apply blast
-  apply (erule ex1E)
-    apply (drule_tac x = "((a,b),ba)" in spec)
-  apply (drule mp)
-     apply blast
-    apply (simp add: ledgra_at_def)
-   apply (rule Rep_ledger)
-(* *)
-  apply (subgoal_tac "Rep_ledger (ld)
-    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
-        \<forall>d::char list.
-           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
-           (\<exists>! dl:: (char list \<times> char list set) \<times> char list. ld dl \<noteq> {})}")
-    apply simp
-    apply (erule disjE)
-     apply blast
-  apply (erule ex1E)
-    apply (frule_tac x = "((a,b),ba)" in spec)
-  apply (drule mp)
-    apply blast
-    apply (drule_tac x = "x" in spec)
-  apply (drule mp)
-    apply (simp add: ledgra_at_def)
-    apply blast
-  apply simp
-by (rule Rep_ledger)
-*)
 
-
-(*
-lemma ledger_to_loc_ex: "l \<in> \<Union> range(Rep_ledger ld) \<Longrightarrow> \<exists>! dl. l \<in> (ld \<nabla> dl)"
-  apply (simp add: Rep_ledger)
-  apply (erule exE)+
-  thm ex1I
-  apply (rule_tac a = "((a, b), ba)" in ex1I)
-  apply (subgoal_tac "Rep_ledger (ld)
-    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
-        \<forall>d::char list.
-           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
-           (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
-    apply simp
-    apply (drule_tac x = ba in spec)
-    apply (erule disjE)
-     apply blast
-  apply (erule ex1E)
-    apply (drule_tac x = "(a,b)" in spec)
-  apply (drule mp)
-     apply blast
-    apply (simp add: ledgra_at_def)
-   apply (rule Rep_ledger)
-(* *)
-  apply (subgoal_tac "Rep_ledger (ld)
-    \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
-        \<forall>d::char list.
-           (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
-           (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
-    apply simp
-    apply (frule_tac x = ba in spec)
-    apply (erule disjE)
-    apply blast
-  apply (case_tac x)
-   apply (case_tac aa)
-   apply (simp add:ledgra_at_def)
-   apply (drule_tac x = bb in spec)
-  apply (erule disjE)
-    apply blast
-  apply (erule ex1E)+
-    apply (frule_tac x = "(a,b)" in spec)
-  apply (drule mp)
-    apply blast
-    apply (drule_tac x = "fst x" in spec)
-   apply (drule mp)
-    apply (simp add: ledgra_at_def)
-    prefer 2
-    apply (case_tac x)
-    apply (drule_tac x = "(ab,bc)" in spec)
-  apply (drule mp)
-     apply force
-   
-   apply (rule Rep_ledger)
-*)
 
 definition ref_map :: "[RRLoopFour.infrastructure, 
                         [RRLoopThree.igraph, location] \<Rightarrow> policy set]
@@ -325,8 +222,5 @@ definition ref_map :: "[RRLoopFour.infrastructure,
                                         (cgra (graphI I))
                                         (ledger_to_loc (ledgra (graphI I))))
                                  lp"
-(* old version:
-                                        (lgra_three (ledgra (graphI I))(lgra (graphI I))))
-                                 lp"
-*)                   
+                 
 end
