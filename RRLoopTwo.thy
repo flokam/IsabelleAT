@@ -214,7 +214,7 @@ lemma fold_one: "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} {n} = {f n}"
   apply (simp add: comp_fun_commute_def)
 by force
 
-lemma fmap_Lem_one: "fmap f {a} = {f a}"
+lemma fmap_lem_one: "fmap f {a} = {f a}"
 by (simp add: fmap_def fold_one)
 
 
