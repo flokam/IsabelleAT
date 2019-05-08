@@ -116,7 +116,8 @@ defines "shcV \<equiv> {x. \<not> (global_policyV x ''Eve'')}"
 begin
 
 theorem refmapFour: "hc_KripkeF  \<sqsubseteq>\<^sub>rmapV hc_KripkeV" 
-  apply (rule strong_mt)
+  apply (rule strong_mt')
+
   sorry
 
 (* show attack "Eve can still do put at cloud and since we haven't

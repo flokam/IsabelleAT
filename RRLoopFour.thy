@@ -52,8 +52,14 @@ definition ledgra_upd :: "[ledger, dlm \<times> data, location set] \<Rightarrow
   where
  "ledgra_upd ld dl L == Abs_ledger((Rep_ledger ld)(dl := L))"
 
+
 definition ledgra_at :: "[ledger, dlm \<times> data] \<Rightarrow> location set" ("_ \<nabla> _" 50)
   where  "l \<nabla> dl \<equiv> (Rep_ledger l) dl"
+
+lemma ledgra_at_fun: "(\<forall> d. (\<forall> l. (f :: dlm \<times> data \<Rightarrow> location set)(l, d) = {}) \<or>
+(\<exists>! l. f (l, d) \<noteq> {})) \<Longrightarrow> (Rep_ledger (Abs_ledger f)) dl = f dl"
+  by (simp add: Abs_ledger_inverse)
+
 
 definition nodes :: "igraph \<Rightarrow> location set" 
 where "nodes g == { x. (? y. ((x,y): gra g) | ((y,x): gra g))}"
@@ -128,7 +134,7 @@ where
   move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
           (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
          I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
-| get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
+| get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow> 
         enables I l' (Actor a) get \<Longrightarrow> 
         (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow> l' \<in> L  \<Longrightarrow> a \<in> as \<Longrightarrow> 
         I' = Infrastructure 
@@ -211,7 +217,128 @@ lemma ledger_to_loc_data_unique: "Rep_ledger ld (dl,d) \<noteq> {} \<Longrightar
   apply (rule refl)
 by (rule Rep_ledger)
 
+lemma ledgra_ledger_to_loc: 
+      "finite {dl::(char list \<times> char list set) \<times> char list. l \<in> Rep_ledger (ledgra G) dl} \<Longrightarrow>
+       l \<in> (ledgra G \<nabla> ((a, as), n)) \<Longrightarrow>
+        ((Actor a, fmap Actor as), n) \<in> ledger_to_loc (ledgra G) l"
+  apply (simp add: ledgra_at_def ledger_to_loc_def)
+  apply (rule conjI)
+   apply (rule impI)
+   apply (subgoal_tac "((Actor a, fmap Actor as), n) = data_trans ((a, as), n)")
+  apply (erule ssubst)
+    apply (rule fmap_lem_map, assumption)
+    apply (simp add: Rep_ledger)
+  apply (simp add: data_trans_def dlm_to_dlm_def)
+  apply (rule exI)+
+  by assumption
 
+(*  lemma for ledgra_upd *)
+lemma ledgra_update_lem: "(L = {} \<or> (Rep_ledger lg x \<noteq> {})) \<Longrightarrow>
+                          Rep_ledger (Abs_ledger ((Rep_ledger lg)(x := L))) =
+                            ((Rep_ledger lg)(x := L))"
+  apply (subgoal_tac "((Rep_ledger lg)(x := L)) \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+      \<forall>d::char list.
+         (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+         (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+   apply (erule Abs_ledger_inverse)
+  apply simp
+  apply (erule disjE)
+(* L = {} *)
+   apply simp
+  apply (subgoal_tac "Rep_ledger lg \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+      \<forall>d::char list.
+         (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+         (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+    apply simp
+  apply blast
+   apply (rule Rep_ledger)
+(* *)
+  apply (case_tac "L = {}") 
+   apply simp
+  apply (subgoal_tac "Rep_ledger lg \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+      \<forall>d::char list.
+         (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+         (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+    apply simp
+  apply blast
+   apply (rule Rep_ledger)
+(* L \<noteq> {} *)
+  apply (rule allI)
+  apply (case_tac "snd x = d")
+  apply (rule disjI2)
+   apply simp
+   apply (rule_tac a = "fst x" in ex1I)
+    apply (rule impI)
+    apply (erule subst)
+  apply simp
+    apply (subgoal_tac "Rep_ledger lg \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+      \<forall>d::char list.
+         (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+         (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+  apply simp
+   apply (drule_tac x = d in spec)
+   apply (erule disjE)
+     apply (drule_tac x = "fst(fst x)" in spec)
+     apply (drule_tac x = "snd(fst x)" in spec)
+     apply (erule notE)
+     apply force
+    apply (erule ex1E)
+    apply (case_tac "(xa, d) = x")
+     apply simp
+  apply (rotate_tac -1)
+     apply (erule subst)
+  apply simp
+    apply (drule mp, assumption)
+    apply (frule_tac x = "fst x" in spec)
+    apply (drule mp)
+  apply (erule subst)
+     apply simp
+    apply (drule_tac x = xa in spec)
+    apply (drule mp, assumption)
+    apply simp
+   apply (rule Rep_ledger)
+(* snd x \<noteq> d *)
+  apply simp
+  apply (subgoal_tac "Rep_ledger lg \<in> {ld::(char list \<times> char list set) \<times> char list \<Rightarrow> location set.
+      \<forall>d::char list.
+         (\<forall>l::char list \<times> char list set. ld (l, d) = {}) \<or>
+         (\<exists>!l::char list \<times> char list set. ld (l, d) \<noteq> {})}")
+  apply simp
+   apply (drule_tac x = d in spec)
+   apply (erule disjE)
+    apply (rule disjI1)
+    apply blast
+   apply (rule disjI2)
+   apply blast
+by (rule Rep_ledger)
+ 
+lemma ledgra_insert0: "(Rep_ledger lg)((a, as), n) = L \<Longrightarrow> l \<noteq> la \<Longrightarrow> l' \<in> L \<Longrightarrow>
+         {dl::(char list \<times> char list set) \<times> char list.
+           l \<in> Rep_ledger (lg ((a, as), n) := insert la L) dl} =
+         {dl::(char list \<times> char list set) \<times> char list.
+           l \<in> Rep_ledger lg dl}"
+  apply (simp add: ledgra_upd_def)
+  apply (subgoal_tac "insert la L = {} \<or> (Rep_ledger lg)((a, as), n) \<noteq> {}")
+  prefer 2
+   apply blast
+  apply (drule ledgra_update_lem)
+  apply (rotate_tac -1)
+  apply (erule ssubst)
+by force
+
+lemma ledgra_insert: "(Rep_ledger lg)((a, as), n) = L \<Longrightarrow> l' \<in> L \<Longrightarrow>
+        {dl::(char list \<times> char list set) \<times> char list.
+         l \<in> Rep_ledger (lg ((a, as), n) := insert l L) dl} =
+          insert ((a, as), n) {dl::(char list \<times> char list set) \<times> char list.
+         l \<in> Rep_ledger lg dl}"
+  apply (simp add: ledgra_upd_def)
+  apply (subgoal_tac "insert l L = {} \<or> (Rep_ledger lg)((a, as), n) \<noteq> {}")
+  prefer 2
+   apply blast
+  apply (drule ledgra_update_lem)
+  apply (rotate_tac -1)
+  apply (erule ssubst)
+  by force
 
 definition ref_map :: "[RRLoopFour.infrastructure, 
                         [RRLoopThree.igraph, location] \<Rightarrow> policy set]
@@ -222,5 +349,10 @@ definition ref_map :: "[RRLoopFour.infrastructure,
                                         (cgra (graphI I))
                                         (ledger_to_loc (ledgra (graphI I))))
                                  lp"
-                 
+    
+lemma delta_invariant: "\<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z')"
+  apply clarify
+  apply (erule state_transition_in.cases)
+ by simp+
+             
 end

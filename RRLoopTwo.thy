@@ -141,7 +141,7 @@ where
                    ((lgra G)(l := (lgra G l) - {(y, x). x = n })))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-| put : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
+| put : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
         enables I l (Actor h) put \<Longrightarrow>
         I' = Infrastructure 
                   (Lgraph (gra G)(agra G)(cgra G)
@@ -213,6 +213,9 @@ lemma fold_one: "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} {n} = {f n}"
      apply simp+
   apply (simp add: comp_fun_commute_def)
 by force
+
+lemma fmap_Lem_one: "fmap f {a} = {f a}"
+by (simp add: fmap_def fold_one)
 
 
 lemma fmap_lem[rule_format]: "finite S \<Longrightarrow> \<forall> n. (fmap f (insert n S)) = (insert (f n) (fmap f S))"
