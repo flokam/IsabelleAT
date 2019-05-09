@@ -340,6 +340,108 @@ lemma ledgra_insert: "(Rep_ledger lg)((a, as), n) = L \<Longrightarrow> l' \<in>
   apply (erule ssubst)
   by force
 
+lemma ledger_to_loc_insert: 
+  assumes a: "\<forall> l. finite {dl::(char list \<times> char list set) \<times> char list. l \<in> Rep_ledger lg dl}" 
+  shows "(lg \<nabla> ((a, as), n)) = L \<Longrightarrow> l' \<in> L \<Longrightarrow>
+           ledger_to_loc (lg ((a, as), n) := insert l L) =
+          (ledger_to_loc lg)(l := insert ((Actor a, fmap Actor as), n) (ledger_to_loc lg l))"
+proof (unfold ledger_to_loc_def, rule ext, case_tac "l = la")
+  show "\<And>la::location.
+       (lg \<nabla> ((a, as), n)) = L \<Longrightarrow>
+       l' \<in> L \<Longrightarrow>
+       l = la \<Longrightarrow>
+       (if la \<in> UNION UNIV (Rep_ledger (lg ((a, as), n) := insert l L))
+        then fmap data_trans
+              {dl::(char list \<times> char list set) \<times> char list. la \<in> (lg ((a, as), n) := insert l L \<nabla> dl)}
+        else {}) =
+       ((\<lambda>l::location.
+            if l \<in> UNION UNIV (Rep_ledger lg)
+            then fmap data_trans {dl::(char list \<times> char list set) \<times> char list. l \<in> (lg \<nabla> dl)} else {})
+        (l := insert ((Actor a, fmap Actor as), n)
+               (if l \<in> UNION UNIV (Rep_ledger lg)
+                then fmap data_trans {dl::(char list \<times> char list set) \<times> char list. l \<in> (lg \<nabla> dl)} else {})))
+        la"
+   apply simp
+  apply (rule conjI)
+   apply (rule impI)+
+  apply (simp add: ledgra_at_def)
+   apply (rule conjI)
+     apply (rule impI)+
+     apply (subst ledgra_insert, assumption, assumption)
+     apply (subst fmap_lem)
+  prefer 2
+       apply (simp add: data_trans_def dlm_to_dlm_def)
+      apply (insert a)
+      apply (erule spec)
+     apply (simp add: ledgra_upd_def)
+     apply (subst ledgra_update_lem)
+      apply blast
+     apply force
+    apply (rule impI)+
+(*  *)
+    apply (rule conjI)
+     apply (rule impI)
+     apply (subgoal_tac 
+          "{dl::(char list \<times> char list set) \<times> char list. la \<in> (lg ((a, as), n) := insert la L \<nabla> dl)} =
+           {((a,as),n)}")
+      apply (rotate_tac -1, erule ssubst)
+    apply (subst fmap_lem_one)
+      apply (simp add: data_trans_def dlm_to_dlm_def)
+     apply (simp add: ledgra_at_def ledgra_upd_def)
+     apply (subst ledgra_update_lem)
+      apply blast
+     apply force
+     apply (simp add: ledgra_upd_def)
+     apply (subst ledgra_update_lem)
+     apply (simp add: ledgra_at_def, blast)
+by force
+next show "\<And>la::location.
+       (lg \<nabla> ((a, as), n)) = L \<Longrightarrow>
+       l' \<in> L \<Longrightarrow>
+       l \<noteq> la \<Longrightarrow>
+       (if la \<in> UNION UNIV (Rep_ledger (lg ((a, as), n) := insert l L))
+        then fmap data_trans
+              {dl::(char list \<times> char list set) \<times> char list. la \<in> (lg ((a, as), n) := insert l L \<nabla> dl)}
+        else {}) =
+       ((\<lambda>l::location.
+            if l \<in> UNION UNIV (Rep_ledger lg)
+            then fmap data_trans {dl::(char list \<times> char list set) \<times> char list. l \<in> (lg \<nabla> dl)} else {})
+        (l := insert ((Actor a, fmap Actor as), n)
+               (if l \<in> UNION UNIV (Rep_ledger lg)
+                then fmap data_trans {dl::(char list \<times> char list set) \<times> char list. l \<in> (lg \<nabla> dl)} else {})))
+        la"
+   apply simp
+  apply (rule conjI)
+   apply (rule impI)+
+  apply (simp add: ledgra_at_def)
+   apply (rule conjI)
+     apply (rule impI)+
+      apply (subst ledgra_insert0, assumption, simp, assumption, rule refl)
+     apply (simp add: ledgra_upd_def)
+          apply (subst ledgra_update_lem)
+      apply blast
+     apply (rule impI)
+    apply (subgoal_tac "{dl::(char list \<times> char list set) \<times> char list.
+         la \<in> ((Rep_ledger lg)(((a, as), n) := insert l L)) dl} = {}")
+    apply (rotate_tac -1, erule ssubst)
+     apply (simp add: fmap_def)
+     apply force
+    apply (rule impI)+
+    apply (rule FalseE)
+    apply (erule exE)+
+    apply (drule_tac x = aa in spec)
+    apply (drule_tac x = b in spec)
+    apply (drule_tac x = ba in spec)
+    apply (rotate_tac -1, erule notE)
+    apply (simp add: ledgra_upd_def)
+    apply (subst ledgra_update_lem)
+     apply (simp add: ledgra_at_def)
+     apply blast
+    apply (erule subst)
+    apply (simp add: ledgra_at_def)
+by force
+qed
+
 definition ref_map :: "[RRLoopFour.infrastructure, 
                         [RRLoopThree.igraph, location] \<Rightarrow> policy set]
                         \<Rightarrow> RRLoopThree.infrastructure"

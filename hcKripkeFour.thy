@@ -215,6 +215,22 @@ lemma finite_data0:
    apply (rule finite.emptyI)
 by simp
 
+lemma finite_label_imp0: "(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
+(\<forall>l::location. \<forall> a :: string. \<forall> d :: string. 
+                          l \<in> Rep_ledger (ledgra (RRLoopFour.graphI hc_scenarioF)) ((a,as),d)
+                       \<longrightarrow> finite as) \<longrightarrow>
+(\<forall>l::location.  \<forall> a :: string. \<forall> d :: string. 
+                          l \<in> Rep_ledger (ledgra (RRLoopFour.graphI I)) ((a,as),d)
+                       \<longrightarrow> finite as)"
+  sorry
+
+lemma finite_label0[rule_format]: "(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
+(\<forall>l::location.  \<forall> a :: string. \<forall> d :: string. 
+                          l \<in> Rep_ledger (ledgra (RRLoopFour.graphI I)) ((a,as),d)
+                       \<longrightarrow> finite as)"
+  sorry
+
+
 (*
 "(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
 \<forall>l::location. finite (RRLoopFour.lgra (RRLoopFour.graphI I) l)"
@@ -251,8 +267,6 @@ lemma init_state_policy: "\<lbrakk> (x,y) \<in> {(x::infrastructure, y::infrastr
   apply (rule init_state_policy0)
     apply (rule delta_invariant)
   by assumption
-
-
 
 lemma refmapThree_lem: "\<forall>s::RRLoopFour.infrastructure.
        (hc_scenarioF, s) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<longrightarrow>
@@ -391,9 +405,11 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
     apply (simp add: ledger_to_loc_def)
 (* *)
       prefer 2
-      apply (simp add: rmapR_def ref_map_def)
+      apply (rule fmap_lem_map)
+       apply (erule_tac l = l' and a = a' and d = n in finite_label0)
+    apply (simp add: ledgra_at_def, assumption)
      prefer 2
-      apply (simp add: rmapR_def ref_map_def)
+      apply (simp add: rmapF_def ref_map_def)
 (*
 (* enables get*)
  apply (simp add: rmapF_def ref_map_def enables_def RRLoopThree.enables_def)
