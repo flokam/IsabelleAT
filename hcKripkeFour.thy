@@ -310,7 +310,8 @@ proof -
          apply (rule_tac x = l in exI)
          apply (simp add: nodes_def RRLoopThree.nodes_def atI_def)
   prefer 2
-        apply (simp add: rmapF_def ref_map_def move_graph_a_def RRLoopThree.move_graph_a_def)
+     apply (simp add: rmapF_def ref_map_def move_graph_a_def RRLoopThree.move_graph_a_def)
+(* enables move *)
   apply (simp add: rmapF_def ref_map_def enables_def RRLoopThree.enables_def)
         apply (erule bexE)
   apply (rule_tac x = x in bexI, assumption)
@@ -380,7 +381,7 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
        a @\<^bsub>G\<^esub> l \<Longrightarrow>
        l \<in> RRLoopFour.nodes G \<Longrightarrow>
        l' \<in> RRLoopFour.nodes G \<Longrightarrow>
-       RRLoopFour.enables I l' (Actor a) get \<Longrightarrow>
+       RRLoopFour.enables I l (Actor a) get \<Longrightarrow>
        (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow>
        l' \<in> L \<Longrightarrow>
        a \<in> as \<Longrightarrow>
@@ -409,8 +410,12 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
        apply (erule_tac l = l' and a = a' and d = n in finite_label0)
     apply (simp add: ledgra_at_def, assumption)
      prefer 2
-      apply (simp add: rmapF_def ref_map_def)
-(*
+     apply (simp add: rmapF_def ref_map_def)
+     apply (rule ledger_to_loc_insert)
+    apply (rule allI)
+       apply (frule finite_data0)
+       apply (erule spec)
+    apply assumption+
 (* enables get*)
  apply (simp add: rmapF_def ref_map_def enables_def RRLoopThree.enables_def)
         apply (erule bexE)
@@ -422,9 +427,9 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
         apply (rule impI)
         apply (drule sym)
      apply (drule sym)
-  apply (simp add: hc_scenarioF_def local_policiesF_def)
+  apply (simp add: hc_scenarioF_def local_policiesR_def local_policiesF_def)
   apply (simp add: hospitalR_def sphoneR_def
-                  homeR_def cloudR_def cloudF_def homeF_def sphoneF_def cloudF_def hospitalF_def hc_scenarioF_def)
+                  homeR_def cloudR_def cloudF_def homeF_def sphoneF_def hospitalF_def hc_scenarioF_def)
          apply (simp add: has_def RRLoopThree.has_def atI_def 
                 RRLoopThree.credentials_def RRLoopFour.credentials_def)
          apply (rule impI)+
@@ -432,40 +437,38 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
         apply (rule impI)+
 apply (drule sym)
   apply (drule sym)
-        apply (simp add: hc_scenarioR_def local_policiesR_def)
-  apply (simp add: hospitalT_def sphoneT_def
-                  homeT_def cloudT_def cloudR_def homeR_def sphoneR_def hospitalR_def hc_scenarioR_def)
-         apply (simp add: has_def RRLoopTwo.has_def atI_def 
-                RRLoopTwo.credentials_def RRLoopThree.credentials_def)
+        apply (simp add: hc_scenarioF_def local_policiesF_def)
+  apply (simp add: hospitalR_def sphoneR_def
+                  homeR_def cloudR_def cloudF_def homeF_def sphoneF_def hospitalF_def hc_scenarioF_def)
+         apply (simp add: has_def RRLoopThree.has_def atI_def 
+                RRLoopThree.credentials_def RRLoopFour.credentials_def)
          apply (rule impI)+
         apply (rule conjI)
      apply (rule impI)+
 (* *)
 apply (drule sym)
   apply (drule sym)
-        apply (simp add: hc_scenarioR_def local_policiesR_def)
-  apply (simp add: hospitalT_def sphoneT_def
-                  homeT_def cloudT_def cloudR_def homeR_def sphoneR_def hospitalR_def hc_scenarioR_def)
-         apply (simp add: has_def RRLoopTwo.has_def atI_def 
-                RRLoopTwo.credentials_def RRLoopThree.credentials_def)
+        apply (simp add: hc_scenarioF_def local_policiesF_def)
+  apply (simp add: hospitalR_def sphoneR_def
+                  homeR_def cloudR_def cloudF_def homeF_def sphoneF_def hospitalF_def hc_scenarioF_def)
+         apply (simp add: has_def RRLoopThree.has_def atI_def 
+                RRLoopThree.credentials_def RRLoopFour.credentials_def)
          apply (rule impI)+
         apply (rule conjI)
         apply (rule impI)+
         apply (drule sym)
   apply (drule sym)
-        apply (simp add: hc_scenarioR_def local_policiesR_def)
-        apply (simp add: hc_scenarioR_def local_policiesR_def ex_graphR_def RRLoopThree.nodes_def)
-  apply (simp add: hospitalT_def sphoneT_def
-                  homeT_def cloudT_def cloudR_def homeR_def sphoneR_def hospitalR_def hc_scenarioR_def)
-  apply (subgoal_tac "RRLoopThree.nodes (RRLoopThree.graphI I) = {Location 0, Location 1, Location 2, Location 3}")
+        apply (simp add: hc_scenarioF_def local_policiesF_def)
+        apply (simp add: hc_scenarioF_def local_policiesF_def ex_graphF_def RRLoopFour.nodes_def)
+  apply (simp add: hospitalR_def sphoneR_def
+                  homeR_def cloudR_def cloudF_def homeF_def sphoneF_def hospitalF_def hc_scenarioF_def)
+  apply (subgoal_tac "RRLoopFour.nodes (RRLoopFour.graphI I) = {Location 0, Location 1, Location 2, Location 3}")
   apply simp
   apply (drule sym)
-  apply (simp add: hc_scenarioR_def local_policiesR_def ex_graphR_def RRLoopThree.nodes_def)
-  apply (simp add: hospitalT_def sphoneT_def
-                  homeT_def cloudT_def cloudR_def homeR_def sphoneR_def hospitalR_def hc_scenarioR_def)
+  apply (simp add: hc_scenarioF_def local_policiesF_def ex_graphF_def RRLoopFour.nodes_def)
+  apply (simp add: hospitalR_def sphoneR_def
+                  homeR_def cloudR_def cloudF_def homeF_def sphoneF_def hospitalF_def hc_scenarioF_def)
     by blast 
-*)
-    sorry
 (* eval *)
 next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) (G::RRLoopFour.igraph)
        (I::RRLoopFour.infrastructure) (a::char list) (l::location) (a'::char list) (as::char list set)
@@ -479,25 +482,27 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
        a @\<^bsub>G\<^esub> l \<Longrightarrow>
        RRLoopFour.enables I l (Actor a) eval \<Longrightarrow>
        (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow>
-       a \<in> as \<Longrightarrow>
+       a \<in> as \<or> a = a' \<Longrightarrow>
        I' =
        RRLoopFour.infrastructure.Infrastructure
         (RRLoopFour.igraph.Lgraph (RRLoopFour.gra G) (RRLoopFour.agra G) (RRLoopFour.cgra G)
-          (RRLoopFour.lgra G) (ledgra G f \<Updown> ((a', as), n) := L ((a', as), n) := {}))
+          (RRLoopFour.lgra G) (ledgra G ((a', as), n) := {} f \<Updown> ((a', as), n) := L ))
         (RRLoopFour.delta I) \<Longrightarrow>
        rmapF s \<rightarrow>\<^sub>n rmapF s'"
     sorry
 (* delete *)
 next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) (G::RRLoopFour.igraph)
-       (I::RRLoopFour.infrastructure) (a::char list) (actors::RRLoopFour.igraph \<Rightarrow> actor set)
-       (as::char list set) (n::char list) (L::location set) I'::RRLoopFour.infrastructure.
+       (I::RRLoopFour.infrastructure) (a::char list) (l::location) (L::location set) (as::char list set)
+       (n::char list) I'::RRLoopFour.infrastructure.
        (hc_scenarioF, s) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
        RRLoopFour.nodes (RRLoopFour.graphI hc_scenarioF) = RRLoopFour.nodes (RRLoopFour.graphI s) \<Longrightarrow>
        RRLoopFour.delta hc_scenarioF = RRLoopFour.delta s \<Longrightarrow>
        s = I \<Longrightarrow>
        s' = I' \<Longrightarrow>
        G = RRLoopFour.graphI I \<Longrightarrow>
-       Actor a \<in> actors G \<Longrightarrow>
+       a \<in> RRLoopFour.actors_graph G \<Longrightarrow>
+       l \<in> RRLoopFour.nodes G \<Longrightarrow>
+       l \<in> L \<Longrightarrow>
        (ledgra G \<nabla> ((a, as), n)) = L \<Longrightarrow>
        I' =
        RRLoopFour.infrastructure.Infrastructure
@@ -505,7 +510,26 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
           (RRLoopFour.lgra G) (ledgra G ((a, as), n) := {}))
         (RRLoopFour.delta I) \<Longrightarrow>
        rmapF s \<rightarrow>\<^sub>n rmapF s'"
-    sorry
+    apply (rule_tac I = "rmapF s" and I' = "rmapF s'" and h = a and l = l and
+                               hs = "fmap Actor as" and  n = n
+         in RRLoopThree.state_transition_in.del_data)
+  apply (rule refl)
+        apply (simp add: rmapF_def ref_map_def atI_def RRLoopThree.actors_graph_def actors_graph_def
+                        RRLoopThree.nodes_def nodes_def)
+                apply (simp add: rmapF_def ref_map_def nodes_def RRLoopThree.nodes_def)
+           apply (simp add: rmapF_def ref_map_def nodes_def RRLoopThree.nodes_def)
+      prefer 2
+     apply (simp add: rmapF_def ref_map_def)
+    prefer 2
+       apply (rule ledgra_ledger_to_loc)
+    apply (frule finite_data0)
+    apply (erule spec)
+    apply (simp add: ledger_to_loc_def)
+(* *)
+    apply (rule ledger_to_loc_delete)
+    apply (frule finite_data0)
+    apply (rule allI)
+by (erule spec)
 (* put *)
 next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) (G::RRLoopFour.igraph)
        (I::RRLoopFour.infrastructure) (a::char list) (l::location) (I'::RRLoopFour.infrastructure)

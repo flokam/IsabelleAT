@@ -135,7 +135,7 @@ where
           (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
          I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
 | get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow> 
-        enables I l' (Actor a) get \<Longrightarrow> 
+        enables I l (Actor a) get \<Longrightarrow> 
         (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow> l' \<in> L  \<Longrightarrow> a \<in> as \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
@@ -145,14 +145,14 @@ where
 | process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l (Actor a) eval \<Longrightarrow> 
         (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow>
-        a \<in> as \<Longrightarrow>
+        a \<in> as \<or> a = a'\<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                                 ((ledgra G (f :: label_fun) \<Updown> ((a', as), n) := L)
-                                    ((a', as), n) := {}))
+                                 ((ledgra G ((a', as), n) := {}
+                                    (f :: label_fun) \<Updown> ((a', as), n) := L)))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"  
-| del_data : "G = graphI I \<Longrightarrow> Actor a \<in> actors G \<Longrightarrow> 
+| del_data : "G = graphI I \<Longrightarrow> a \<in> actors_graph G \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l \<in> L \<Longrightarrow>
              (ledgra G \<nabla> ((a, as), n)) = L \<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
@@ -441,6 +441,13 @@ next show "\<And>la::location.
     apply (simp add: ledgra_at_def)
 by force
 qed
+
+lemma ledger_to_loc_delete:   
+  assumes a: "\<forall> l. finite {dl::(char list \<times> char list set) \<times> char list. l \<in> Rep_ledger lg dl}" 
+  shows "(ledgra G \<nabla> ((a, as), n)) = L \<Longrightarrow> l \<in> L \<Longrightarrow>
+      ledger_to_loc (lg ((a, as), n) := {}) =
+       (ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})"
+  sorry
 
 definition ref_map :: "[RRLoopFour.infrastructure, 
                         [RRLoopThree.igraph, location] \<Rightarrow> policy set]
