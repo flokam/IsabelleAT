@@ -328,7 +328,7 @@ lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
 
 
 
-lemma qkd_Eve_attack: "qkd_Kripke (pmap qkd_ops') \<turnstile>PF\<^sub>J negated_policy"
+lemma qkd_Eve_attack: "qkd_Kripke (pmap qkd_ops) \<turnstile>PF\<^sub>J negated_policy"
   oops
 
 

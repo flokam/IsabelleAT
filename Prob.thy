@@ -19,18 +19,40 @@ definition prob_dist_def
 typedef ('O :: finite)prob_dist = "{p :: ('O set \<Rightarrow> real).
          (\<forall> A:: 'O set. p A \<ge> 0) \<and> (p(UNIV :: 'O set) = 1) \<and>
          (\<forall> A:: 'O set. \<forall> B:: 'O set. A \<inter> B = {} \<longrightarrow> p(A \<union> B) = p A + p B)}"
-proof (rule_tac x = "(\<lambda> x :: 'O set. if x = UNIV then 1 else 0)" in exI, rule CollectI, rule conjI)
-  show " \<forall>A::'O set. (0::real) \<le> (if A = UNIV then 1::real else (0::real))" by simp
-next show "(if UNIV = UNIV then 1::real else (0::real)) = (1::real) \<and>
-    (\<forall>(A::'O set) B::'O set.
+proof (rule_tac x = "(\<lambda> x :: 'O set. ((card x)::real)/((card (UNIV :: 'O set))::real))" in exI, rule CollectI, rule conjI)
+  show " \<forall>A::'O set. (0::real) \<le> real (card A) / real (card UNIV)" by simp
+next show "real (card (UNIV :: ('O :: finite) set)) / real (card (UNIV :: ('O :: finite)set)) = (1::real) \<and>
+    (\<forall>(A::('O ::finite) set) B::('O::finite) set.
         A \<inter> B = {} \<longrightarrow>
-        (if A \<union> B = UNIV then 1::real else (0::real)) =
-        (if A = UNIV then 1::real else (0::real)) + (if B = UNIV then 1::real else (0::real)))"
+        real (card (A \<union> B)) / real (card (UNIV :: ('O :: finite)set)) =
+        real (card A) / real (card (UNIV :: ('O :: finite)set)) + 
+        real (card B) / real (card (UNIV :: ('O :: finite)set)))"
     apply (rule conjI)
-    apply simp
+     apply simp
     apply clarify
-    apply (rule CollectD)
-    sorry
+    apply (subgoal_tac "real (card A) / real (card (UNIV :: ('O :: finite) set)) + 
+                        real (card B) / real (card (UNIV :: ('O :: finite) set)) = 
+                        (real (card A) + real (card B)) / real (card (UNIV :: ('O :: finite) set))")
+    apply (rotate_tac -1)
+     apply (erule ssubst)
+     apply (subgoal_tac "real (card (A \<union> B)) = real (card A) + real (card B) ")
+      apply (rotate_tac -1)
+      apply (erule ssubst)
+      apply (rule refl)
+     apply (subgoal_tac "card (A \<union> B) = card A + card B")
+      apply (rotate_tac -1)
+      apply (erule ssubst)
+    apply simp
+     apply (simp add: card_Un_disjoint)
+    apply (subgoal_tac "\<forall> (a::real) b c. c > 0 \<longrightarrow> a / c + b / c = (a + b) / c")
+     apply (subgoal_tac "0 < real(card (UNIV :: ('O :: finite) set))")
+      apply (drule_tac x = "real (card A)" in spec)
+      apply (drule_tac x = "real (card B)" in spec)
+        apply (drule_tac x = "real (card (UNIV :: ('O :: finite)set))" in spec)
+    apply (drule mp)    
+       apply simp+
+     apply force
+    by (simp add: add_divide_distrib)
 qed
 
 (* Canonical construction *)
