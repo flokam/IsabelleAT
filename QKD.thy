@@ -1,5 +1,5 @@
 theory QKD
-  imports AT
+  imports Prob
 begin
 datatype event = AsOne bool | AchX bool | BchX bool | EchX bool | BmOne bool | EmOne bool
 
@@ -214,3 +214,123 @@ proof -
   "qkd_Kripke \<turnstile> EF negated_policy"
     by (simp add: qkd_Kripke_def qkd_scenario_def Iqkd_def)
 qed
+
+(* Probabilistic Analysis *)
+typedef outcome = "{l :: event list. length l = 4}"
+proof (rule_tac x = "[EmOne True, EchX True, AchX True, AsOne True]" in exI, simp)
+qed
+
+
+instance outcome :: finite
+proof (rule Finite_Set.finite_class.intro)
+  show "OFCLASS(outcome, type_class)"
+    sorry
+next show "class.finite TYPE(outcome) "
+    sorry
+qed
+
+locale QKD = 
+  fixes qkd_ops :: "outcome \<Rightarrow> real"
+  defines qkd_ops_def: 
+    "qkd_ops \<equiv>
+    (\<lambda> x. case Rep_outcome x of
+          [EmOne False, EchX False, AchX False, AsOne False] \<Rightarrow> 1/8
+       |  [EmOne True, EchX False, AchX False, AsOne False] \<Rightarrow> 0
+       |  [EmOne False, EchX True, AchX False, AsOne False] \<Rightarrow> 1/16
+       |  [EmOne True, EchX True, AchX False, AsOne False] \<Rightarrow> 1/16
+       |  [EmOne False, EchX False, AchX True, AsOne False] \<Rightarrow> 1/16
+       |  [EmOne True, EchX False, AchX True, AsOne False] \<Rightarrow> 1/16
+       |  [EmOne False, EchX True, AchX True, AsOne False] \<Rightarrow> 1/8
+       |  [EmOne True, EchX True, AchX True, AsOne False] \<Rightarrow> 0
+       |  [EmOne False, EchX False, AchX False, AsOne True] \<Rightarrow> 0
+       |  [EmOne True, EchX False, AchX False, AsOne True] \<Rightarrow> 1/8
+       |  [EmOne False, EchX True, AchX False, AsOne True] \<Rightarrow> 1/16
+       |  [EmOne True, EchX True, AchX False, AsOne True] \<Rightarrow> 1/16
+       |  [EmOne False, EchX False, AchX True, AsOne True] \<Rightarrow> 1/16
+       |  [EmOne True, EchX False, AchX True, AsOne True] \<Rightarrow> 1/16
+       |  [EmOne False, EchX True, AchX True, AsOne True] \<Rightarrow> 0
+      |  [EmOne True, EchX True, AchX True, AsOne True] \<Rightarrow> 1/8
+       | _ \<Rightarrow> 0)"
+
+  fixes qkd_ops' :: "event list \<Rightarrow> real"
+  defines qkd_ops'_def: 
+    "qkd_ops' \<equiv>
+    (\<lambda> x. case x of
+          [EmOne False, EchX False, AchX False, AsOne False] \<Rightarrow> 1/8
+       |  [EmOne True, EchX False, AchX False, AsOne False] \<Rightarrow> 0
+       |  [EmOne False, EchX True, AchX False, AsOne False] \<Rightarrow> 1/16
+       |  [EmOne True, EchX True, AchX False, AsOne False] \<Rightarrow> 1/16
+       |  [EmOne False, EchX False, AchX True, AsOne False] \<Rightarrow> 1/16
+       |  [EmOne True, EchX False, AchX True, AsOne False] \<Rightarrow> 1/16
+       |  [EmOne False, EchX True, AchX True, AsOne False] \<Rightarrow> 1/8
+       |  [EmOne True, EchX True, AchX True, AsOne False] \<Rightarrow> 0
+       |  [EmOne False, EchX False, AchX False, AsOne True] \<Rightarrow> 0
+       |  [EmOne True, EchX False, AchX False, AsOne True] \<Rightarrow> 1/8
+       |  [EmOne False, EchX True, AchX False, AsOne True] \<Rightarrow> 1/16
+       |  [EmOne True, EchX True, AchX False, AsOne True] \<Rightarrow> 1/16
+       |  [EmOne False, EchX False, AchX True, AsOne True] \<Rightarrow> 1/16
+       |  [EmOne True, EchX False, AchX True, AsOne True] \<Rightarrow> 1/16
+       |  [EmOne False, EchX True, AchX True, AsOne True] \<Rightarrow> 0
+      |  [EmOne True, EchX True, AchX True, AsOne True] \<Rightarrow> 1/8
+       | _ \<Rightarrow> 0)"
+
+fixes \<A> :: "outcome set set"
+defines A_def:
+   "\<A> \<equiv> {{s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX True, AchX True, AsOne True])},
+          {s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX False, AchX True, AsOne True])},
+          {s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX True, AchX False, AsOne True])},
+          {s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX False, AchX False, AsOne True])},
+          {s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX True, AchX True, AsOne False])},
+          {s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX False, AchX True, AsOne False])},
+          {s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX True, AchX False, AsOne False])},
+          {s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX False, AchX False, AsOne False])}
+}"
+
+fixes J :: "real \<Rightarrow> bool"
+defines J_def: "J \<equiv> (\<lambda> x. x = 3/4)"
+
+begin
+lemma qkd_prob_dist_lem: "pmap qkd_ops \<in> prob_dist_def"
+  apply (rule pmap_ops)
+   apply (unfold qkd_ops_def)
+   apply (rule allI)
+   apply (case_tac x)
+   apply auto
+   apply (case_tac y)
+    apply simp+
+   apply (case_tac list)
+    apply simp+
+apply (case_tac lista)
+    apply simp+
+apply (case_tac listb)
+    apply simp+
+  apply auto
+  sorry
+
+lemma all_eigth: "(Rep_prob_dist(P:: (outcome)prob_dist)
+          ({s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX True, AchX True, AsOne True])})) = 1/8"
+  sorry
+
+definition EmOne' :: "outcome set"
+  where 
+"(EmOne' :: outcome set) \<equiv> {l :: outcome. hd (Rep_outcome l) = (EmOne True :: event)}"
+
+lemma PEmOne': "(Rep_prob_dist(P:: (outcome)prob_dist)) EmOne' = 1/2"
+  sorry
+
+definition AsOne' :: "outcome set"
+  where 
+"(AsOne' :: outcome set) \<equiv> {l :: outcome. (Rep_outcome l) ! 3 = (AsOne True :: event)}"
+
+
+lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
+  sorry
+
+
+
+lemma qkd_Eve_attack: "qkd_Kripke (pmap qkd_ops') \<turnstile>PF\<^sub>J negated_policy"
+  oops
+
+
+
+end
