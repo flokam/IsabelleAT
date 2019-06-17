@@ -274,6 +274,18 @@ locale QKD =
       |  [EmOne True, EchX True, AchX True, AsOne True] \<Rightarrow> 1/8
        | _ \<Rightarrow> 0)"
 
+(* Now lift this basic outcome distribution to protocol and then to protocol lists*)
+  fixes qkd_ops'' :: "protocol \<Rightarrow> real"
+  defines qkd_ops''_def: 
+    "qkd_ops'' P \<equiv> fsum(fmap qkd_ops' (the_prot P))"
+
+
+  fixes qkd_ops''' :: "protocol list \<Rightarrow> real"
+  defines qkd_ops'''_def: 
+    "qkd_ops''' pl \<equiv> fold (\<lambda> x y. (qkd_ops'' x) + y) pl 0"
+
+
+
 fixes \<A> :: "outcome set set"
 defines A_def:
    "\<A> \<equiv> {{s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX True, AchX True, AsOne True])},
@@ -304,6 +316,151 @@ apply (case_tac lista)
     apply simp+
 apply (case_tac listb)
     apply simp+
+   apply auto
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+(*
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
+*)
+   apply auto
+   apply (case_tac ad, simp+)
+    apply (case_tac x6, simp+)
+    apply (case_tac list, simp+)
+    apply auto
+   apply (case_tac ae, simp+)
+      apply auto
+    apply (case_tac x4, simp+)
+     apply auto
+        apply (case_tac lista, simp+)
+     apply auto
+   apply (case_tac ad, simp+)
+         apply auto
+   apply (case_tac x2, simp+)
+      apply auto
+    apply (case_tac list, simp+)
+    apply auto
+   apply (case_tac ad, simp+)
+         apply auto
+      apply (case_tac x1)
+       apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac list)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x1)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x2)
+        apply auto
+       apply (case_tac list)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x1)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac list)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x1)
+     apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac list)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x4)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x2)
+        apply auto
+       apply (case_tac list)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x1)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac list)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x1)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac list)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x2)
+        apply auto
+       apply (case_tac ad)
+        apply auto
+       apply (case_tac x2)
+        apply auto
+       apply (case_tac ae)
+        apply auto
+       apply (case_tac x1)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac ae)
+        apply auto
+       apply (case_tac x1)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+       apply (case_tac lista)
+        apply auto
+(* now = 1 *)
+  apply (simp add: sum_def)
   apply auto
   sorry
 
@@ -328,8 +485,8 @@ lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
 
 
 
-lemma qkd_Eve_attack: "qkd_Kripke (pmap qkd_ops) \<turnstile>PF\<^sub>J negated_policy"
-  oops
+lemma qkd_Eve_attack: "qkd_Kripke ((fsum o (fmap qkd_ops'''))::(protocol list set \<Rightarrow> real)) \<turnstile>PF\<^sub>J negated_policy"
+  sorry
 
 
 
