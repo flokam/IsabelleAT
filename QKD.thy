@@ -438,7 +438,7 @@ defines A_def:
 fixes J :: "real \<Rightarrow> bool"
 defines J_def: "J \<equiv> (\<lambda> x. x = 3/4)"
 
-(* define protocol lists *)
+(* define protocol lists representing Eve's successful attacks *)
 fixes QKD_L QKD_La QKD_Lb QKD_Lc QKD_Ld QKD_Le QKD_Lf QKD_Lg :: "protocol list"
 defines QKD_L_def: "QKD_L \<equiv> [qkd_scenario, QKD1, QKD2, QKD3, QKD4]"
 defines QKD_La_def: "QKD_La \<equiv> [qkd_scenario, QKD1a, QKD2a, QKD3a, QKD4a]"
