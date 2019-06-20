@@ -109,6 +109,12 @@ definition probF :: "[('a :: state)kripke, 'a list set \<Rightarrow> real, real 
 definition fmap :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b set"
   where "fmap f S = Finite_Set.fold (\<lambda> x y. insert (f x) y) {} S"
 
+(* doesn't work since not commutative -- consider 
+   linear sorted domains and then use sorted_list_of_set
+definition fmapL :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b list"
+  where "fmapL f S = Finite_Set.fold (\<lambda> x y. (f x) # y) [] S"
+*)
+
 lemma fmap_lem_map[rule_format]: "finite S \<Longrightarrow> n \<in> S \<longrightarrow> (f n) \<in> (fmap f S)"
   apply (erule_tac F = S in finite_induct)
    apply simp
@@ -150,6 +156,17 @@ lemma fold_one: "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} {n} = {f n}"
   apply (simp add: comp_fun_commute_def)
   by force
 
+(*
+lemma fold_oneL: "Finite_Set.fold (\<lambda> (x::'a). (#)(f x)) [] {n} = [f n]"
+  apply (subgoal_tac "comp_fun_commute (\<lambda> (x::'a). (#)(f x))")
+   apply (drule_tac A = "{}" and z = "[]" in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp+
+  apply (simp add: comp_fun_commute_def)
+fails here  
+by force
+*)
+
+
 lemma fold_one_plus: "Finite_Set.fold (+) (b::real) {a::real} = a + b"
   apply (subgoal_tac "comp_fun_commute (+)")
    apply (drule_tac A = "{}" in Finite_Set.comp_fun_commute.fold_insert)
@@ -171,10 +188,22 @@ lemma fold_two_plus: "a \<noteq> c \<Longrightarrow> Finite_Set.fold (+) (b::rea
   apply (simp add: comp_def)
 by force
 
+lemma fold_three_plus: "a \<noteq> c \<Longrightarrow> a \<noteq> b \<Longrightarrow> b \<noteq> c \<Longrightarrow> Finite_Set.fold (+) (d::real) {a::real, b, c} = a + b + c + d"
+  apply (subgoal_tac "comp_fun_commute (+)")
+   apply (drule_tac A = "{b, c}" and x = a and z = d in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp+
+   apply (simp add: fold_two_plus)
+  apply (simp add: comp_fun_commute_def)
+  apply (simp add: comp_def)
+by force
 
 lemma fmap_lem_one: "fmap f {a} = {f a}"
-by (simp add: fmap_def fold_one)
+  by (simp add: fmap_def fold_one)
 
+(*
+lemma fmapL_lem_one: "fmapL f {a} = [f a]"
+  by (simp add: fmapL_def fold_one)
+*)
 
 lemma fmap_lem[rule_format]: "finite S \<Longrightarrow> \<forall> n. (fmap f (insert n S)) = (insert (f n) (fmap f S))"
   thm finite.induct
@@ -359,10 +388,27 @@ definition fmap :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b set"
 definition fsum :: "real set \<Rightarrow>  real"
   where "fsum S = Finite_Set.fold (\<lambda> x y. x + y) 0 S"
 
+definition fsumap :: "['a \<Rightarrow> real, 'a set] \<Rightarrow> real"
+  where "fsumap f S = Finite_Set.fold (\<lambda> x y. (f x) + y) (0 :: real) S"
+
+lemma fsumap_fold_one: "Finite_Set.fold (\<lambda>x y. (f x) + y) (0 :: real) {n} = f n"
+  thm Finite_Set.comp_fun_commute.fold_insert
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x. (+)(f x))")
+   apply (drule_tac A = "{}" and z = 0 and x = n in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp+
+  apply (simp add: comp_fun_commute_def)
+  by force
+
+lemma fsumap_lem[rule_format]: "finite S \<Longrightarrow> \<forall> n. (fsumap f (insert n S)) = (f n) + (fsumap f S)"
+  sorry
+
 primrec map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a list \<Rightarrow> 'b list"
   where
    map_empty: "map f [] = []"
 |  map_step: "map f (a # l) = (f a) #(map f l)"
+
+definition lsum :: "real list \<Rightarrow> real"
+  where "lsum rl \<equiv>  fold (\<lambda> x y. x + y) rl 0"
 
 thm fold.simps
 end

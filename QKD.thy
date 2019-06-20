@@ -635,15 +635,16 @@ lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
 lemma qkd_eval_step1: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
   sorry
 
-lemma qkd_eval_step2a: "(fsum \<circ> fmap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} = 3/4"
-proof (unfold comp_def)
-  show "fsum (fmap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}) =
+lemma qkd_eval_step2a: "(fsumap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} = 3/4"
+proof -
+  show "fsumap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} =
     (3::real) / (4::real)"
   proof -
-    have a: "fmap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} =
-             {qkd_ops''' QKD_L, qkd_ops''' QKD_La, qkd_ops''' QKD_Lb, qkd_ops''' QKD_Lc, 
-              qkd_ops''' QKD_Ld, qkd_ops''' QKD_Le, qkd_ops''' QKD_Lf, qkd_ops''' QKD_Lg}"
-      by (simp add: fmap_lem fmap_lem_one)
+    have a: "fsumap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} =
+             qkd_ops''' QKD_L + qkd_ops''' QKD_La + qkd_ops''' QKD_Lb + qkd_ops''' QKD_Lc + 
+              qkd_ops''' QKD_Ld + qkd_ops''' QKD_Le + qkd_ops''' QKD_Lf + qkd_ops''' QKD_Lg"
+      apply (simp add: fsumap_fold_one fsumap_lem)
+      by (simp add: fsumap_def)
     moreover have b1: "qkd_ops''' QKD_L = 1/8" 
       apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_L_def fsum_def the_prot_def
              QKD1_def QKD2_def QKD3_def QKD4_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
@@ -676,11 +677,11 @@ proof (unfold comp_def)
             apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_Lg_def fsum_def the_prot_def
              QKD1g_def QKD2g_def QKD3g_def QKD4g_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
       by (simp add: fold_one_plus fold_two_plus)
-    moreover have c: "fsum {qkd_ops''' QKD_L, qkd_ops''' QKD_La, qkd_ops''' QKD_Lb, qkd_ops''' QKD_Lc, 
-              qkd_ops''' QKD_Ld, qkd_ops''' QKD_Le, qkd_ops''' QKD_Lf, qkd_ops''' QKD_Lg} =
+    moreover have c: "qkd_ops''' QKD_L + qkd_ops''' QKD_La + qkd_ops''' QKD_Lb + qkd_ops''' QKD_Lc +
+              qkd_ops''' QKD_Ld + qkd_ops''' QKD_Le + qkd_ops''' QKD_Lf + qkd_ops''' QKD_Lg =
                       1/8 + 1/16 + 1/16 + 1/16 + 1/16 + 1/8 + 1/8 + 1/8"
-      sorry
-    ultimately show "fsum (fmap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}) =
+      by (simp add: lsum_def b1 b2 b3 b4 b5 b6 b7 b8) 
+    ultimately show "fsumap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} =
     (3::real) / (4::real)"
       apply (subst a)
       apply (subst c)
@@ -689,21 +690,21 @@ proof (unfold comp_def)
 qed
 
 
-lemma qkd_eval_step2: "J ((fsum \<circ> fmap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg})"
+lemma qkd_eval_step2: "J (fsumap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg})"
 proof (subst qkd_eval_step2a)
   show "J ((3::real) / (4::real))" by (simp add: J_def)
 qed
 
-lemma qkd_Eve_attack: "qkd_Kripke ((fsum o (fmap qkd_ops'''))::(protocol list set \<Rightarrow> real)) \<turnstile>PF\<^sub>J negated_policy"
+lemma qkd_Eve_attack: "qkd_Kripke ((fsumap qkd_ops''')::(protocol list set \<Rightarrow> real)) \<turnstile>PF\<^sub>J negated_policy"
 proof (unfold probF_def)
-  show "J ((fsum \<circ> fmap qkd_ops''') (qkd_Kripke \<turnstile>F negated_policy))"
+  show "J ((fsumap qkd_ops''') (qkd_Kripke \<turnstile>F negated_policy))"
   proof -
     have a: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
       by (rule qkd_eval_step1)
     moreover have b:
-    "J ((fsum \<circ> fmap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg})"
+    "J ((fsumap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg})"
       by (rule qkd_eval_step2)
-    ultimately show "J ((fsum \<circ> fmap qkd_ops''') (qkd_Kripke \<turnstile>F negated_policy))" 
+    ultimately show "J ((fsumap qkd_ops''') (qkd_Kripke \<turnstile>F negated_policy))" 
       by (subst a)
   qed
 qed
