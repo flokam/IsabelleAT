@@ -148,7 +148,29 @@ lemma fold_one: "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} {n} = {f n}"
    apply (drule_tac A = "{}" in Finite_Set.comp_fun_commute.fold_insert)
      apply simp+
   apply (simp add: comp_fun_commute_def)
+  by force
+
+lemma fold_one_plus: "Finite_Set.fold (+) (b::real) {a::real} = a + b"
+  apply (subgoal_tac "comp_fun_commute (+)")
+   apply (drule_tac A = "{}" in Finite_Set.comp_fun_commute.fold_insert)
+  apply simp+
+  apply (simp add: comp_fun_commute_def)
+  apply (simp add: comp_def)
 by force
+
+lemma fold_two_plus: "a \<noteq> c \<Longrightarrow> Finite_Set.fold (+) (b::real) {a::real, c} = a + b + c"
+  apply (subgoal_tac "comp_fun_commute (+)")
+   apply (drule_tac A = "{ c}" and x = a in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp+
+   apply (simp add: fold_one_plus)
+   apply (subgoal_tac "a + (c + b) = a + b + c")
+    apply (erule ssubst)
+    apply assumption
+  apply simp
+  apply (simp add: comp_fun_commute_def)
+  apply (simp add: comp_def)
+by force
+
 
 lemma fmap_lem_one: "fmap f {a} = {f a}"
 by (simp add: fmap_def fold_one)
@@ -337,4 +359,10 @@ definition fmap :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b set"
 definition fsum :: "real set \<Rightarrow>  real"
   where "fsum S = Finite_Set.fold (\<lambda> x y. x + y) 0 S"
 
+primrec map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a list \<Rightarrow> 'b list"
+  where
+   map_empty: "map f [] = []"
+|  map_step: "map f (a # l) = (f a) #(map f l)"
+
+thm fold.simps
 end

@@ -34,9 +34,13 @@ where
                 evs \<rightarrow>\<^sub>Q insertp (EmOne b # l) evs"
 | EintrcptNOK: "l \<in> evs \<Longrightarrow>  hd l = EchX b \<Longrightarrow> hd(tl l) = AchX b' \<Longrightarrow>
                 b \<noteq> b' \<Longrightarrow> evs \<rightarrow>\<^sub>Q insertp (EmOne b'' # l) evs"
+(* Iteration only makes sense if we insert numberings to the bits. Otherwise
+   there would be repititions of the same bit which defies the purpose.
+   Numbers can easily be introduced by having an additinal parameter  "i: nat"
+   to index the bits.
 | B_E_iterate: "l \<in> evs \<Longrightarrow> hd l = BmOne b \<or> hd l = EmOne b \<Longrightarrow>
                 evs \<rightarrow>\<^sub>Q insertp [AsOne b] evs"
-
+*)
 instantiation "protocol" :: state
 begin
 
@@ -71,6 +75,12 @@ definition qkd_Kripke
   where
 "qkd_Kripke \<equiv> Kripke {I. qkd_scenario  \<rightarrow>\<^sub>Q* I} Iqkd"
 
+(* Eve has success because she chooses the same scheme as Alice 
+  "": [EmOne True, EchX True, AchX True, AsOne True]
+   e: [EmOne False, EchX True, AchX True, AsOne False]
+   f: [EmOne True, EchX False, AchX False, AsOne True]
+   g: [EmOne False, EchX False, AchX False, AsOne False]*)
+
 definition QKD1
   where
 "QKD1 \<equiv> insertp [AsOne True] qkd_scenario"
@@ -87,7 +97,134 @@ definition QKD4
   where
 "QKD4 \<equiv> insertp [EmOne True, EchX True, AchX True, AsOne True] QKD3"
 
+(* e *)
+definition QKD1e
+  where
+"QKD1e \<equiv> insertp [AsOne False] qkd_scenario"
 
+definition QKD2e
+  where
+"QKD2e \<equiv> insertp [AchX True, AsOne False] QKD1e"
+
+definition QKD3e
+  where
+"QKD3e \<equiv> insertp [EchX True, AchX True, AsOne False] QKD2e"
+
+definition QKD4e
+  where
+"QKD4e \<equiv> insertp [EmOne False, EchX True, AchX True, AsOne False] QKD3e"
+
+(* f *)
+definition QKD1f
+  where
+"QKD1f \<equiv> insertp [AsOne True] qkd_scenario"
+
+definition QKD2f
+  where
+"QKD2f \<equiv> insertp [AchX False, AsOne True] QKD1f"
+
+definition QKD3f
+  where
+"QKD3f \<equiv> insertp [EchX False, AchX False, AsOne True] QKD2f"
+
+definition QKD4f
+  where
+"QKD4f \<equiv> insertp [EmOne True, EchX False, AchX False, AsOne True] QKD3f"
+
+(* g *)
+definition QKD1g
+  where
+"QKD1g \<equiv> insertp [AsOne False] qkd_scenario"
+
+definition QKD2g
+  where
+"QKD2g \<equiv> insertp [AchX False, AsOne False] QKD1g"
+
+definition QKD3g
+  where
+"QKD3g \<equiv> insertp [EchX False, AchX False, AsOne False] QKD2g"
+
+definition QKD4g
+  where
+"QKD4g \<equiv> insertp [EmOne False, EchX False, AchX False, AsOne False] QKD3g"
+
+
+(* E succeeds despite wrong scheme: 
+   a: [EmOne True, EchX True, AchX False, AsOne True] and
+   b: [EmOne False, EchX True, AchX False, AsOne False]    
+   c: [EmOne True, EchX False, AchX True, AsOne True] and
+   d: [EmOne False, EchX False, AchX True, AsOne False]   *)
+
+definition QKD1a
+  where
+"QKD1a \<equiv> insertp [AsOne True] qkd_scenario"
+
+definition QKD2a
+  where
+"QKD2a \<equiv> insertp [AchX False, AsOne True] QKD1a"
+
+definition QKD3a
+  where
+"QKD3a \<equiv> insertp [EchX True, AchX False, AsOne True] QKD2a"
+
+definition QKD4a
+  where
+"QKD4a \<equiv> insertp [EmOne True, EchX True, AchX False, AsOne True] QKD3a"
+
+(* b *)
+definition QKD1b
+  where
+"QKD1b \<equiv> insertp [AsOne False] qkd_scenario"
+
+definition QKD2b
+  where
+"QKD2b \<equiv> insertp [AchX False, AsOne False] QKD1b"
+
+definition QKD3b
+  where
+"QKD3b \<equiv> insertp [EchX True, AchX False, AsOne False] QKD2b"
+
+definition QKD4b
+  where
+"QKD4b \<equiv> insertp [EmOne False, EchX True, AchX False, AsOne False] QKD3b"
+
+
+(* c *)
+definition QKD1c
+  where
+"QKD1c \<equiv> insertp [AsOne True] qkd_scenario"
+
+definition QKD2c
+  where
+"QKD2c \<equiv> insertp [AchX True, AsOne True] QKD1c"
+
+definition QKD3c
+  where
+"QKD3c \<equiv> insertp [EchX False, AchX True, AsOne True] QKD2c"
+
+definition QKD4c
+  where
+"QKD4c \<equiv> insertp [EmOne True, EchX False, AchX True, AsOne True] QKD3c"
+
+(* d *)
+definition QKD1d
+  where
+"QKD1d \<equiv> insertp [AsOne False] qkd_scenario"
+
+definition QKD2d
+  where
+"QKD2d \<equiv> insertp [AchX True, AsOne False] QKD1d"
+
+definition QKD3d
+  where
+"QKD3d \<equiv> insertp [EchX False, AchX True, AsOne False] QKD2d"
+
+definition QKD4d
+  where
+"QKD4d \<equiv> insertp [EmOne False, EchX False, AchX True, AsOne False] QKD3d"
+
+
+(* step relation for QKD *)
 lemma step0: "qkd_scenario \<rightarrow>\<^sub>Q QKD1"
 proof (unfold qkd_scenario_def QKD1_def)
   show "Protocol {[]}  \<rightarrow>\<^sub>Q insertp [AsOne True] (Protocol {[]})"
@@ -301,6 +438,18 @@ defines A_def:
 fixes J :: "real \<Rightarrow> bool"
 defines J_def: "J \<equiv> (\<lambda> x. x = 3/4)"
 
+(* define protocol lists *)
+fixes QKD_L QKD_La QKD_Lb QKD_Lc QKD_Ld QKD_Le QKD_Lf QKD_Lg :: "protocol list"
+defines QKD_L_def: "QKD_L \<equiv> [qkd_scenario, QKD1, QKD2, QKD3, QKD4]"
+defines QKD_La_def: "QKD_La \<equiv> [qkd_scenario, QKD1a, QKD2a, QKD3a, QKD4a]"
+defines QKD_Lb_def: "QKD_Lb \<equiv> [qkd_scenario, QKD1b, QKD2b, QKD3b, QKD4b]"
+defines QKD_Lc_def: "QKD_Lc \<equiv> [qkd_scenario, QKD1c, QKD2c, QKD3c, QKD4c]"
+defines QKD_Ld_def: "QKD_Ld \<equiv> [qkd_scenario, QKD1d, QKD2d, QKD3d, QKD4d]"
+defines QKD_Le_def: "QKD_Le \<equiv> [qkd_scenario, QKD1e, QKD2e, QKD3e, QKD4e]"
+defines QKD_Lf_def: "QKD_Lf \<equiv> [qkd_scenario, QKD1f, QKD2f, QKD3f, QKD4f]"
+defines QKD_Lg_def: "QKD_Lg \<equiv> [qkd_scenario, QKD1g, QKD2g, QKD3g, QKD4g]"
+
+
 begin
 lemma qkd_prob_dist_lem: "pmap qkd_ops \<in> prob_dist_def"
   apply (rule pmap_ops)
@@ -483,11 +632,81 @@ definition AsOne' :: "outcome set"
 lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
   sorry
 
-
-
-lemma qkd_Eve_attack: "qkd_Kripke ((fsum o (fmap qkd_ops'''))::(protocol list set \<Rightarrow> real)) \<turnstile>PF\<^sub>J negated_policy"
+lemma qkd_eval_step1: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
   sorry
 
+lemma qkd_eval_step2a: "(fsum \<circ> fmap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} = 3/4"
+proof (unfold comp_def)
+  show "fsum (fmap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}) =
+    (3::real) / (4::real)"
+  proof -
+    have a: "fmap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} =
+             {qkd_ops''' QKD_L, qkd_ops''' QKD_La, qkd_ops''' QKD_Lb, qkd_ops''' QKD_Lc, 
+              qkd_ops''' QKD_Ld, qkd_ops''' QKD_Le, qkd_ops''' QKD_Lf, qkd_ops''' QKD_Lg}"
+      by (simp add: fmap_lem fmap_lem_one)
+    moreover have b1: "qkd_ops''' QKD_L = 1/8" 
+      apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_L_def fsum_def the_prot_def
+             QKD1_def QKD2_def QKD3_def QKD4_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
+      by (simp add: fold_one_plus fold_two_plus)
+    moreover have b2: "qkd_ops''' QKD_La = 1/16" 
+      apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_La_def fsum_def the_prot_def
+             QKD1a_def QKD2a_def QKD3a_def QKD4a_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
+      by (simp add: fold_one_plus fold_two_plus)
+    moreover have b3: "qkd_ops''' QKD_Lb = 1/16" 
+       apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_Lb_def fsum_def the_prot_def
+             QKD1b_def QKD2b_def QKD3b_def QKD4b_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
+      by (simp add: fold_one_plus fold_two_plus)
+    moreover have b4: "qkd_ops''' QKD_Lc = 1/16" 
+      apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_Lc_def fsum_def the_prot_def
+             QKD1c_def QKD2c_def QKD3c_def QKD4c_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
+      by (simp add: fold_one_plus fold_two_plus)
+    moreover have b5: "qkd_ops''' QKD_Ld = 1/16" 
+        apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_Ld_def fsum_def the_prot_def
+             QKD1d_def QKD2d_def QKD3d_def QKD4d_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
+      by (simp add: fold_one_plus fold_two_plus)
+    moreover have b6: "qkd_ops''' QKD_Le = 1/8"  
+        apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_Le_def fsum_def the_prot_def
+             QKD1e_def QKD2e_def QKD3e_def QKD4e_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
+      by (simp add: fold_one_plus fold_two_plus)
+    moreover have b7: "qkd_ops''' QKD_Lf = 1/8" 
+          apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_Lf_def fsum_def the_prot_def
+             QKD1f_def QKD2f_def QKD3f_def QKD4f_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
+      by (simp add: fold_one_plus fold_two_plus)
+    moreover have b8: "qkd_ops''' QKD_Lg = 1/8" 
+            apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_Lg_def fsum_def the_prot_def
+             QKD1g_def QKD2g_def QKD3g_def QKD4g_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
+      by (simp add: fold_one_plus fold_two_plus)
+    moreover have c: "fsum {qkd_ops''' QKD_L, qkd_ops''' QKD_La, qkd_ops''' QKD_Lb, qkd_ops''' QKD_Lc, 
+              qkd_ops''' QKD_Ld, qkd_ops''' QKD_Le, qkd_ops''' QKD_Lf, qkd_ops''' QKD_Lg} =
+                      1/8 + 1/16 + 1/16 + 1/16 + 1/16 + 1/8 + 1/8 + 1/8"
+      sorry
+    ultimately show "fsum (fmap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}) =
+    (3::real) / (4::real)"
+      apply (subst a)
+      apply (subst c)
+      by arith
+  qed
+qed
+
+
+lemma qkd_eval_step2: "J ((fsum \<circ> fmap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg})"
+proof (subst qkd_eval_step2a)
+  show "J ((3::real) / (4::real))" by (simp add: J_def)
+qed
+
+lemma qkd_Eve_attack: "qkd_Kripke ((fsum o (fmap qkd_ops'''))::(protocol list set \<Rightarrow> real)) \<turnstile>PF\<^sub>J negated_policy"
+proof (unfold probF_def)
+  show "J ((fsum \<circ> fmap qkd_ops''') (qkd_Kripke \<turnstile>F negated_policy))"
+  proof -
+    have a: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
+      by (rule qkd_eval_step1)
+    moreover have b:
+    "J ((fsum \<circ> fmap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg})"
+      by (rule qkd_eval_step2)
+    ultimately show "J ((fsum \<circ> fmap qkd_ops''') (qkd_Kripke \<turnstile>F negated_policy))" 
+      by (subst a)
+  qed
+qed
 
 
 end
