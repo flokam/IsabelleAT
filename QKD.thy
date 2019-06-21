@@ -236,6 +236,12 @@ proof (unfold qkd_scenario_def QKD1_def)
 by (simp add: prot_mem_def)
 qed
 
+lemma step0R: "qkd_scenario \<rightarrow>\<^sub>Q* QKD1"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(qkd_scenario, QKD1) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step0, auto)
+qed
+
 lemma step1: "QKD1 \<rightarrow>\<^sub>Q QKD2"
 proof (unfold QKD1_def QKD2_def, rule_tac l = "[AsOne True]" and b = True in AchosesPolX) 
   show "[AsOne True] \<in>  insertp [AsOne True] qkd_scenario" by (simp add: insertp_def prot_mem_def)
@@ -269,6 +275,12 @@ proof (unfold QKD3_def QKD4_def, rule_tac l = "[EchX True, AchX True, AsOne True
     by (simp add: insertp_def prot_mem_def)
 next show "hd [EchX True, AchX True, AsOne True] = EchX True" by simp
 next show "hd (tl [EchX True, AchX True, AsOne True]) = AchX True" by simp
+qed
+
+lemma step3R: "QKD3 \<rightarrow>\<^sub>Q* QKD4"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD3, QKD4) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step3, auto)
 qed
 
 (* QKD4 violates global policy *)
@@ -633,8 +645,76 @@ lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
   sorry
 
 lemma qkd_eval_step1: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
-  sorry
+proof (unfold eventually_def F_def, rule equalityI) 
+  show "{l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
+    {l::protocol list. \<forall>i<length l. l ! i \<rightarrow>\<^sub>i l ! Suc i \<and> last l \<in> negated_policy}
+    \<subseteq> {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
+ sorry
+next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
+    \<subseteq> {l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
+       {l::protocol list. \<forall>i<length l. l ! i \<rightarrow>\<^sub>i l ! Suc i \<and> last l \<in> negated_policy}"
+    apply (rule subsetI)
+    apply simp
+  proof -
+    have L: "set QKD_L \<subseteq> states qkd_Kripke \<and>
+       hd QKD_L \<in> init qkd_Kripke \<and>
+       (\<forall>i<length QKD_L. QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i \<and> last QKD_L \<in> negated_policy)"
+      apply (rule conjI)
+       apply (simp add: QKD_L_def qkd_Kripke_def qkd_scenario_def)
+       apply (rule conjI)
+        apply (simp add:  state_transition_qkd_refl_def)
+      apply (rule conjI)
+        apply (fold qkd_scenario_def, rule step0R)
+       apply (rule conjI)
+      apply (insert step0R step1R, simp add: state_transition_qkd_refl_def)
+       apply (rule conjI)
+      apply (insert step2R, simp add: state_transition_qkd_refl_def)
+      apply (insert step3R, simp add: state_transition_qkd_refl_def)
 
+      sorry
+    moreover have La: "set QKD_La \<subseteq> states qkd_Kripke \<and>
+       hd QKD_La \<in> init qkd_Kripke \<and> 
+       (\<forall>i<length QKD_La. QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i \<and> last QKD_La \<in> negated_policy)"
+      sorry
+    moreover have Lb: "set QKD_Lb \<subseteq> states qkd_Kripke \<and>
+       hd QKD_Lb \<in> init qkd_Kripke \<and> 
+       (\<forall>i<length QKD_Lb. QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i \<and> last QKD_Lb \<in> negated_policy)"
+      sorry
+    moreover have Lc: "set QKD_Lc \<subseteq> states qkd_Kripke \<and>
+       hd QKD_Lc \<in> init qkd_Kripke \<and> 
+       (\<forall>i<length QKD_Lc. QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i \<and> last QKD_Lc \<in> negated_policy)"
+      sorry
+    moreover have Ld: "set QKD_Ld \<subseteq> states qkd_Kripke \<and>
+       hd QKD_Ld \<in> init qkd_Kripke \<and> 
+       (\<forall>i<length QKD_Ld. QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i \<and> last QKD_Ld \<in> negated_policy)"
+      sorry
+    moreover have Le: "set QKD_Le \<subseteq> states qkd_Kripke \<and>
+       hd QKD_Le \<in> init qkd_Kripke \<and> 
+       (\<forall>i<length QKD_Le. QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i \<and> last QKD_Le \<in> negated_policy)"
+      sorry
+    moreover have Lf: "set QKD_Lf \<subseteq> states qkd_Kripke \<and>
+       hd QKD_Lf \<in> init qkd_Kripke \<and> 
+       (\<forall>i<length QKD_Lf. QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i \<and> last QKD_Lf \<in> negated_policy)"
+      sorry
+    moreover have Lg: "set QKD_Lg \<subseteq> states qkd_Kripke \<and>
+       hd QKD_Lg \<in> init qkd_Kripke \<and> 
+       (\<forall>i<length QKD_Lg. QKD_Lg ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i \<and> last QKD_Lg \<in> negated_policy)"
+      sorry
+    fix x
+    show "x = QKD_L \<or>
+       x = QKD_La \<or> x = QKD_Lb \<or> x = QKD_Lc \<or> x = QKD_Ld \<or> x = QKD_Le \<or> x = QKD_Lf \<or> x = QKD_Lg \<Longrightarrow>
+       set x \<subseteq> states qkd_Kripke \<and>
+       hd x \<in> init qkd_Kripke \<and> (\<forall>i<length x. x ! i \<rightarrow>\<^sub>i x ! Suc i \<and> last x \<in> negated_policy)"
+      apply (erule disjE, erule ssubst, rule L)
+        apply (erule disjE, erule ssubst, rule La)
+      apply (erule disjE, erule ssubst, rule Lb)
+      apply (erule disjE, erule ssubst, rule Lc)
+      apply (erule disjE, erule ssubst, rule Ld)
+      apply (erule disjE, erule ssubst, rule Le)
+      apply (erule disjE, erule ssubst, rule Lf)
+      by (erule ssubst, rule Lg)
+  qed
+qed
 
 (* Proof for unequality are unfortunately better done as separate lemmas
    to not clutter the presentation of the actual PCTL calculation below. *)
