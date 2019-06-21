@@ -635,6 +635,238 @@ lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
 lemma qkd_eval_step1: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
   sorry
 
+
+(* Proof for unequality are unfortunately better done as separate lemmas
+   to not clutter the presentation of the actual PCTL calculation below. *)
+(* L not equal to ... *)
+lemma insert_neq: "a \<noteq> b \<Longrightarrow> a \<notin> A \<Longrightarrow> b \<notin> A \<Longrightarrow> insert a A \<noteq> insert b A"
+by blast
+
+lemma L_neq_La: "QKD_L \<noteq> QKD_La"
+apply (simp add: QKD_L_def QKD_La_def QKD4_def QKD4a_def QKD3_def QKD3a_def QKD2_def QKD2a_def
+                    QKD1_def QKD1a_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma L_neq_Lb: "QKD_L \<noteq> QKD_Lb"
+apply (simp add: QKD_L_def QKD_Lb_def QKD4_def QKD4b_def QKD3_def QKD3b_def QKD2_def QKD2b_def
+                    QKD1_def QKD1b_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma L_neq_Lc: "QKD_L \<noteq> QKD_Lc"
+apply (simp add: QKD_L_def QKD_Lc_def QKD4_def QKD4c_def QKD3_def QKD3c_def QKD2_def QKD2c_def
+                    QKD1_def QKD1c_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma L_neq_Ld: "QKD_L \<noteq> QKD_Ld"
+apply (simp add: QKD_L_def QKD_Ld_def QKD4_def QKD4d_def QKD3_def QKD3d_def QKD2_def QKD2d_def
+                    QKD1_def QKD1d_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma L_neq_Le: "QKD_L \<noteq> QKD_Le"
+apply (simp add: QKD_L_def QKD_Le_def QKD4_def QKD4e_def QKD3_def QKD3e_def QKD2_def QKD2e_def
+                    QKD1_def QKD1e_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma L_neq_Lf: "QKD_L \<noteq> QKD_Lf"
+apply (simp add: QKD_L_def QKD_Lf_def QKD4_def QKD4f_def QKD3_def QKD3f_def QKD2_def QKD2f_def
+                    QKD1_def QKD1f_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma L_neq_Lg: "QKD_L \<noteq> QKD_Lg"
+apply (simp add: QKD_L_def QKD_Lg_def QKD4_def QKD4g_def QKD3_def QKD3g_def QKD2_def QKD2g_def
+                    QKD1_def QKD1g_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+(* La *)
+lemma La_neq_Lb: "QKD_La \<noteq> QKD_Lb"
+apply (simp add: QKD_La_def QKD_Lb_def QKD4a_def QKD4b_def QKD3a_def QKD3b_def QKD2a_def QKD2b_def
+                     QKD1a_def QKD1b_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma La_neq_Lc: "QKD_La \<noteq> QKD_Lc"
+apply (simp add: QKD_La_def QKD_Lc_def QKD4a_def QKD4c_def QKD3a_def QKD3c_def QKD2a_def QKD2c_def
+                    QKD1a_def QKD1c_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma La_neq_Ld: "QKD_La \<noteq> QKD_Ld"
+apply (simp add: QKD_La_def QKD_Ld_def QKD4a_def QKD4d_def QKD3a_def QKD3d_def QKD2a_def QKD2d_def
+                    QKD1a_def QKD1d_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma La_neq_Le: "QKD_La \<noteq> QKD_Le"
+apply (simp add: QKD_La_def QKD_Le_def QKD4a_def QKD4e_def QKD3a_def QKD3e_def QKD2a_def QKD2e_def
+                    QKD1a_def QKD1e_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma La_neq_Lf: "QKD_La \<noteq> QKD_Lf"
+apply (simp add: QKD_La_def QKD_Lf_def QKD4a_def QKD4f_def QKD3a_def QKD3f_def QKD2a_def QKD2f_def
+                    QKD1a_def QKD1f_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma La_neq_Lg: "QKD_La \<noteq> QKD_Lg"
+apply (simp add: QKD_La_def QKD_Lg_def QKD4a_def QKD4g_def QKD3a_def QKD3g_def QKD2a_def QKD2g_def
+                    QKD1a_def QKD1g_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+(* Lb *)
+
+lemma Lb_neq_Lc: "QKD_Lb \<noteq> QKD_Lc"
+apply (simp add: QKD_Lb_def QKD_Lc_def QKD4b_def QKD4c_def QKD3b_def QKD3c_def QKD2b_def QKD2c_def
+                    QKD1b_def QKD1c_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma Lb_neq_Ld: "QKD_Lb \<noteq> QKD_Ld"
+apply (simp add: QKD_Lb_def QKD_Ld_def QKD4b_def QKD4d_def QKD3b_def QKD3d_def QKD2_def QKD2d_def
+                    QKD1b_def QKD1d_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma Lb_neq_Le: "QKD_Lb \<noteq> QKD_Le"
+apply (simp add: QKD_Lb_def QKD_Le_def QKD4b_def QKD4e_def QKD3b_def QKD3e_def QKD2b_def QKD2e_def
+                    QKD1b_def QKD1e_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma Lb_neq_Lf: "QKD_Lb \<noteq> QKD_Lf"
+apply (simp add: QKD_Lb_def QKD_Lf_def QKD4b_def QKD4f_def QKD3b_def QKD3f_def QKD2b_def QKD2f_def
+                    QKD1b_def QKD1f_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma Lb_neq_Lg: "QKD_Lb \<noteq> QKD_Lg"
+apply (simp add: QKD_Lb_def QKD_Lg_def QKD4b_def QKD4g_def QKD3b_def QKD3g_def QKD2b_def QKD2g_def
+                    QKD1b_def QKD1g_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+(* Lc *)
+
+lemma Lc_neq_Ld: "QKD_Lc \<noteq> QKD_Ld"
+apply (simp add: QKD_Lc_def QKD_Ld_def QKD4c_def QKD4d_def QKD3c_def QKD3d_def QKD2c_def QKD2d_def
+                    QKD1c_def QKD1d_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma Lc_neq_Le: "QKD_Lc \<noteq> QKD_Le"
+apply (simp add: QKD_Lc_def QKD_Le_def QKD4c_def QKD4e_def QKD3c_def QKD3e_def QKD2c_def QKD2e_def
+                    QKD1c_def QKD1e_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma Lc_neq_Lf: "QKD_Lc \<noteq> QKD_Lf"
+apply (simp add: QKD_Lc_def QKD_Lf_def QKD4c_def QKD4f_def QKD3c_def QKD3f_def QKD2c_def QKD2f_def
+                    QKD1c_def QKD1f_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma Lc_neq_Lg: "QKD_Lc \<noteq> QKD_Lg"
+apply (simp add: QKD_Lc_def QKD_Lg_def QKD4c_def QKD4g_def QKD3c_def QKD3g_def QKD2c_def QKD2g_def
+                    QKD1c_def QKD1g_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+(* Ld *)
+lemma Ld_neq_Le: "QKD_Ld \<noteq> QKD_Le"
+apply (simp add: QKD_Ld_def QKD_Le_def QKD4d_def QKD4e_def QKD3d_def QKD3e_def QKD2d_def QKD2e_def
+                    QKD1d_def QKD1e_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma Ld_neq_Lf: "QKD_Ld \<noteq> QKD_Lf"
+apply (simp add: QKD_Ld_def QKD_Lf_def QKD4d_def QKD4f_def QKD3d_def QKD3f_def QKD2d_def QKD2f_def
+                    QKD1d_def QKD1f_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma Ld_neq_Lg: "QKD_Ld \<noteq> QKD_Lg"
+apply (simp add: QKD_Ld_def QKD_Lg_def QKD4d_def QKD4g_def QKD3d_def QKD3g_def QKD2d_def QKD2g_def
+                    QKD1d_def QKD1g_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+(* Le *)
+
+lemma Le_neq_Lf: "QKD_Le \<noteq> QKD_Lf"
+apply (simp add: QKD_Le_def QKD_Lf_def QKD4e_def QKD4f_def QKD3e_def QKD3f_def QKD2e_def QKD2f_def
+                    QKD1e_def QKD1f_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+lemma Le_neq_Lg: "QKD_Le \<noteq> QKD_Lg"
+apply (simp add: QKD_Le_def QKD_Lg_def QKD4e_def QKD4g_def QKD3e_def QKD3g_def QKD2e_def QKD2g_def
+                    QKD1e_def QKD1g_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+(* Lf *)
+lemma Lf_neq_Lg: "QKD_Lf \<noteq> QKD_Lg"
+apply (simp add: QKD_Lf_def QKD_Lg_def QKD4f_def QKD4g_def QKD3f_def QKD3g_def QKD2f_def QKD2g_def
+                    QKD1f_def QKD1g_def qkd_scenario_def insertp_def the_prot_def)
+  apply (rule impI)+
+  apply (rule insert_neq)
+by simp+
+
+
+lemma Lf_nin_Lg: "QKD_Lf \<notin> {QKD_Lg}"
+by (simp add: Lf_neq_Lg)
+
+(* main QKD result: PCTL formula that shows that changes for Eve to get the tight key are 3/4 *)
 lemma qkd_eval_step2a: "(fsumap qkd_ops''') {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} = 3/4"
 proof -
   show "fsumap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} =
@@ -643,9 +875,32 @@ proof -
     have a: "fsumap qkd_ops''' {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg} =
              qkd_ops''' QKD_L + qkd_ops''' QKD_La + qkd_ops''' QKD_Lb + qkd_ops''' QKD_Lc + 
               qkd_ops''' QKD_Ld + qkd_ops''' QKD_Le + qkd_ops''' QKD_Lf + qkd_ops''' QKD_Lg"
-      apply (simp add: fsumap_fold_one fsumap_lem)
-      by (simp add: fsumap_def)
-    moreover have b1: "qkd_ops''' QKD_L = 1/8" 
+      apply (subgoal_tac "QKD_L \<notin> {QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}") 
+       apply (simp add: fsumap_fold_one fsumap_lem)
+      apply (subgoal_tac "QKD_La \<notin> {QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}") 
+        apply (simp add: fsumap_fold_one fsumap_lem)
+        apply (subgoal_tac "QKD_Lb \<notin> {QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}") 
+         apply (simp add: fsumap_fold_one fsumap_lem)
+        apply (subgoal_tac "QKD_Lc \<notin> {QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}") 
+          apply (simp add: fsumap_fold_one fsumap_lem)
+          apply (subgoal_tac "QKD_Lc \<notin> {QKD_Le, QKD_Lf, QKD_Lg}") 
+           apply (simp add: fsumap_fold_one fsumap_lem)
+            apply (subgoal_tac "QKD_Ld \<notin> {QKD_Le, QKD_Lf, QKD_Lg}") 
+            apply (simp add: fsumap_fold_one fsumap_lem)
+            apply (subgoal_tac "QKD_Le \<notin> {QKD_Lf, QKD_Lg}") 
+             apply (simp add: fsumap_fold_one fsumap_lem)
+             apply (subgoal_tac "QKD_Lf \<notin> {QKD_Lg}") 
+             apply (simp add: fsumap_fold_one fsumap_lem)
+              apply (simp add: fsumap_def)
+             apply (rule Lf_nin_Lg)
+            apply (simp add: Ld_neq_Le Le_neq_Lf Le_neq_Lg)
+           apply (simp add: Ld_neq_Le Ld_neq_Lf Ld_neq_Lg Le_neq_Lf Le_neq_Lg)
+          apply (simp add: Lc_neq_Le)
+         apply (simp add: Lc_neq_Ld  Lc_neq_Le  Lc_neq_Lf  Lc_neq_Lg)
+        apply (simp add: Lb_neq_Lc Lb_neq_Ld Lb_neq_Le Lb_neq_Lf Lb_neq_Lg)
+       apply (simp add: La_neq_Lb La_neq_Lc La_neq_Ld La_neq_Le La_neq_Lf La_neq_Lg)
+      by (simp add: L_neq_La L_neq_Lb L_neq_Lc L_neq_Ld L_neq_Le L_neq_Lf L_neq_Lg)
+        moreover have b1: "qkd_ops''' QKD_L = 1/8" 
       apply (simp add: qkd_ops'''_def qkd_ops''_def qkd_ops'_def QKD_L_def fsum_def the_prot_def
              QKD1_def QKD2_def QKD3_def QKD4_def insertp_def qkd_scenario_def fmap_lem fmap_lem_one)
       by (simp add: fold_one_plus fold_two_plus)

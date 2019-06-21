@@ -399,8 +399,45 @@ lemma fsumap_fold_one: "Finite_Set.fold (\<lambda>x y. (f x) + y) (0 :: real) {n
   apply (simp add: comp_fun_commute_def)
   by force
 
-lemma fsumap_lem[rule_format]: "finite S \<Longrightarrow> \<forall> n. (fsumap f (insert n S)) = (f n) + (fsumap f S)"
-  sorry
+lemma fsumap_lem[rule_format]: "finite S \<Longrightarrow> \<forall> n. n \<notin> S \<longrightarrow> (fsumap f (insert n S)) = (f n) + (fsumap f S)"
+  thm finite.induct
+  apply (erule_tac F = S in finite_induct)
+   apply (rule allI)
+   apply (simp add: fsumap_def)
+   apply (rule fsumap_fold_one)
+(* *)
+  apply (subgoal_tac "comp_fun_commute (\<lambda>x. (+)(f x))")
+   apply (rule allI, rule impI)
+   apply (drule_tac x = x in spec)
+  apply (drule mp, assumption)
+   apply (erule ssubst)
+  apply (subgoal_tac "fsumap f (insert n (insert x F)) = f n + (fsumap f (insert x F))")
+    apply (erule ssubst)
+    apply (subgoal_tac "fsumap f (insert x F) = (f x + fsumap f F)")
+         apply simp
+    apply (drule_tac A = "F" in Finite_Set.comp_fun_commute.fold_insert)
+      apply assumption
+     apply assumption
+    apply (unfold fsumap_def, assumption)
+   apply (case_tac "n \<in> insert x F")
+    defer
+    apply (drule_tac A = "insert x F" in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp
+  apply assumption+
+  apply (simp add: comp_fun_commute_def)
+by force+
+(* n \<in> insert x F is not possible 
+  apply (subgoal_tac "Finite_Set.fold (\<lambda>x::'a. (+) (f x)) (0::real) (insert n (insert x F)) =
+                      Finite_Set.fold (\<lambda>x::'a. (+) (f x)) (0::real) (insert x F)")
+     prefer 2
+   apply (subgoal_tac "insert n (insert x F) = insert x F")
+    apply simp
+  apply blast
+  apply (erule ssubst)
+  apply (simp add: Finite_Set.comp_fun_commute.fold_rec)
+apply (simp add: comp_fun_commute_def)
+   apply force
+*)
 
 primrec map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a list \<Rightarrow> 'b list"
   where
