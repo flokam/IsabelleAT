@@ -296,6 +296,157 @@ proof (simp add: QKD4_def global_policy_def)
     by simp
 qed
 
+(* same for QKDxa, QKDxb, ...*)
+(* step relation for QKDxa *)
+lemma step0a: "qkd_scenario \<rightarrow>\<^sub>Q QKD1a"
+proof (unfold qkd_scenario_def QKD1a_def)
+  show "Protocol {[]}  \<rightarrow>\<^sub>Q insertp [AsOne True] (Protocol {[]})"
+    apply (insert AsendsBitb)
+    apply (drule_tac x = "Protocol {[]}" in meta_spec)
+    apply (drule_tac x = True in meta_spec)
+    apply (simp add: insertp_def)
+    apply (erule meta_mp)
+by (simp add: prot_mem_def)
+qed
+
+lemma step0aR: "qkd_scenario \<rightarrow>\<^sub>Q* QKD1a"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(qkd_scenario, QKD1a) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step0a, auto)
+qed
+
+lemma step1a: "QKD1a \<rightarrow>\<^sub>Q QKD2a"
+proof (unfold QKD1a_def QKD2a_def, rule_tac l = "[AsOne True]" and b = True in AchosesPolX) 
+  show "[AsOne True] \<in>  insertp [AsOne True] qkd_scenario" by (simp add: insertp_def prot_mem_def)
+next show "hd [AsOne True] = AsOne True" by simp
+qed
+
+lemma step1aR: "QKD1a \<rightarrow>\<^sub>Q* QKD2a"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD1a, QKD2a) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step1a, auto)
+qed
+
+lemma step2a: "QKD2a \<rightarrow>\<^sub>Q QKD3a"
+proof (unfold QKD2a_def QKD3a_def, rule_tac l = "[AchX False, AsOne True]" and 
+          b = False and b' = True in EchosesPolX)
+  show "[AchX False, AsOne True] \<in> insertp [AchX False, AsOne True] QKD1a"
+    by (simp add: insertp_def prot_mem_def)+
+next show "hd [AchX False, AsOne True] = AchX False" by simp
+qed
+
+lemma step2aR: "QKD2a \<rightarrow>\<^sub>Q* QKD3a"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD2a, QKD3a) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step2a, auto)
+qed
+
+lemma step3a: "QKD3a \<rightarrow>\<^sub>Q QKD4a"
+proof (unfold QKD3a_def QKD4a_def, rule_tac l = "[EchX True, AchX False, AsOne True]" and 
+          b = True and b' = False in EintrcptNOK)
+  show "[EchX True, AchX False, AsOne True] \<in> insertp [EchX True, AchX False, AsOne True] QKD2a"
+    by (simp add: insertp_def prot_mem_def)
+next show "hd [EchX True, AchX False, AsOne True] = EchX True" by simp
+next show "hd (tl [EchX True, AchX False, AsOne True]) = AchX False" by simp
+next show "True \<noteq> False" by simp
+qed
+
+lemma step3aR: "QKD3a \<rightarrow>\<^sub>Q* QKD4a"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD3a, QKD4a) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step3a, auto)
+qed
+
+(* QKD4a violates global policy *)
+lemma QKD4a_bad: "\<not> global_policy QKD4a"
+proof (simp add: QKD4a_def global_policy_def)
+  show "\<exists>l::event list.
+       l \<in> insertp [EmOne True, EchX True, AchX False, AsOne True] QKD3a \<and>
+       (\<exists>b::bool. AsOne b \<in> set l \<and> EmOne b \<in> set l)"
+    apply (rule_tac x = "[EmOne True, EchX True, AchX False, AsOne True]" in exI)
+    apply (rule conjI)
+     apply (simp add: insertp_def prot_mem_def)
+    apply (rule_tac x = True in exI)
+    by simp
+qed
+
+(* step relation for QKDxb *)
+lemma step0b: "qkd_scenario \<rightarrow>\<^sub>Q QKD1b"
+proof (unfold qkd_scenario_def QKD1b_def)
+  show "Protocol {[]}  \<rightarrow>\<^sub>Q insertp [AsOne False] (Protocol {[]})"
+    apply (insert AsendsBitb)
+    apply (drule_tac x = "Protocol {[]}" in meta_spec)
+    apply (drule_tac x = False in meta_spec)
+    apply (simp add: insertp_def)
+    apply (erule meta_mp)
+by (simp add: prot_mem_def)
+qed
+
+lemma step0bR: "qkd_scenario \<rightarrow>\<^sub>Q* QKD1b"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(qkd_scenario, QKD1b) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step0b, auto)
+qed
+
+lemma step1b: "QKD1b \<rightarrow>\<^sub>Q QKD2b"
+proof (unfold QKD1b_def QKD2b_def, rule_tac l = "[AsOne False]" and b = False in AchosesPolX) 
+  show "[AsOne False] \<in>  insertp [AsOne False] qkd_scenario" by (simp add: insertp_def prot_mem_def)
+next show "hd [AsOne False] = AsOne False" by simp
+qed
+
+lemma step1bR: "QKD1b \<rightarrow>\<^sub>Q* QKD2b"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD1b, QKD2b) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step1b, auto)
+qed
+
+lemma step2b: "QKD2b \<rightarrow>\<^sub>Q QKD3b"
+proof (unfold QKD2b_def QKD3b_def, rule_tac l = "[AchX False, AsOne False]" and 
+          b = False and b' = True in EchosesPolX)
+  show "[AchX False, AsOne False] \<in> insertp [AchX False, AsOne False] QKD1b"
+    by (simp add: insertp_def prot_mem_def)+
+next show "hd [AchX False, AsOne False] = AchX False" by simp
+qed
+
+lemma step2bR: "QKD2b \<rightarrow>\<^sub>Q* QKD3b"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD2b, QKD3b) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step2b, auto)
+qed
+
+lemma step3b: "QKD3b \<rightarrow>\<^sub>Q QKD4b"
+proof (unfold QKD3b_def QKD4b_def, rule_tac l = "[EchX True, AchX False, AsOne False]" and 
+          b = True and b' = False in EintrcptNOK)
+  show "[EchX True, AchX False, AsOne False] \<in> insertp [EchX True, AchX False, AsOne False] QKD2b"
+    by (simp add: insertp_def prot_mem_def)
+next show "hd [EchX True, AchX False, AsOne False] = EchX True" by simp
+next show "hd (tl [EchX True, AchX False, AsOne False]) = AchX False" by simp
+next show "True \<noteq> False" by simp
+qed
+
+lemma step3bR: "QKD3b \<rightarrow>\<^sub>Q* QKD4b"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD3b, QKD4b) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step3b, auto)
+qed
+
+(* QKD4b violates global policy *)
+lemma QKD4b_bad: "\<not> global_policy QKD4b"
+proof (simp add: QKD4b_def global_policy_def)
+  show "\<exists>l::event list.
+       l \<in> insertp [EmOne False, EchX True, AchX False, AsOne False] QKD3b \<and>
+       (\<exists>b::bool. AsOne b \<in> set l \<and> EmOne b \<in> set l)"
+    apply (rule_tac x = "[EmOne False, EchX True, AchX False, AsOne False]" in exI)
+    apply (rule conjI)
+     apply (simp add: insertp_def prot_mem_def)
+    apply (rule_tac x = False in exI)
+    by simp
+qed
+
+(* c d e f g *)
+
+
+
 lemma qkd_ref: "[\<N>\<^bsub>(Iqkd,negated_policy)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Iqkd,negated_policy)\<^esup> \<sqsubseteq>
   [\<N>\<^bsub>(Iqkd,{QKD1})\<^esub>, \<N>\<^bsub>({QKD1},{QKD2})\<^esub>, \<N>\<^bsub>({QKD2},{QKD3})\<^esub>, \<N>\<^bsub>({QKD3},negated_policy)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Iqkd,negated_policy)\<^esup>"  
 proof (rule_tac l = "[]" and
@@ -647,19 +798,20 @@ lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
 lemma qkd_eval_step1: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
 proof (unfold eventually_def F_def, rule equalityI) 
   show "{l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
-    {l::protocol list. \<forall>i<length l. l ! i \<rightarrow>\<^sub>i l ! Suc i \<and> last l \<in> negated_policy}
+    {l::protocol list. \<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i \<and> last l \<in> negated_policy}
     \<subseteq> {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
  sorry
 next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
     \<subseteq> {l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
-       {l::protocol list. \<forall>i<length l. l ! i \<rightarrow>\<^sub>i l ! Suc i \<and> last l \<in> negated_policy}"
+       {l::protocol list. \<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i \<and> last l \<in> negated_policy}"
     apply (rule subsetI)
     apply simp
   proof -
     have L: "set QKD_L \<subseteq> states qkd_Kripke \<and>
        hd QKD_L \<in> init qkd_Kripke \<and>
-       (\<forall>i<length QKD_L. QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i \<and> last QKD_L \<in> negated_policy)"
+       (\<forall>i<length QKD_L - Suc (0::nat). QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i \<and> last QKD_L \<in> negated_policy)"
       apply (rule conjI)
+      (* set QKD_L \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_L_def qkd_Kripke_def qkd_scenario_def)
        apply (rule conjI)
         apply (simp add:  state_transition_qkd_refl_def)
@@ -670,41 +822,88 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
        apply (rule conjI)
       apply (insert step2R, simp add: state_transition_qkd_refl_def)
       apply (insert step3R, simp add: state_transition_qkd_refl_def)
-
-      sorry
+     (* hd QKD_L \<in> init qkd_Kripke *)
+      apply (rule conjI)
+       apply (simp add: QKD_L_def qkd_Kripke_def Iqkd_def)
+     (* \<forall>i<length QKD_L. QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i \<and> last QKD_L \<in> negated_policy *)
+      apply (rule allI)
+      apply (rule impI)
+      apply (simp add: QKD_L_def negated_policy_def)
+      apply (rule conjI)
+      prefer 2
+       apply (rule QKD4_bad)
+      apply (subst state_transition_qkd_inst_def)
+      apply (case_tac i)
+       apply (simp add: step0)
+      apply (case_tac nat)
+       apply (simp add: step1)
+      apply (case_tac nata)
+       apply (simp add: step2)
+      apply (case_tac natb)
+      by (simp add: step3)+
     moreover have La: "set QKD_La \<subseteq> states qkd_Kripke \<and>
        hd QKD_La \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_La. QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i \<and> last QKD_La \<in> negated_policy)"
-      sorry
+       (\<forall>i<length QKD_La - Suc (0::nat). QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i \<and> last QKD_La \<in> negated_policy)"
+apply (rule conjI)
+      (* set QKD_La \<subseteq> states qkd_Kripke  *)
+       apply (simp add: QKD_La_def qkd_Kripke_def qkd_scenario_def)
+       apply (rule conjI)
+        apply (simp add:  state_transition_qkd_refl_def)
+      apply (rule conjI)
+        apply (fold qkd_scenario_def, rule step0aR)
+       apply (rule conjI)
+      apply (insert step0aR step1aR, simp add: state_transition_qkd_refl_def)
+       apply (rule conjI)
+      apply (insert step2aR, simp add: state_transition_qkd_refl_def)
+      apply (insert step3aR, simp add: state_transition_qkd_refl_def)
+     (* hd QKD_L \<in> init qkd_Kripke *)
+      apply (rule conjI)
+       apply (simp add: QKD_La_def qkd_Kripke_def Iqkd_def)
+     (* \<forall>i<length QKD_La. QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i \<and> last QKD_La \<in> negated_policy *)
+      apply (rule allI)
+      apply (rule impI)
+      apply (simp add: QKD_La_def negated_policy_def)
+      apply (rule conjI)
+      prefer 2
+       apply (rule QKD4a_bad)
+      apply (subst state_transition_qkd_inst_def)
+      apply (case_tac i)
+       apply (simp add: step0a)
+      apply (case_tac nat)
+       apply (simp add: step1a)
+      apply (case_tac nata)
+       apply (simp add: step2a)
+      apply (case_tac natb)
+      by (simp add: step3a)+      
     moreover have Lb: "set QKD_Lb \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lb \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lb. QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i \<and> last QKD_Lb \<in> negated_policy)"
+       (\<forall>i<length QKD_Lb - Suc (0::nat). QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i \<and> last QKD_Lb \<in> negated_policy)"
       sorry
     moreover have Lc: "set QKD_Lc \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lc \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lc. QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i \<and> last QKD_Lc \<in> negated_policy)"
+       (\<forall>i<length QKD_Lc - Suc (0::nat). QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i \<and> last QKD_Lc \<in> negated_policy)"
       sorry
     moreover have Ld: "set QKD_Ld \<subseteq> states qkd_Kripke \<and>
        hd QKD_Ld \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Ld. QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i \<and> last QKD_Ld \<in> negated_policy)"
+       (\<forall>i<length QKD_Ld - Suc (0::nat). QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i \<and> last QKD_Ld \<in> negated_policy)"
       sorry
     moreover have Le: "set QKD_Le \<subseteq> states qkd_Kripke \<and>
        hd QKD_Le \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Le. QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i \<and> last QKD_Le \<in> negated_policy)"
+       (\<forall>i<length QKD_Le - Suc (0::nat). QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i \<and> last QKD_Le \<in> negated_policy)"
       sorry
     moreover have Lf: "set QKD_Lf \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lf \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lf. QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i \<and> last QKD_Lf \<in> negated_policy)"
+       (\<forall>i<length QKD_Lf - Suc (0::nat). QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i \<and> last QKD_Lf \<in> negated_policy)"
       sorry
     moreover have Lg: "set QKD_Lg \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lg \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lg. QKD_Lg ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i \<and> last QKD_Lg \<in> negated_policy)"
+       (\<forall>i<length QKD_Lg - Suc (0::nat). QKD_Lg ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i \<and> last QKD_Lg \<in> negated_policy)"
       sorry
     fix x
     show "x = QKD_L \<or>
        x = QKD_La \<or> x = QKD_Lb \<or> x = QKD_Lc \<or> x = QKD_Ld \<or> x = QKD_Le \<or> x = QKD_Lf \<or> x = QKD_Lg \<Longrightarrow>
        set x \<subseteq> states qkd_Kripke \<and>
-       hd x \<in> init qkd_Kripke \<and> (\<forall>i<length x. x ! i \<rightarrow>\<^sub>i x ! Suc i \<and> last x \<in> negated_policy)"
+       hd x \<in> init qkd_Kripke \<and> (\<forall>i<length x - Suc (0::nat). x ! i \<rightarrow>\<^sub>i x ! Suc i \<and> last x \<in> negated_policy)"
       apply (erule disjE, erule ssubst, rule L)
         apply (erule disjE, erule ssubst, rule La)
       apply (erule disjE, erule ssubst, rule Lb)
