@@ -25,13 +25,13 @@ where
 | BchosesPolX: "l \<in> evs \<Longrightarrow> hd l = AchX b \<Longrightarrow>
                 evs \<rightarrow>\<^sub>Q insertp (BchX b' # l) evs"
 | BmeasuresOK: "l \<in> evs \<Longrightarrow>  hd l = BchX b \<Longrightarrow> hd(tl l) = AchX b \<Longrightarrow>
-                 evs \<rightarrow>\<^sub>Q insertp (BmOne b # l) evs"
+                 hd(tl (tl l)) = AsOne b' \<Longrightarrow> evs \<rightarrow>\<^sub>Q insertp (BmOne b' # l) evs"
 | BmeasuresNOK: "l \<in> evs \<Longrightarrow>  hd l = BchX b \<Longrightarrow> hd(tl l) = AchX b' \<Longrightarrow>
                  b \<noteq> b' \<Longrightarrow> evs \<rightarrow>\<^sub>Q insertp (BmOne b'' # l) evs"
 | EchosesPolX: "l \<in> evs \<Longrightarrow> hd l = AchX b \<Longrightarrow>
                 evs \<rightarrow>\<^sub>Q insertp (EchX b' # l) evs"
 | EintercptOK: "l \<in> evs \<Longrightarrow> hd l = EchX b \<Longrightarrow> hd(tl l) = AchX b \<Longrightarrow>
-                evs \<rightarrow>\<^sub>Q insertp (EmOne b # l) evs"
+                hd(tl (tl l)) = AsOne b' \<Longrightarrow> evs \<rightarrow>\<^sub>Q insertp (EmOne b' # l) evs"
 | EintrcptNOK: "l \<in> evs \<Longrightarrow>  hd l = EchX b \<Longrightarrow> hd(tl l) = AchX b' \<Longrightarrow>
                 b \<noteq> b' \<Longrightarrow> evs \<rightarrow>\<^sub>Q insertp (EmOne b'' # l) evs"
 (* Iteration only makes sense if we insert numberings to the bits. Otherwise
@@ -275,6 +275,7 @@ proof (unfold QKD3_def QKD4_def, rule_tac l = "[EchX True, AchX True, AsOne True
     by (simp add: insertp_def prot_mem_def)
 next show "hd [EchX True, AchX True, AsOne True] = EchX True" by simp
 next show "hd (tl [EchX True, AchX True, AsOne True]) = AchX True" by simp
+next show "hd (tl (tl [EchX True, AchX True, AsOne True])) = AsOne True" by simp
 qed
 
 lemma step3R: "QKD3 \<rightarrow>\<^sub>Q* QKD4"
@@ -443,7 +444,373 @@ proof (simp add: QKD4b_def global_policy_def)
     by simp
 qed
 
-(* c d e f g *)
+(* step relation for QKDxc *)
+lemma step0c: "qkd_scenario \<rightarrow>\<^sub>Q QKD1c"
+proof (unfold qkd_scenario_def QKD1c_def)
+  show "Protocol {[]}  \<rightarrow>\<^sub>Q insertp [AsOne True] (Protocol {[]})"
+    apply (insert AsendsBitb)
+    apply (drule_tac x = "Protocol {[]}" in meta_spec)
+    apply (drule_tac x = True in meta_spec)
+    apply (simp add: insertp_def)
+    apply (erule meta_mp)
+by (simp add: prot_mem_def)
+qed
+
+lemma step0cR: "qkd_scenario \<rightarrow>\<^sub>Q* QKD1c"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(qkd_scenario, QKD1c) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step0c, auto)
+qed
+
+lemma step1c: "QKD1c \<rightarrow>\<^sub>Q QKD2c"
+proof (unfold QKD1c_def QKD2c_def, rule_tac l = "[AsOne True]" and b = True in AchosesPolX) 
+  show "[AsOne True] \<in>  insertp [AsOne True] qkd_scenario" by (simp add: insertp_def prot_mem_def)
+next show "hd [AsOne True] = AsOne True" by simp
+qed
+
+lemma step1cR: "QKD1c \<rightarrow>\<^sub>Q* QKD2c"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD1c, QKD2c) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step1c, auto)
+qed
+
+lemma step2c: "QKD2c \<rightarrow>\<^sub>Q QKD3c"
+proof (unfold QKD2c_def QKD3c_def, rule_tac l = "[AchX True, AsOne True]" and 
+          b = True and b' = False in EchosesPolX)
+  show "[AchX True, AsOne True] \<in> insertp [AchX True, AsOne True] QKD1c"
+    by (simp add: insertp_def prot_mem_def)+
+next show "hd [AchX True, AsOne True] = AchX True" by simp
+qed
+
+lemma step2cR: "QKD2c \<rightarrow>\<^sub>Q* QKD3c"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD2c, QKD3c) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step2c, auto)
+qed
+
+lemma step3c: "QKD3c \<rightarrow>\<^sub>Q QKD4c"
+proof (unfold QKD3c_def QKD4c_def, rule_tac l = "[EchX False, AchX True, AsOne True]" and 
+          b = False and b' = True in EintrcptNOK)
+  show "[EchX False, AchX True, AsOne True] \<in> insertp [EchX False, AchX True, AsOne True] QKD2c"
+    by (simp add: insertp_def prot_mem_def)
+next show "hd [EchX False, AchX True, AsOne True] = EchX False" by simp
+next show "hd (tl [EchX False, AchX True, AsOne True]) = AchX True" by simp
+next show "False \<noteq> True" by simp
+qed
+
+lemma step3cR: "QKD3c \<rightarrow>\<^sub>Q* QKD4c"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD3c, QKD4c) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step3c, auto)
+qed
+
+(* QKD4c violates global policy *)
+lemma QKD4c_bad: "\<not> global_policy QKD4c"
+proof (simp add: QKD4c_def global_policy_def)
+  show "\<exists>l::event list.
+       l \<in> insertp [EmOne True, EchX False, AchX True, AsOne True] QKD3c \<and>
+       (\<exists>b::bool. AsOne b \<in> set l \<and> EmOne b \<in> set l)"
+    apply (rule_tac x = "[EmOne True, EchX False, AchX True, AsOne True]" in exI)
+    apply (rule conjI)
+     apply (simp add: insertp_def prot_mem_def)
+    apply (rule_tac x = True in exI)
+    by simp
+qed
+
+(* step relation for QKDxd *)
+lemma step0d: "qkd_scenario \<rightarrow>\<^sub>Q QKD1d"
+proof (unfold qkd_scenario_def QKD1d_def)
+  show "Protocol {[]}  \<rightarrow>\<^sub>Q insertp [AsOne False] (Protocol {[]})"
+    apply (insert AsendsBitb)
+    apply (drule_tac x = "Protocol {[]}" in meta_spec)
+    apply (drule_tac x = False in meta_spec)
+    apply (simp add: insertp_def)
+    apply (erule meta_mp)
+by (simp add: prot_mem_def)
+qed
+
+lemma step0dR: "qkd_scenario \<rightarrow>\<^sub>Q* QKD1d"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(qkd_scenario, QKD1d) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step0d, auto)
+qed
+
+lemma step1d: "QKD1d \<rightarrow>\<^sub>Q QKD2d"
+proof (unfold QKD1d_def QKD2d_def, rule_tac l = "[AsOne False]" and b = False in AchosesPolX) 
+  show "[AsOne False] \<in>  insertp [AsOne False] qkd_scenario" by (simp add: insertp_def prot_mem_def)
+next show "hd [AsOne False] = AsOne False" by simp
+qed
+
+lemma step1dR: "QKD1d \<rightarrow>\<^sub>Q* QKD2d"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD1d, QKD2d) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step1d, auto)
+qed
+
+lemma step2d: "QKD2d \<rightarrow>\<^sub>Q QKD3d"
+proof (unfold QKD2d_def QKD3d_def, rule_tac l = "[AchX True, AsOne False]" and 
+          b = True and b' = False in EchosesPolX)
+  show "[AchX True, AsOne False] \<in> insertp [AchX True, AsOne False] QKD1d"
+    by (simp add: insertp_def prot_mem_def)+
+next show "hd [AchX True, AsOne False] = AchX True" by simp
+qed
+
+lemma step2dR: "QKD2d \<rightarrow>\<^sub>Q* QKD3d"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD2d, QKD3d) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step2d, auto)
+qed
+
+lemma step3d: "QKD3d \<rightarrow>\<^sub>Q QKD4d"
+proof (unfold QKD3d_def QKD4d_def, rule_tac l = "[EchX False, AchX True, AsOne False]" and 
+          b = False and b' = True in EintrcptNOK)
+  show "[EchX False, AchX True, AsOne False] \<in> insertp [EchX False, AchX True, AsOne False] QKD2d"
+    by (simp add: insertp_def prot_mem_def)
+next show "hd [EchX False, AchX True, AsOne False] = EchX False" by simp
+next show "hd (tl [EchX False, AchX True, AsOne False]) = AchX True" by simp
+next show "False \<noteq> True" by simp
+qed
+
+lemma step3dR: "QKD3d \<rightarrow>\<^sub>Q* QKD4d"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD3d, QKD4d) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step3d, auto)
+qed
+
+(* QKD4d violates global policy *)
+lemma QKD4d_bad: "\<not> global_policy QKD4d"
+proof (simp add: QKD4d_def global_policy_def)
+  show "\<exists>l::event list.
+       l \<in> insertp [EmOne False, EchX False, AchX True, AsOne False] QKD3d \<and>
+       (\<exists>b::bool. AsOne b \<in> set l \<and> EmOne b \<in> set l)"
+    apply (rule_tac x = "[EmOne False, EchX False, AchX True, AsOne False]" in exI)
+    apply (rule conjI)
+     apply (simp add: insertp_def prot_mem_def)
+    apply (rule_tac x = False in exI)
+    by simp
+qed
+
+(* step relation for QKDxd *)
+lemma step0e: "qkd_scenario \<rightarrow>\<^sub>Q QKD1e"
+proof (unfold qkd_scenario_def QKD1e_def)
+  show "Protocol {[]}  \<rightarrow>\<^sub>Q insertp [AsOne False] (Protocol {[]})"
+    apply (insert AsendsBitb)
+    apply (drule_tac x = "Protocol {[]}" in meta_spec)
+    apply (drule_tac x = False in meta_spec)
+    apply (simp add: insertp_def)
+    apply (erule meta_mp)
+by (simp add: prot_mem_def)
+qed
+
+lemma step0eR: "qkd_scenario \<rightarrow>\<^sub>Q* QKD1e"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(qkd_scenario, QKD1e) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step0e, auto)
+qed
+
+lemma step1e: "QKD1e \<rightarrow>\<^sub>Q QKD2e"
+proof (unfold QKD1e_def QKD2e_def, rule_tac l = "[AsOne False]" and b = False in AchosesPolX) 
+  show "[AsOne False] \<in>  insertp [AsOne False] qkd_scenario" by (simp add: insertp_def prot_mem_def)
+next show "hd [AsOne False] = AsOne False" by simp
+qed
+
+lemma step1eR: "QKD1e \<rightarrow>\<^sub>Q* QKD2e"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD1e, QKD2e) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step1e, auto)
+qed
+
+lemma step2e: "QKD2e \<rightarrow>\<^sub>Q QKD3e"
+proof (unfold QKD2e_def QKD3e_def, rule_tac l = "[AchX True, AsOne False]" and 
+          b = True and b' = True in EchosesPolX)
+  show "[AchX True, AsOne False] \<in> insertp [AchX True, AsOne False] QKD1e"
+    by (simp add: insertp_def prot_mem_def)+
+next show "hd [AchX True, AsOne False] = AchX True" by simp
+qed
+
+lemma step2eR: "QKD2e \<rightarrow>\<^sub>Q* QKD3e"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD2e, QKD3e) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step2e, auto)
+qed
+
+lemma step3e: "QKD3e \<rightarrow>\<^sub>Q QKD4e"
+proof (unfold QKD3e_def QKD4e_def, rule_tac l = "[EchX True, AchX True, AsOne False]" and 
+          b = True in EintercptOK)
+  show "[EchX True, AchX True, AsOne False] \<in> insertp [EchX True, AchX True, AsOne False] QKD2e"
+    by (simp add: insertp_def prot_mem_def)
+next show "hd [EchX True, AchX True, AsOne False] = EchX True" by simp
+next show "hd (tl [EchX True, AchX True, AsOne False]) = AchX True" by simp
+next show "hd (tl (tl [EchX True, AchX True, AsOne False])) = AsOne False" by simp
+qed
+
+lemma step3eR: "QKD3e \<rightarrow>\<^sub>Q* QKD4e"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD3e, QKD4e) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step3e, auto)
+qed
+
+(* QKD4d violates global policy *)
+lemma QKD4e_bad: "\<not> global_policy QKD4e"
+proof (simp add: QKD4e_def global_policy_def)
+  show "\<exists>l::event list.
+       l \<in> insertp [EmOne False, EchX True, AchX True, AsOne False] QKD3e \<and>
+       (\<exists>b::bool. AsOne b \<in> set l \<and> EmOne b \<in> set l)"
+    apply (rule_tac x = "[EmOne False, EchX True, AchX True, AsOne False]" in exI)
+    apply (rule conjI)
+     apply (simp add: insertp_def prot_mem_def)
+    apply (rule_tac x = False in exI)
+    by simp
+qed
+
+
+(* step relation for QKDxf *)
+lemma step0f: "qkd_scenario \<rightarrow>\<^sub>Q QKD1f"
+proof (unfold qkd_scenario_def QKD1f_def)
+  show "Protocol {[]}  \<rightarrow>\<^sub>Q insertp [AsOne True] (Protocol {[]})"
+    apply (insert AsendsBitb)
+    apply (drule_tac x = "Protocol {[]}" in meta_spec)
+    apply (drule_tac x = True in meta_spec)
+    apply (simp add: insertp_def)
+    apply (erule meta_mp)
+by (simp add: prot_mem_def)
+qed
+
+lemma step0fR: "qkd_scenario \<rightarrow>\<^sub>Q* QKD1f"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(qkd_scenario, QKD1f) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step0f, auto)
+qed
+
+lemma step1f: "QKD1f \<rightarrow>\<^sub>Q QKD2f"
+proof (unfold QKD1f_def QKD2f_def, rule_tac l = "[AsOne True]" and b = True in AchosesPolX) 
+  show "[AsOne True] \<in>  insertp [AsOne True] qkd_scenario" by (simp add: insertp_def prot_mem_def)
+next show "hd [AsOne True] = AsOne True" by simp
+qed
+
+lemma step1fR: "QKD1f \<rightarrow>\<^sub>Q* QKD2f"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD1f, QKD2f) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step1f, auto)
+qed
+
+lemma step2f: "QKD2f \<rightarrow>\<^sub>Q QKD3f"
+proof (unfold QKD2f_def QKD3f_def, rule_tac l = "[AchX False, AsOne True]" and 
+          b = False and b' = False in EchosesPolX)
+  show "[AchX False, AsOne True] \<in> insertp [AchX False, AsOne True] QKD1f"
+    by (simp add: insertp_def prot_mem_def)+
+next show "hd [AchX False, AsOne True] = AchX False" by simp
+qed
+
+lemma step2fR: "QKD2f \<rightarrow>\<^sub>Q* QKD3f"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD2f, QKD3f) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step2f, auto)
+qed
+
+lemma step3f: "QKD3f \<rightarrow>\<^sub>Q QKD4f"
+proof (unfold QKD3f_def QKD4f_def, rule_tac l = "[EchX False, AchX False, AsOne True]" and 
+          b = False in EintercptOK)
+  show "[EchX False, AchX False, AsOne True] \<in> insertp [EchX False, AchX False, AsOne True] QKD2f"
+    by (simp add: insertp_def prot_mem_def)
+next show "hd [EchX False, AchX False, AsOne True] = EchX False" by simp
+next show "hd (tl [EchX False, AchX False, AsOne True]) = AchX False" by simp
+next show "hd (tl (tl [EchX False, AchX False, AsOne True])) = AsOne True" by simp
+qed
+
+lemma step3fR: "QKD3f \<rightarrow>\<^sub>Q* QKD4f"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD3f, QKD4f) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step3f, auto)
+qed
+
+(* QKD4f violates global policy *)
+lemma QKD4f_bad: "\<not> global_policy QKD4f"
+proof (simp add: QKD4f_def global_policy_def)
+  show "\<exists>l::event list.
+       l \<in> insertp [EmOne True, EchX False, AchX False, AsOne True] QKD3f \<and>
+       (\<exists>b::bool. AsOne b \<in> set l \<and> EmOne b \<in> set l)"
+    apply (rule_tac x = "[EmOne True, EchX False, AchX False, AsOne True]" in exI)
+    apply (rule conjI)
+     apply (simp add: insertp_def prot_mem_def)
+    apply (rule_tac x = True in exI)
+    by simp
+qed
+
+(* step relation for QKDxg *)
+lemma step0g: "qkd_scenario \<rightarrow>\<^sub>Q QKD1g"
+proof (unfold qkd_scenario_def QKD1g_def)
+  show "Protocol {[]}  \<rightarrow>\<^sub>Q insertp [AsOne False] (Protocol {[]})"
+    apply (insert AsendsBitb)
+    apply (drule_tac x = "Protocol {[]}" in meta_spec)
+    apply (drule_tac x = False in meta_spec)
+    apply (simp add: insertp_def)
+    apply (erule meta_mp)
+by (simp add: prot_mem_def)
+qed
+
+lemma step0gR: "qkd_scenario \<rightarrow>\<^sub>Q* QKD1g"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(qkd_scenario, QKD1g) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step0g, auto)
+qed
+
+lemma step1g: "QKD1g \<rightarrow>\<^sub>Q QKD2g"
+proof (unfold QKD1g_def QKD2g_def, rule_tac l = "[AsOne False]" and b = False in AchosesPolX) 
+  show "[AsOne False] \<in>  insertp [AsOne False] qkd_scenario" by (simp add: insertp_def prot_mem_def)
+next show "hd [AsOne False] = AsOne False" by simp
+qed
+
+lemma step1gR: "QKD1g \<rightarrow>\<^sub>Q* QKD2g"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD1g, QKD2g) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step1g, auto)
+qed
+
+lemma step2g: "QKD2g \<rightarrow>\<^sub>Q QKD3g"
+proof (unfold QKD2g_def QKD3g_def, rule_tac l = "[AchX False, AsOne False]" and 
+          b = False and b' = False in EchosesPolX)
+  show "[AchX False, AsOne False] \<in> insertp [AchX False, AsOne False] QKD1g"
+    by (simp add: insertp_def prot_mem_def)+
+next show "hd [AchX False, AsOne False] = AchX False" by simp
+qed
+
+lemma step2gR: "QKD2g \<rightarrow>\<^sub>Q* QKD3g"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD2g, QKD3g) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step2g, auto)
+qed
+
+lemma step3g: "QKD3g \<rightarrow>\<^sub>Q QKD4g"
+proof (unfold QKD3g_def QKD4g_def, rule_tac l = "[EchX False, AchX False, AsOne False]" and 
+          b = False in EintercptOK)
+  show "[EchX False, AchX False, AsOne False] \<in> insertp [EchX False, AchX False, AsOne False] QKD2g"
+    by (simp add: insertp_def prot_mem_def)
+next show "hd [EchX False, AchX False, AsOne False] = EchX False" by simp
+next show "hd (tl [EchX False, AchX False, AsOne False]) = AchX False" by simp
+next show "hd (tl (tl [EchX False, AchX False, AsOne False])) = AsOne False" by simp
+qed
+
+lemma step3gR: "QKD3g \<rightarrow>\<^sub>Q* QKD4g"
+proof (simp add: state_transition_qkd_refl_def)
+  show "(QKD3g, QKD4g) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* "
+    by (insert step3g, auto)
+qed
+
+(* QKD4g violates global policy *)
+lemma QKD4g_bad: "\<not> global_policy QKD4g"
+proof (simp add: QKD4g_def global_policy_def)
+  show "\<exists>l::event list.
+       l \<in> insertp [EmOne False, EchX False, AchX False, AsOne False] QKD3g \<and>
+       (\<exists>b::bool. AsOne b \<in> set l \<and> EmOne b \<in> set l)"
+    apply (rule_tac x = "[EmOne False, EchX False, AchX False, AsOne False]" in exI)
+    apply (rule conjI)
+     apply (simp add: insertp_def prot_mem_def)
+    apply (rule_tac x = False in exI)
+    by simp
+qed
+
+
 
 
 
@@ -844,7 +1211,7 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
     moreover have La: "set QKD_La \<subseteq> states qkd_Kripke \<and>
        hd QKD_La \<in> init qkd_Kripke \<and> 
        (\<forall>i<length QKD_La - Suc (0::nat). QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i \<and> last QKD_La \<in> negated_policy)"
-apply (rule conjI)
+       apply (rule conjI)
       (* set QKD_La \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_La_def qkd_Kripke_def qkd_scenario_def)
        apply (rule conjI)
@@ -878,27 +1245,207 @@ apply (rule conjI)
     moreover have Lb: "set QKD_Lb \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lb \<in> init qkd_Kripke \<and> 
        (\<forall>i<length QKD_Lb - Suc (0::nat). QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i \<and> last QKD_Lb \<in> negated_policy)"
-      sorry
+       apply (rule conjI)
+      (* set QKD_Lb \<subseteq> states qkd_Kripke  *)
+       apply (simp add: QKD_Lb_def qkd_Kripke_def qkd_scenario_def)
+       apply (rule conjI)
+        apply (simp add:  state_transition_qkd_refl_def)
+      apply (rule conjI)
+        apply (fold qkd_scenario_def, rule step0bR)
+       apply (rule conjI)
+      apply (insert step0bR step1bR, simp add: state_transition_qkd_refl_def)
+       apply (rule conjI)
+      apply (insert step2bR, simp add: state_transition_qkd_refl_def)
+      apply (insert step3bR, simp add: state_transition_qkd_refl_def)
+     (* hd QKD_La \<in> init qkd_Kripke *)
+      apply (rule conjI)
+       apply (simp add: QKD_Lb_def qkd_Kripke_def Iqkd_def)
+     (* \<forall>i<length QKD_Lb. QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i \<and> last QKD_Lb \<in> negated_policy *)
+      apply (rule allI)
+      apply (rule impI)
+      apply (simp add: QKD_Lb_def negated_policy_def)
+      apply (rule conjI)
+      prefer 2
+       apply (rule QKD4b_bad)
+      apply (subst state_transition_qkd_inst_def)
+      apply (case_tac i)
+       apply (simp add: step0b)
+      apply (case_tac nat)
+       apply (simp add: step1b)
+      apply (case_tac nata)
+       apply (simp add: step2b)
+      apply (case_tac natb)
+      by (simp add: step3b)+      
     moreover have Lc: "set QKD_Lc \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lc \<in> init qkd_Kripke \<and> 
        (\<forall>i<length QKD_Lc - Suc (0::nat). QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i \<and> last QKD_Lc \<in> negated_policy)"
-      sorry
+       apply (rule conjI)
+      (* set QKD_Lc \<subseteq> states qkd_Kripke  *)
+       apply (simp add: QKD_Lc_def qkd_Kripke_def qkd_scenario_def)
+       apply (rule conjI)
+        apply (simp add:  state_transition_qkd_refl_def)
+      apply (rule conjI)
+        apply (fold qkd_scenario_def, rule step0cR)
+       apply (rule conjI)
+      apply (insert step0cR step1cR, simp add: state_transition_qkd_refl_def)
+       apply (rule conjI)
+      apply (insert step2cR, simp add: state_transition_qkd_refl_def)
+      apply (insert step3cR, simp add: state_transition_qkd_refl_def)
+     (* hd QKD_Lc \<in> init qkd_Kripke *)
+      apply (rule conjI)
+       apply (simp add: QKD_Lc_def qkd_Kripke_def Iqkd_def)
+     (* \<forall>i<length QKD_Lc. QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i \<and> last QKD_Lc \<in> negated_policy *)
+      apply (rule allI)
+      apply (rule impI)
+      apply (simp add: QKD_Lc_def negated_policy_def)
+      apply (rule conjI)
+      prefer 2
+       apply (rule QKD4c_bad)
+      apply (subst state_transition_qkd_inst_def)
+      apply (case_tac i)
+       apply (simp add: step0c)
+      apply (case_tac nat)
+       apply (simp add: step1c)
+      apply (case_tac nata)
+       apply (simp add: step2c)
+      apply (case_tac natb)
+      by (simp add: step3c)+      
     moreover have Ld: "set QKD_Ld \<subseteq> states qkd_Kripke \<and>
        hd QKD_Ld \<in> init qkd_Kripke \<and> 
        (\<forall>i<length QKD_Ld - Suc (0::nat). QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i \<and> last QKD_Ld \<in> negated_policy)"
-      sorry
+       apply (rule conjI)
+      (* set QKD_Ld \<subseteq> states qkd_Kripke  *)
+       apply (simp add: QKD_Ld_def qkd_Kripke_def qkd_scenario_def)
+       apply (rule conjI)
+        apply (simp add:  state_transition_qkd_refl_def)
+      apply (rule conjI)
+        apply (fold qkd_scenario_def, rule step0dR)
+       apply (rule conjI)
+      apply (insert step0dR step1dR, simp add: state_transition_qkd_refl_def)
+       apply (rule conjI)
+      apply (insert step2dR, simp add: state_transition_qkd_refl_def)
+      apply (insert step3dR, simp add: state_transition_qkd_refl_def)
+     (* hd QKD_Ld \<in> init qkd_Kripke *)
+      apply (rule conjI)
+       apply (simp add: QKD_Ld_def qkd_Kripke_def Iqkd_def)
+     (* \<forall>i<length QKD_Ld. QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i \<and> last QKD_Ld \<in> negated_policy *)
+      apply (rule allI)
+      apply (rule impI)
+      apply (simp add: QKD_Ld_def negated_policy_def)
+      apply (rule conjI)
+      prefer 2
+       apply (rule QKD4d_bad)
+      apply (subst state_transition_qkd_inst_def)
+      apply (case_tac i)
+       apply (simp add: step0d)
+      apply (case_tac nat)
+       apply (simp add: step1d)
+      apply (case_tac nata)
+       apply (simp add: step2d)
+      apply (case_tac natb)
+      by (simp add: step3d)+      
     moreover have Le: "set QKD_Le \<subseteq> states qkd_Kripke \<and>
        hd QKD_Le \<in> init qkd_Kripke \<and> 
        (\<forall>i<length QKD_Le - Suc (0::nat). QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i \<and> last QKD_Le \<in> negated_policy)"
-      sorry
+       apply (rule conjI)
+      (* set QKD_Le \<subseteq> states qkd_Kripke  *)
+       apply (simp add: QKD_Le_def qkd_Kripke_def qkd_scenario_def)
+       apply (rule conjI)
+        apply (simp add:  state_transition_qkd_refl_def)
+      apply (rule conjI)
+        apply (fold qkd_scenario_def, rule step0eR)
+       apply (rule conjI)
+      apply (insert step0eR step1eR, simp add: state_transition_qkd_refl_def)
+       apply (rule conjI)
+      apply (insert step2eR, simp add: state_transition_qkd_refl_def)
+      apply (insert step3eR, simp add: state_transition_qkd_refl_def)
+     (* hd QKD_Le \<in> init qkd_Kripke *)
+      apply (rule conjI)
+       apply (simp add: QKD_Le_def qkd_Kripke_def Iqkd_def)
+     (* \<forall>i<length QKD_Le. QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i \<and> last QKD_Le \<in> negated_policy *)
+      apply (rule allI)
+      apply (rule impI)
+      apply (simp add: QKD_Le_def negated_policy_def)
+      apply (rule conjI)
+      prefer 2
+       apply (rule QKD4e_bad)
+      apply (subst state_transition_qkd_inst_def)
+      apply (case_tac i)
+       apply (simp add: step0e)
+      apply (case_tac nat)
+       apply (simp add: step1e)
+      apply (case_tac nata)
+       apply (simp add: step2e)
+      apply (case_tac natb)
+      by (simp add: step3e)+      
     moreover have Lf: "set QKD_Lf \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lf \<in> init qkd_Kripke \<and> 
        (\<forall>i<length QKD_Lf - Suc (0::nat). QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i \<and> last QKD_Lf \<in> negated_policy)"
-      sorry
+       apply (rule conjI)
+      (* set QKD_Lf \<subseteq> states qkd_Kripke  *)
+       apply (simp add: QKD_Lf_def qkd_Kripke_def qkd_scenario_def)
+       apply (rule conjI)
+        apply (simp add:  state_transition_qkd_refl_def)
+      apply (rule conjI)
+        apply (fold qkd_scenario_def, rule step0fR)
+       apply (rule conjI)
+      apply (insert step0fR step1fR, simp add: state_transition_qkd_refl_def)
+       apply (rule conjI)
+      apply (insert step2fR, simp add: state_transition_qkd_refl_def)
+      apply (insert step3fR, simp add: state_transition_qkd_refl_def)
+     (* hd QKD_Lf \<in> init qkd_Kripke *)
+      apply (rule conjI)
+       apply (simp add: QKD_Lf_def qkd_Kripke_def Iqkd_def)
+     (* \<forall>i<length QKD_Lf. QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i \<and> last QKD_Lf \<in> negated_policy *)
+      apply (rule allI)
+      apply (rule impI)
+      apply (simp add: QKD_Lf_def negated_policy_def)
+      apply (rule conjI)
+      prefer 2
+       apply (rule QKD4f_bad)
+      apply (subst state_transition_qkd_inst_def)
+      apply (case_tac i)
+       apply (simp add: step0f)
+      apply (case_tac nat)
+       apply (simp add: step1f)
+      apply (case_tac nata)
+       apply (simp add: step2f)
+      apply (case_tac natb)
+      by (simp add: step3f)+      
     moreover have Lg: "set QKD_Lg \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lg \<in> init qkd_Kripke \<and> 
        (\<forall>i<length QKD_Lg - Suc (0::nat). QKD_Lg ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i \<and> last QKD_Lg \<in> negated_policy)"
-      sorry
+       apply (rule conjI)
+      (* set QKD_Lg \<subseteq> states qkd_Kripke  *)
+       apply (simp add: QKD_Lg_def qkd_Kripke_def qkd_scenario_def)
+       apply (rule conjI)
+        apply (simp add:  state_transition_qkd_refl_def)
+      apply (rule conjI)
+        apply (fold qkd_scenario_def, rule step0gR)
+       apply (rule conjI)
+      apply (insert step0gR step1gR, simp add: state_transition_qkd_refl_def)
+       apply (rule conjI)
+      apply (insert step2gR, simp add: state_transition_qkd_refl_def)
+      apply (insert step3gR, simp add: state_transition_qkd_refl_def)
+     (* hd QKD_Lg \<in> init qkd_Kripke *)
+      apply (rule conjI)
+       apply (simp add: QKD_Lg_def qkd_Kripke_def Iqkd_def)
+     (* \<forall>i<length QKD_Lg. QKD_Le ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i \<and> last QKD_Lg \<in> negated_policy *)
+      apply (rule allI)
+      apply (rule impI)
+      apply (simp add: QKD_Lg_def negated_policy_def)
+      apply (rule conjI)
+      prefer 2
+       apply (rule QKD4g_bad)
+      apply (subst state_transition_qkd_inst_def)
+      apply (case_tac i)
+       apply (simp add: step0g)
+      apply (case_tac nat)
+       apply (simp add: step1g)
+      apply (case_tac nata)
+       apply (simp add: step2g)
+      apply (case_tac natb)
+      by (simp add: step3g)+      
     fix x
     show "x = QKD_L \<or>
        x = QKD_La \<or> x = QKD_Lb \<or> x = QKD_Lc \<or> x = QKD_Ld \<or> x = QKD_Le \<or> x = QKD_Lf \<or> x = QKD_Lg \<Longrightarrow>
