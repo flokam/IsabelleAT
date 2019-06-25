@@ -1165,18 +1165,46 @@ lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
 lemma qkd_eval_step1: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
 proof (unfold eventually_def F_def, rule equalityI) 
   show "{l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
-    {l::protocol list. \<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i \<and> last l \<in> negated_policy}
+    {l::protocol list. (\<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i) \<and> last l \<in> negated_policy}
     \<subseteq> {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
- sorry
+    apply (rule subsetI)
+    apply (simp add: negated_policy_def global_policy_def)
+    apply (erule conjE)+
+    apply (erule exE)
+    apply (erule conjE)
+    apply (erule exE)
+    apply (erule conjE)
+  proof -
+    show "\<And>(x::protocol list) (l::event list) b::bool.
+       set x \<subseteq> states qkd_Kripke \<Longrightarrow>
+       hd x \<in> init qkd_Kripke \<Longrightarrow>
+       \<forall>i<length x - Suc (0::nat). x ! i \<rightarrow>\<^sub>i x ! Suc i \<Longrightarrow>
+       l \<in> last x \<Longrightarrow>
+       AsOne b \<in> set l \<Longrightarrow>
+       EmOne b \<in> set l \<Longrightarrow>
+       x = QKD_L \<or> x = QKD_La \<or> x = QKD_Lb \<or> x = QKD_Lc \<or> x = QKD_Ld \<or> x = QKD_Le \<or> x = QKD_Lf \<or> x = QKD_Lg"
+      apply (case_tac "b = True", simp)
+      apply (subgoal_tac "\<exists> z d. l = [EmOne True, EchX z, AchX d, AsOne True]")
+        apply (erule exE)+
+        apply (case_tac "z = True")
+         apply (case_tac "d = True")
+          apply simp
+         (* l = [EmOne True, EchX True, AchX True, AsOne True] \<longrightarrow> x = QKD_L*)
+          apply (rule disjI1)
+          apply (simp add: QKD_L_def)
+          apply (subgoal_tac "last x = QKD4")
+      (* because of prefix-closedness this follows *)
+      sorry
+  qed
 next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
     \<subseteq> {l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
-       {l::protocol list. \<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i \<and> last l \<in> negated_policy}"
+       {l::protocol list. (\<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i) \<and> last l \<in> negated_policy}"
     apply (rule subsetI)
     apply simp
   proof -
     have L: "set QKD_L \<subseteq> states qkd_Kripke \<and>
        hd QKD_L \<in> init qkd_Kripke \<and>
-       (\<forall>i<length QKD_L - Suc (0::nat). QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i \<and> last QKD_L \<in> negated_policy)"
+       (\<forall>i<length QKD_L - Suc (0::nat). QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i) \<and> last QKD_L \<in> negated_policy"
       apply (rule conjI)
       (* set QKD_L \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_L_def qkd_Kripke_def qkd_scenario_def)
@@ -1193,12 +1221,10 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (rule conjI)
        apply (simp add: QKD_L_def qkd_Kripke_def Iqkd_def)
      (* \<forall>i<length QKD_L. QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i \<and> last QKD_L \<in> negated_policy *)
+      apply (rule conjI)
       apply (rule allI)
       apply (rule impI)
       apply (simp add: QKD_L_def negated_policy_def)
-      apply (rule conjI)
-      prefer 2
-       apply (rule QKD4_bad)
       apply (subst state_transition_qkd_inst_def)
       apply (case_tac i)
        apply (simp add: step0)
@@ -1207,10 +1233,12 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (case_tac nata)
        apply (simp add: step2)
       apply (case_tac natb)
-      by (simp add: step3)+
+        apply (simp add: step3)+
+      apply (simp add: QKD_L_def negated_policy_def)
+      by (rule QKD4_bad)
     moreover have La: "set QKD_La \<subseteq> states qkd_Kripke \<and>
        hd QKD_La \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_La - Suc (0::nat). QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i \<and> last QKD_La \<in> negated_policy)"
+       (\<forall>i<length QKD_La - Suc (0::nat). QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i) \<and> last QKD_La \<in> negated_policy"
        apply (rule conjI)
       (* set QKD_La \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_La_def qkd_Kripke_def qkd_scenario_def)
@@ -1227,12 +1255,10 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (rule conjI)
        apply (simp add: QKD_La_def qkd_Kripke_def Iqkd_def)
      (* \<forall>i<length QKD_La. QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i \<and> last QKD_La \<in> negated_policy *)
+      apply (rule conjI)
       apply (rule allI)
       apply (rule impI)
       apply (simp add: QKD_La_def negated_policy_def)
-      apply (rule conjI)
-      prefer 2
-       apply (rule QKD4a_bad)
       apply (subst state_transition_qkd_inst_def)
       apply (case_tac i)
        apply (simp add: step0a)
@@ -1241,10 +1267,12 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (case_tac nata)
        apply (simp add: step2a)
       apply (case_tac natb)
-      by (simp add: step3a)+      
+        apply (simp add: step3a)+
+      apply (simp add: QKD_La_def negated_policy_def)
+      by (rule QKD4a_bad)
     moreover have Lb: "set QKD_Lb \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lb \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lb - Suc (0::nat). QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i \<and> last QKD_Lb \<in> negated_policy)"
+       (\<forall>i<length QKD_Lb - Suc (0::nat). QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i) \<and> last QKD_Lb \<in> negated_policy"
        apply (rule conjI)
       (* set QKD_Lb \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Lb_def qkd_Kripke_def qkd_scenario_def)
@@ -1261,12 +1289,10 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (rule conjI)
        apply (simp add: QKD_Lb_def qkd_Kripke_def Iqkd_def)
      (* \<forall>i<length QKD_Lb. QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i \<and> last QKD_Lb \<in> negated_policy *)
+      apply (rule conjI)
       apply (rule allI)
       apply (rule impI)
       apply (simp add: QKD_Lb_def negated_policy_def)
-      apply (rule conjI)
-      prefer 2
-       apply (rule QKD4b_bad)
       apply (subst state_transition_qkd_inst_def)
       apply (case_tac i)
        apply (simp add: step0b)
@@ -1275,10 +1301,12 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (case_tac nata)
        apply (simp add: step2b)
       apply (case_tac natb)
-      by (simp add: step3b)+      
+        apply (simp add: step3b)+   
+      apply (simp add: QKD_Lb_def negated_policy_def)
+      by (rule QKD4b_bad)
     moreover have Lc: "set QKD_Lc \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lc \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lc - Suc (0::nat). QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i \<and> last QKD_Lc \<in> negated_policy)"
+       (\<forall>i<length QKD_Lc - Suc (0::nat). QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i) \<and> last QKD_Lc \<in> negated_policy"
        apply (rule conjI)
       (* set QKD_Lc \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Lc_def qkd_Kripke_def qkd_scenario_def)
@@ -1295,12 +1323,10 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (rule conjI)
        apply (simp add: QKD_Lc_def qkd_Kripke_def Iqkd_def)
      (* \<forall>i<length QKD_Lc. QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i \<and> last QKD_Lc \<in> negated_policy *)
+      apply (rule conjI)
       apply (rule allI)
       apply (rule impI)
       apply (simp add: QKD_Lc_def negated_policy_def)
-      apply (rule conjI)
-      prefer 2
-       apply (rule QKD4c_bad)
       apply (subst state_transition_qkd_inst_def)
       apply (case_tac i)
        apply (simp add: step0c)
@@ -1309,10 +1335,12 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (case_tac nata)
        apply (simp add: step2c)
       apply (case_tac natb)
-      by (simp add: step3c)+      
+       apply (simp add: step3c)+
+      apply (simp add: QKD_Lc_def negated_policy_def)
+      by (rule QKD4c_bad)
     moreover have Ld: "set QKD_Ld \<subseteq> states qkd_Kripke \<and>
        hd QKD_Ld \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Ld - Suc (0::nat). QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i \<and> last QKD_Ld \<in> negated_policy)"
+       (\<forall>i<length QKD_Ld - Suc (0::nat). QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i) \<and> last QKD_Ld \<in> negated_policy"
        apply (rule conjI)
       (* set QKD_Ld \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Ld_def qkd_Kripke_def qkd_scenario_def)
@@ -1329,12 +1357,10 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (rule conjI)
        apply (simp add: QKD_Ld_def qkd_Kripke_def Iqkd_def)
      (* \<forall>i<length QKD_Ld. QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i \<and> last QKD_Ld \<in> negated_policy *)
+      apply (rule conjI)
       apply (rule allI)
       apply (rule impI)
       apply (simp add: QKD_Ld_def negated_policy_def)
-      apply (rule conjI)
-      prefer 2
-       apply (rule QKD4d_bad)
       apply (subst state_transition_qkd_inst_def)
       apply (case_tac i)
        apply (simp add: step0d)
@@ -1343,10 +1369,12 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (case_tac nata)
        apply (simp add: step2d)
       apply (case_tac natb)
-      by (simp add: step3d)+      
+        apply (simp add: step3d)+  
+      apply (simp add: QKD_Ld_def negated_policy_def)
+      by (rule QKD4d_bad)
     moreover have Le: "set QKD_Le \<subseteq> states qkd_Kripke \<and>
        hd QKD_Le \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Le - Suc (0::nat). QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i \<and> last QKD_Le \<in> negated_policy)"
+       (\<forall>i<length QKD_Le - Suc (0::nat). QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i) \<and> last QKD_Le \<in> negated_policy"
        apply (rule conjI)
       (* set QKD_Le \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Le_def qkd_Kripke_def qkd_scenario_def)
@@ -1363,12 +1391,10 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (rule conjI)
        apply (simp add: QKD_Le_def qkd_Kripke_def Iqkd_def)
      (* \<forall>i<length QKD_Le. QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i \<and> last QKD_Le \<in> negated_policy *)
+      apply (rule conjI)
       apply (rule allI)
       apply (rule impI)
       apply (simp add: QKD_Le_def negated_policy_def)
-      apply (rule conjI)
-      prefer 2
-       apply (rule QKD4e_bad)
       apply (subst state_transition_qkd_inst_def)
       apply (case_tac i)
        apply (simp add: step0e)
@@ -1377,10 +1403,12 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (case_tac nata)
        apply (simp add: step2e)
       apply (case_tac natb)
-      by (simp add: step3e)+      
+        apply (simp add: step3e)+  
+      apply (simp add: QKD_Le_def negated_policy_def)
+       by (rule QKD4e_bad)
     moreover have Lf: "set QKD_Lf \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lf \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lf - Suc (0::nat). QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i \<and> last QKD_Lf \<in> negated_policy)"
+       (\<forall>i<length QKD_Lf - Suc (0::nat). QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i) \<and> last QKD_Lf \<in> negated_policy"
        apply (rule conjI)
       (* set QKD_Lf \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Lf_def qkd_Kripke_def qkd_scenario_def)
@@ -1397,12 +1425,10 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (rule conjI)
        apply (simp add: QKD_Lf_def qkd_Kripke_def Iqkd_def)
      (* \<forall>i<length QKD_Lf. QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i \<and> last QKD_Lf \<in> negated_policy *)
+      apply (rule conjI)
       apply (rule allI)
       apply (rule impI)
       apply (simp add: QKD_Lf_def negated_policy_def)
-      apply (rule conjI)
-      prefer 2
-       apply (rule QKD4f_bad)
       apply (subst state_transition_qkd_inst_def)
       apply (case_tac i)
        apply (simp add: step0f)
@@ -1411,10 +1437,12 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (case_tac nata)
        apply (simp add: step2f)
       apply (case_tac natb)
-      by (simp add: step3f)+      
+        apply (simp add: step3f)+ 
+      apply (simp add: QKD_Lf_def negated_policy_def)
+      by (rule QKD4f_bad)
     moreover have Lg: "set QKD_Lg \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lg \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lg - Suc (0::nat). QKD_Lg ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i \<and> last QKD_Lg \<in> negated_policy)"
+       (\<forall>i<length QKD_Lg - Suc (0::nat). QKD_Lg ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i) \<and> last QKD_Lg \<in> negated_policy"
        apply (rule conjI)
       (* set QKD_Lg \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Lg_def qkd_Kripke_def qkd_scenario_def)
@@ -1431,12 +1459,10 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (rule conjI)
        apply (simp add: QKD_Lg_def qkd_Kripke_def Iqkd_def)
      (* \<forall>i<length QKD_Lg. QKD_Le ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i \<and> last QKD_Lg \<in> negated_policy *)
+      apply (rule conjI)
       apply (rule allI)
       apply (rule impI)
       apply (simp add: QKD_Lg_def negated_policy_def)
-      apply (rule conjI)
-      prefer 2
-       apply (rule QKD4g_bad)
       apply (subst state_transition_qkd_inst_def)
       apply (case_tac i)
        apply (simp add: step0g)
@@ -1445,12 +1471,15 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       apply (case_tac nata)
        apply (simp add: step2g)
       apply (case_tac natb)
-      by (simp add: step3g)+      
+        apply (simp add: step3g)+  
+      apply (simp add: QKD_Lg_def negated_policy_def)
+      by (rule QKD4g_bad)
+
     fix x
     show "x = QKD_L \<or>
        x = QKD_La \<or> x = QKD_Lb \<or> x = QKD_Lc \<or> x = QKD_Ld \<or> x = QKD_Le \<or> x = QKD_Lf \<or> x = QKD_Lg \<Longrightarrow>
        set x \<subseteq> states qkd_Kripke \<and>
-       hd x \<in> init qkd_Kripke \<and> (\<forall>i<length x - Suc (0::nat). x ! i \<rightarrow>\<^sub>i x ! Suc i \<and> last x \<in> negated_policy)"
+       hd x \<in> init qkd_Kripke \<and> (\<forall>i<length x - Suc (0::nat). x ! i \<rightarrow>\<^sub>i x ! Suc i) \<and> last x \<in> negated_policy"
       apply (erule disjE, erule ssubst, rule L)
         apply (erule disjE, erule ssubst, rule La)
       apply (erule disjE, erule ssubst, rule Lb)
