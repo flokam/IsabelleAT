@@ -997,26 +997,6 @@ apply (case_tac listb)
     apply simp+
    apply auto
    apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-(*
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-   apply (case_tac "Rep_outcome (Abs_outcome [a, aa, ab, ac])", simp)
-*)
    apply auto
    apply (case_tac ad, simp+)
     apply (case_tac x6, simp+)
@@ -1162,6 +1142,46 @@ definition AsOne' :: "outcome set"
 lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
   sorry
 
+
+lemma qkd_states_form[rule_format]: "x \<in> states qkd_Kripke \<Longrightarrow> 
+ (\<forall> l. l \<in> x \<and> AsOne b \<in> set l \<and> EmOne b \<in> set l \<longrightarrow> (\<exists> z d. l = [EmOne b, EchX z, AchX d, AsOne b]))"
+proof (simp add: qkd_Kripke_def states_def state_transition_qkd_refl_def, erule rtrancl_induct)
+  show " \<forall>l::event list.
+       l \<in> qkd_scenario \<and> AsOne b \<in> set l \<and> EmOne b \<in> set l \<longrightarrow>
+       (\<exists>(z::bool) d::bool. l = [EmOne b, EchX z, AchX d, AsOne b])"
+    by (simp add: qkd_scenario_def prot_mem_def)
+next show "(\<And>(y::protocol) z::protocol.
+       (qkd_scenario, y) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y}\<^sup>* \<Longrightarrow>
+       (y, z) \<in> {(x::protocol, y::protocol). x  \<rightarrow>\<^sub>Q y} \<Longrightarrow>
+       (\<forall>l::event list.
+          (l \<in> y \<and> AsOne b \<in> set l \<and> EmOne b \<in> set l) \<longrightarrow>
+          (\<exists> z d. l = [EmOne b, EchX z, AchX d, AsOne b])) \<Longrightarrow>
+       (\<forall>l::event list.
+          (l \<in> z \<and> AsOne b \<in> set l \<and> EmOne b \<in> set l) \<longrightarrow>
+          (\<exists> z d. l = [EmOne b, EchX z, AchX d, AsOne b])))"
+    sorry
+qed
+
+lemma qkd_prepostfix_closed: "set (x :: protocol list) \<subseteq> states qkd_Kripke \<Longrightarrow>
+       hd x \<in> init qkd_Kripke \<Longrightarrow>
+       \<forall>i<length x - Suc (0::nat). x ! i \<rightarrow>\<^sub>i x ! Suc i \<Longrightarrow>
+       l \<in> last x \<Longrightarrow> l = [EmOne b, EchX z, AchX d, AsOne b] \<Longrightarrow>
+       x = [qkd_scenario,
+            insertp [AsOne b] qkd_scenario,
+            insertp [AchX d, AsOne b] (insertp [AsOne b] qkd_scenario),
+            insertp [EchX z, AchX d, AsOne b]
+              (insertp [AchX d, AsOne b] (insertp [AsOne b] qkd_scenario)),
+            insertp [EmOne b, EchX z, AchX d, AsOne b] (insertp [EchX z, AchX d, AsOne b]
+              (insertp [AchX d, AsOne b] (insertp [AsOne b] qkd_scenario)))]  "
+  sorry
+
+
+lemma last_nempty : "(l \<in> (last (x :: protocol list))) \<Longrightarrow> x \<noteq> []"
+  apply (simp add: prot_mem_def the_prot_def)
+  sorry
+
+
+
 lemma qkd_eval_step1: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
 proof (unfold eventually_def F_def, rule equalityI) 
   show "{l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
@@ -1184,17 +1204,88 @@ proof (unfold eventually_def F_def, rule equalityI)
        EmOne b \<in> set l \<Longrightarrow>
        x = QKD_L \<or> x = QKD_La \<or> x = QKD_Lb \<or> x = QKD_Lc \<or> x = QKD_Ld \<or> x = QKD_Le \<or> x = QKD_Lf \<or> x = QKD_Lg"
       apply (case_tac "b = True", simp)
-      apply (subgoal_tac "\<exists> z d. l = [EmOne True, EchX z, AchX d, AsOne True]")
+       apply (subgoal_tac "\<exists> z d. l = [EmOne True, EchX z, AchX d, AsOne True]")
+        prefer 2
+        apply (rule_tac x = "last x" in qkd_states_form)
+         apply (subgoal_tac "last x \<in> set x")
+          apply (erule subsetD, assumption)
+         apply (rule last_in_set)
+         apply (erule last_nempty)
+      apply simp
         apply (erule exE)+
         apply (case_tac "z = True")
          apply (case_tac "d = True")
           apply simp
          (* l = [EmOne True, EchX True, AchX True, AsOne True] \<longrightarrow> x = QKD_L*)
-          apply (rule disjI1)
-          apply (simp add: QKD_L_def)
-          apply (subgoal_tac "last x = QKD4")
-      (* because of prefix-closedness this follows *)
-      sorry
+      apply (drule qkd_prepostfix_closed)
+             apply assumption+
+      apply (rule refl)
+         apply (rule disjI1)
+         apply (simp add: QKD_L_def QKD1_def QKD2_def QKD3_def QKD4_def)
+        apply simp
+       (* l = [EmOne True, EchX True, AchX False, AsOne True] \<longrightarrow> x = QKD_La *)
+      apply (drule qkd_prepostfix_closed)
+             apply assumption+
+         apply (rule refl)
+        apply (rule disjI2, rule disjI1)
+        apply (simp add: QKD_La_def QKD1a_def QKD2a_def QKD3a_def QKD4a_def)
+      apply (case_tac d)
+       apply simp
+      (* l = [EmOne True, EchX False, AchX True, AsOne True] \<longrightarrow> QKD_Lc *)
+      apply (drule qkd_prepostfix_closed)
+             apply assumption+
+         apply (rule refl)
+        apply (rule disjI2, rule disjI2, rule disjI2, rule disjI1)
+        apply (simp add: QKD_Lc_def QKD1c_def QKD2c_def QKD3c_def QKD4c_def)
+       apply simp
+      (* l = [EmOne True, EchX False, AchX False, AsOne True] \<longrightarrow> QKD_Lf *)
+      apply (drule qkd_prepostfix_closed)
+             apply assumption+
+         apply (rule refl)
+        apply (rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI1)
+        apply (simp add: QKD_Lf_def QKD1f_def QKD2f_def QKD3f_def QKD4f_def)
+       apply simp
+(* *)
+       apply (subgoal_tac "\<exists> z d. l = [EmOne False, EchX z, AchX d, AsOne False]")
+        prefer 2
+        apply (rule_tac x = "last x" in qkd_states_form)
+         apply (subgoal_tac "last x \<in> set x")
+          apply (erule subsetD, assumption)
+         apply (rule last_in_set)
+         apply (erule last_nempty)
+      apply simp
+        apply (erule exE)+
+        apply (case_tac "z = True")
+         apply (case_tac "d = True")
+        apply simp
+     (* l = [EmOne False, EchX True, AchX True, AsOne False] \<longrightarrow> x = QKD_Le *)
+      apply (drule qkd_prepostfix_closed)
+             apply assumption+
+         apply (rule refl)
+        apply (rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI1)
+        apply (simp add: QKD_Le_def QKD1e_def QKD2e_def QKD3e_def QKD4e_def)
+       apply simp
+      (* l = [EmOne False, EchX True, AchX False, AsOne False] \<longrightarrow> QKD_Lb *)
+      apply (drule qkd_prepostfix_closed)
+             apply assumption+
+         apply (rule refl)
+        apply (rule disjI2, rule disjI2, rule disjI1)
+       apply (simp add: QKD_Lb_def QKD1b_def QKD2b_def QKD3b_def QKD4b_def)
+      apply (case_tac d)
+       apply simp
+     (* l = [EmOne False, EchX False, AchX True, AsOne False] \<longrightarrow> QKD_Ld *)
+      apply (drule qkd_prepostfix_closed)
+             apply assumption+
+         apply (rule refl)
+        apply (rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI1)
+        apply (simp add: QKD_Ld_def QKD1d_def QKD2d_def QKD3d_def QKD4d_def)
+      apply simp
+     (* l = [EmOne False, EchX False, AchX False, AsOne False] \<Longrightarrow> QKD_Lg *)
+      apply (drule qkd_prepostfix_closed)
+             apply assumption+
+         apply (rule refl)
+        apply (rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI2, rule disjI2)
+        by (simp add: QKD_Lg_def QKD1g_def QKD2g_def QKD3g_def QKD4g_def)
   qed
 next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
     \<subseteq> {l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
