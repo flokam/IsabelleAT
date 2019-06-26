@@ -77,17 +77,44 @@ theorem pmap_ops: "\<forall> x :: ('O :: finite). ops x \<ge> 0 \<Longrightarrow
 
 definition cond_prob :: "('O :: finite)prob_dist \<Rightarrow> 'O set \<Rightarrow> 'O set \<Rightarrow> real" ("_[_|_]" 50)
   where
-"(P :: ('O :: finite)prob_dist)[A|B] \<equiv> (Rep_prob_dist P (A \<inter> B)) / (Rep_prob_dist P A)"
+"(P :: ('O :: finite)prob_dist)[A|B] \<equiv> (Rep_prob_dist P (A \<inter> B)) / (Rep_prob_dist P B)"
+
+lemma cond_prob2: "(Rep_prob_dist P (A \<inter> B)) = ((P :: ('O :: finite)prob_dist)[A|B]) * (Rep_prob_dist P B)"
+  apply (subst cond_prob_def)
+  apply simp
+  sorry
 
 theorem law_of_total_probability:
-"\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {} \<Longrightarrow>
-(Rep_prob_dist(P:: ('O :: finite)prob_dist)(B::'O set)) = sum (\<lambda> A. (P[B|A])*(Rep_prob_dist P A)) \<A>"
-  sorry
+  assumes "\<Union> \<A> = (UNIV :: 'O set)"
+          "\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}"
+  shows "(Rep_prob_dist(P:: ('O :: finite)prob_dist)(B::'O set)) = sum (\<lambda> A. (P[B|A])*(Rep_prob_dist P A)) \<A>"
+proof -
+  show "Rep_prob_dist P B = (\<Sum>A::'O set\<in>\<A>. (P[B|A]) * Rep_prob_dist P A)"
+  proof -
+  have a: "Rep_prob_dist P (B :: 'O set) = Rep_prob_dist P (B \<inter> (UNIV :: 'O set))" by simp
+  moreover have b: "Rep_prob_dist P (B \<inter> (UNIV :: 'O set)) = Rep_prob_dist P (B \<inter> \<Union> \<A>)" using assms(1)
+    by simp
+  moreover have c: "Rep_prob_dist P (B \<inter> \<Union> \<A>) = Rep_prob_dist P (\<Union> A \<in> \<A>. B \<inter> A)" using assms(2)
+    by simp
+  moreover have d: "Rep_prob_dist P (\<Union> A \<in> \<A>. B \<inter> A) = sum (\<lambda> A. Rep_prob_dist P (B \<inter> A)) \<A>" using assms
+    sorry
+  moreover have e: "sum (\<lambda> A. Rep_prob_dist P (B \<inter> A)) \<A> = sum (\<lambda> A. (P[B|A])*(Rep_prob_dist P A)) \<A>"
+    apply (subst cond_prob2)
+    by (rule refl)
+  ultimately show "Rep_prob_dist P B = (\<Sum>A::'O set\<in>\<A>. (P[B|A]) * Rep_prob_dist P A)"
+    apply (subst a)
+    apply (subst b)
+    apply (subst c)
+    apply (subst d)
+    apply (subst e)
+    by (rule refl) 
+qed
+qed
 
 
 definition F:: "('a :: state)set \<Rightarrow> 'a list set"
   where
-"F s \<equiv> {l. \<forall> i < length l - 1. l ! i \<rightarrow>\<^sub>i l ! (Suc i) \<and> last l \<in> s}"
+"F s \<equiv> {l. (\<forall> i < length l - 1. l ! i \<rightarrow>\<^sub>i l ! (Suc i)) \<and> last l \<in> s}"
 
 definition eventually :: "[('a :: state)kripke, 'a set] \<Rightarrow> 'a list set" (infixr "\<turnstile>F" 50)
   where
