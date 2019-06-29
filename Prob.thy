@@ -55,6 +55,19 @@ next show "real (card (UNIV :: ('O :: finite) set)) / real (card (UNIV :: ('O ::
     by (simp add: add_divide_distrib)
 qed
 
+(* lemmas to use prop_space and prob_dist *)
+lemma prob_dist_and: "p \<in> prob_dist_def \<Longrightarrow> 
+     p ((A :: (('O :: finite) set)) \<inter> (B :: (('O :: finite) set))) = p A * p B"
+  sorry
+
+lemma prob_dist_sum: "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow> p \<in> prob_dist_def \<Longrightarrow> 
+      p(\<Union> A \<in> \<A>. A) = sum (\<lambda> A. p A) \<A>"
+  sorry
+
+lemma prob_dist_sum': "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow> p \<in> prob_dist_def \<Longrightarrow> 
+      p(\<Union> A \<in> \<A>. B \<inter> A) = sum (\<lambda> A. p (B \<inter> A)) \<A>"
+  sorry
+
 (* Canonical construction *)
 definition pmap :: "(('O :: finite) \<Rightarrow> real) \<Rightarrow> 'O set \<Rightarrow> real"
   where 
@@ -69,7 +82,7 @@ qed
 *)
 
 theorem pmap_ops: "\<forall> x :: ('O :: finite). ops x \<ge> 0 \<Longrightarrow>
-                   sum ops (UNIV :: 'O set) = 1 \<Longrightarrow> pmap ops \<in> prob_dist_def"
+                   sum ops (UNIV :: ('O :: finite) set) = 1 \<Longrightarrow> pmap ops \<in> prob_dist_def"
   apply (simp add: prob_dist_def_def)
   apply (rule conjI)
   apply (simp add: pmap_def)
@@ -82,7 +95,17 @@ definition cond_prob :: "('O :: finite)prob_dist \<Rightarrow> 'O set \<Rightarr
 lemma cond_prob2: "(Rep_prob_dist P (A \<inter> B)) = ((P :: ('O :: finite)prob_dist)[A|B]) * (Rep_prob_dist P B)"
   apply (subst cond_prob_def)
   apply simp
-  sorry
+  apply (insert prob_dist_and)
+  apply (drule_tac x = "Rep_prob_dist P" in meta_spec)
+  apply (subgoal_tac "Rep_prob_dist P \<in> prob_dist_def")
+   apply simp
+  apply (thin_tac "(\<And>(A::'O set) B::'O set.
+        Rep_prob_dist P \<in> prob_dist_def \<Longrightarrow>
+        Rep_prob_dist P (A \<inter> B) = Rep_prob_dist P A * Rep_prob_dist P B) ")
+  apply (insert Rep_prob_dist)
+  apply (drule_tac x = P in meta_spec)
+by (simp add: prob_dist_def_def)
+
 
 theorem law_of_total_probability:
   assumes "\<Union> \<A> = (UNIV :: 'O set)"
@@ -97,7 +120,11 @@ proof -
   moreover have c: "Rep_prob_dist P (B \<inter> \<Union> \<A>) = Rep_prob_dist P (\<Union> A \<in> \<A>. B \<inter> A)" using assms(2)
     by simp
   moreover have d: "Rep_prob_dist P (\<Union> A \<in> \<A>. B \<inter> A) = sum (\<lambda> A. Rep_prob_dist P (B \<inter> A)) \<A>" using assms
-    sorry
+    apply (rule_tac p = "Rep_prob_dist P" in prob_dist_sum')
+     apply (rule assms(2))
+  apply (insert Rep_prob_dist)
+  apply (drule_tac x = P in meta_spec)
+    by (simp add: prob_dist_def_def)
   moreover have e: "sum (\<lambda> A. Rep_prob_dist P (B \<inter> A)) \<A> = sum (\<lambda> A. (P[B|A])*(Rep_prob_dist P A)) \<A>"
     apply (subst cond_prob2)
     by (rule refl)
