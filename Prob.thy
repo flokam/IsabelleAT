@@ -64,9 +64,31 @@ lemma prob_dist_sum: "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq
       p(\<Union> A \<in> \<A>. A) = sum (\<lambda> A. p A) \<A>"
   sorry
 
-lemma prob_dist_sum': "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow> p \<in> prob_dist_def \<Longrightarrow> 
-      p(\<Union> A \<in> \<A>. B \<inter> A) = sum (\<lambda> A. p (B \<inter> A)) \<A>"
-  sorry
+lemma prob_dist_sum': assumes "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {})" 
+                              "p \<in> prob_dist_def" 
+                            shows "p(\<Union> A \<in> \<A>. B \<inter> A) = sum (\<lambda> A. p (B \<inter> A)) \<A>"
+proof -
+  show "p(\<Union> A \<in> \<A>. B \<inter> A) = sum (\<lambda> A. p (B \<inter> A)) \<A>"
+  proof -
+    have a: "p(\<Union> A \<in> \<A>. B \<inter> A) =  p(B \<inter>(\<Union> A \<in> \<A>. A))" by simp
+    moreover have b: "p(B \<inter>(\<Union> A \<in> \<A>. A)) = p B * p(\<Union> A \<in> \<A>. A)"  using assms
+      by (simp add: prob_dist_and)
+    moreover have c: "p(\<Union> A \<in> \<A>. A) = (sum (\<lambda> A. p A) \<A>)" using assms
+      by (rule prob_dist_sum)
+    moreover have d: "p B * p(\<Union> A \<in> \<A>. A) = p B * (sum (\<lambda> A. p A) \<A>)" 
+      by (subst c, rule refl)
+    moreover have e: "p B * (sum (\<lambda> A. p A) \<A>) =  (sum (\<lambda> A. p B * p A) \<A>)" 
+      using sum_distrib_left by blast
+    moreover have f: "(sum (\<lambda> A. p B * p A) \<A>) = (sum (\<lambda> A. p (B \<inter> A)) \<A>)" using assms
+      by (simp add: prob_dist_and)
+    ultimately show "p(\<Union> A \<in> \<A>. B \<inter> A) = sum (\<lambda> A. p (B \<inter> A)) \<A>"
+      apply (subst a)
+      apply (subst b)
+      apply (subst c)
+      apply (subst e)
+      by (rule f)
+  qed
+qed
 
 (* Canonical construction *)
 definition pmap :: "(('O :: finite) \<Rightarrow> real) \<Rightarrow> 'O set \<Rightarrow> real"
