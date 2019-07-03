@@ -14,48 +14,56 @@ definition prob_dist_def
   where
 "prob_dist_def \<equiv> {p :: (('O :: finite) set \<Rightarrow> real).
          (\<forall> A:: 'O set. p A \<ge> 0) \<and> (p(UNIV :: 'O set) = 1) \<and>
-         (\<forall> A:: 'O set. \<forall> B:: 'O set. A \<inter> B = {} \<longrightarrow> p(A \<union> B) = p A + p B)}"
+         (\<forall> A:: 'O set. \<forall> B:: 'O set.  p(A \<union> B) = p A + p B - p(A \<inter> B))}"
 
 typedef ('O :: finite)prob_dist = "{p :: ('O set \<Rightarrow> real).
          (\<forall> A:: 'O set. p A \<ge> 0) \<and> (p(UNIV :: 'O set) = 1) \<and>
-         (\<forall> A:: 'O set. \<forall> B:: 'O set. A \<inter> B = {} \<longrightarrow> p(A \<union> B) = p A + p B)}"
+         (\<forall> A:: 'O set. \<forall> B:: 'O set.  p(A \<union> B) = p A + p B - p(A \<inter> B))}"
 proof (rule_tac x = "(\<lambda> x :: 'O set. ((card x)::real)/((card (UNIV :: 'O set))::real))" in exI, rule CollectI, rule conjI)
   show " \<forall>A::'O set. (0::real) \<le> real (card A) / real (card UNIV)" by simp
 next show "real (card (UNIV :: ('O :: finite) set)) / real (card (UNIV :: ('O :: finite)set)) = (1::real) \<and>
     (\<forall>(A::('O ::finite) set) B::('O::finite) set.
-        A \<inter> B = {} \<longrightarrow>
         real (card (A \<union> B)) / real (card (UNIV :: ('O :: finite)set)) =
         real (card A) / real (card (UNIV :: ('O :: finite)set)) + 
-        real (card B) / real (card (UNIV :: ('O :: finite)set)))"
+        real (card B) / real (card (UNIV :: ('O :: finite)set))
+        - (real (card (A \<inter> B)) / real (card (UNIV :: ('O :: finite)set))))"
     apply (rule conjI)
      apply simp
     apply clarify
     apply (subgoal_tac "real (card A) / real (card (UNIV :: ('O :: finite) set)) + 
-                        real (card B) / real (card (UNIV :: ('O :: finite) set)) = 
-                        (real (card A) + real (card B)) / real (card (UNIV :: ('O :: finite) set))")
+                        real (card B) / real (card (UNIV :: ('O :: finite) set)) -
+                        real (card (A \<inter> B)) / real (card (UNIV :: ('O :: finite) set)) = 
+                        (real (card A) + real (card B) - real (card (A \<inter> B))) / 
+                              real (card (UNIV :: ('O :: finite) set))")
     apply (rotate_tac -1)
      apply (erule ssubst)
-     apply (subgoal_tac "real (card (A \<union> B)) = real (card A) + real (card B) ")
+     apply (subgoal_tac "real (card (A \<union> B)) = real (card A) + real (card B) - real (card (A \<inter> B))")
       apply (rotate_tac -1)
       apply (erule ssubst)
       apply (rule refl)
-     apply (subgoal_tac "card (A \<union> B) = card A + card B")
+     apply (subgoal_tac "card (A \<union> B) = card A + card B - card (A \<inter> B)")
       apply (rotate_tac -1)
       apply (erule ssubst)
-    apply simp
-     apply (simp add: card_Un_disjoint)
-    apply (subgoal_tac "\<forall> (a::real) b c. c > 0 \<longrightarrow> a / c + b / c = (a + b) / c")
-     apply (subgoal_tac "0 < real(card (UNIV :: ('O :: finite) set))")
-      apply (drule_tac x = "real (card A)" in spec)
-      apply (drule_tac x = "real (card B)" in spec)
-        apply (drule_tac x = "real (card (UNIV :: ('O :: finite)set))" in spec)
-    apply (drule mp)    
-       apply simp+
-     apply force
-    by (simp add: add_divide_distrib)
+    apply (metis add_diff_cancel_right' card_Un_Int finite of_nat_add)
+    apply (metis add_diff_cancel_right' card_Un_Int finite)
+    by (simp add: add_divide_distrib diff_divide_distrib)
 qed
 
 (* lemmas to use prop_space and prob_dist *)
+lemma prob_dist_def_Abs_inv: "p \<in> prob_dist_def \<Longrightarrow> Rep_prob_dist (Abs_prob_dist p) = p"
+  apply (unfold prob_dist_def_def)
+  by (erule Abs_prob_dist_inverse)
+
+lemma prob_dist_def_Rep_inv: "Rep_prob_dist (p :: ('O :: finite)prob_dist) \<in> prob_dist_def"
+  apply (unfold prob_dist_def_def)
+  by (rule Rep_prob_dist)
+
+lemma prob_dist_compl: "p \<in> prob_dist_def \<Longrightarrow>
+    p ((UNIV :: (('O :: finite)set)) - A :: (('O :: finite) set)) = 1 - p A"
+  sorry
+
+
+
 lemma prob_dist_and: "p \<in> prob_dist_def \<Longrightarrow> 
      p ((A :: (('O :: finite) set)) \<inter> (B :: (('O :: finite) set))) = p A * p B"
   sorry

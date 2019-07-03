@@ -1120,7 +1120,6 @@ apply (case_tac listb)
         apply auto
 (* now = 1 *)
   apply (simp add: sum_def)
-  apply auto
   sorry
 
 lemma all_eigth: "(Rep_prob_dist(P:: (outcome)prob_dist)
