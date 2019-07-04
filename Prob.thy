@@ -91,6 +91,23 @@ lemma prob_dist_defE3'[rule_format]: "(p :: (('O :: finite) set \<Rightarrow> re
 proof (simp add: prob_dist_defE3 prob_dist_defE1a)
 qed
 
+lemma prob_dist_mono: "(p :: (('O :: finite) set \<Rightarrow> real)) \<in> prob_dist_def \<Longrightarrow> 
+                     (A :: 'O set) \<subseteq> (B:: 'O set) \<Longrightarrow>  p A \<le> p B"
+proof (frule_tac A = A and B = "B - A" in prob_dist_defE3', simp)
+  show "(p :: (('O :: finite) set \<Rightarrow> real)) \<in> prob_dist_def \<Longrightarrow> 
+         A \<subseteq> B \<Longrightarrow> p (A \<union> (B - A)) = p A + p (B - A) \<Longrightarrow> p A \<le> p B"
+    apply (subgoal_tac "A \<union> (B - A) = B")
+     apply (rotate_tac -1)
+     apply (erule subst)
+     apply (erule ssubst)
+    apply simp
+     apply (insert prob_dist_defE1)
+     apply (drule_tac x = p in meta_spec)
+     apply (drule meta_mp)
+    apply assumption
+     apply (erule spec)
+by blast
+qed
 
 lemma prob_dist_compl: assumes "p \<in> prob_dist_def"
   shows "p ((UNIV :: (('O :: finite)set)) - A :: (('O :: finite) set)) = 1 - p A"
@@ -115,67 +132,7 @@ proof -
 qed
 
 
-lemma prob_dist_and: assumes "p \<in> prob_dist_def"
-     shows "\<forall> (B :: (('O :: finite) set)). p ((A :: (('O :: finite) set)) \<inter> B) = p A * p B"
-proof -
-  show "\<forall> (B :: (('O :: finite) set)). p ((A :: (('O :: finite) set)) \<inter> B) = p A * p B"
-    apply (rule finite_psubset_induct, rule finite)
-    apply (rule allI)
-    apply (case_tac "A = {}")
-     apply (simp add: prob_dist_defE1a assms)
-    apply (subgoal_tac "\<exists> x. x \<in> A")
-     prefer 2
-     apply blast
-    apply (erule exE)
-  proof -
-     show "\<And>(A::'O set) (B::'O set) x::'O.
-       finite A \<Longrightarrow>
-       (\<And>B::'O set. B \<subset> A \<Longrightarrow> \<forall>Ba::'O set. p (B \<inter> Ba) = p B * p Ba) \<Longrightarrow>
-       A \<noteq> {} \<Longrightarrow> x \<in> A \<Longrightarrow> p (A \<inter> B) = p A * p B"
-     proof -
-       fix A B x
-      have a: "x \<in> A \<Longrightarrow> ((A :: (('O :: finite) set)) \<inter> B) = (({x} \<inter> B) \<union> ((A - {x}) \<inter> B))" 
-        by blast
-      have b: "x \<in> A \<Longrightarrow> p ((A :: (('O :: finite) set)) \<inter> B) = p (({x} \<inter> B) \<union> ((A - {x}) \<inter> B))"
-        by (simp add: a)
-      have c: "({x} \<inter> B) \<inter> ((A - {x}) \<inter> B) = {}" 
-        by blast
-      have d: "p (({x} \<inter> B) \<union> ((A - {x}) \<inter> B)) = p ({x} \<inter> B) + p ((A - {x}) \<inter> B)"
-        apply (rule prob_dist_defE3')
-         apply (rule assms)
-        by (rule c)
-      have e: "(\<And>B::'O set. B \<subset> A \<Longrightarrow> \<forall>Ba::'O set. p (B \<inter> Ba) = p B * p Ba) \<Longrightarrow>
-       A \<noteq> {} \<Longrightarrow> x \<in> A \<Longrightarrow> p ((A - {x}) \<inter> B) = p (A - {x}) * p B"
-        apply (drule_tac x = "A - {x}" in meta_spec)
-        apply (drule meta_mp)
-         apply blast
-        by (erule spec)
-      have f:  "(\<And>B::'O set. B \<subset> A \<Longrightarrow> \<forall>Ba::'O set. p (B \<inter> Ba) = p B * p Ba) \<Longrightarrow>
-       A \<noteq> {} \<Longrightarrow> A \<noteq> {x} \<Longrightarrow> x \<in> A \<Longrightarrow> p ({x} \<inter> B) = p {x} * p B"
-        apply (drule_tac x = "{x}" in meta_spec)
-        apply (drule meta_mp)
-         apply blast
-        by (erule spec)
-      show "(\<And>B::'O set. B \<subset> A \<Longrightarrow> \<forall>Ba::'O set. p (B \<inter> Ba) = p B * p Ba) \<Longrightarrow>
-       A \<noteq> {} \<Longrightarrow> x \<in> A \<Longrightarrow> p (A \<inter> B) = p A * p B"
-        apply (case_tac "A = {x}")
-        apply simp
-         apply (rule f)
-            apply simp
-        apply simp
-         apply (rule_tac P = "\<lambda> x. x = p A * p B" in ssubst)
-          apply (erule b)
-         apply (subst d)
-         apply (subst e)
-            apply assumption+
-         apply (subst f)
-        apply assumption+
-        sorry
-    qed
-  qed
-qed
-
-(* simply an gerneralisation of prob_dist_defE3'*)
+(* simply a generalisation of prob_dist_defE3'*)
 lemma prob_dist_sum: "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow> p \<in> prob_dist_def \<Longrightarrow> 
       p(\<Union> A \<in> \<A>. A) = sum (\<lambda> A. p A) \<A>"
   sorry
@@ -195,15 +152,34 @@ proof -
     by (rule assms)
   moreover have c: "(\<Union> A \<in> \<A>. C \<inter> A) = (\<Union> A \<in> fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set). A)"
     apply (simp add: fmap_lem_map finite fmap_lem_one fmap_lem)
-    sorry
+    apply (rule equalityI)
+     apply (rule subsetI)
+    apply (erule IntE)
+    apply (erule UnionE)
+     apply (rule_tac X = "C \<inter> X" in UnionI)
+      apply (rule fmap_lem_map, rule finite, assumption, simp)
+    apply (rule subsetI)
+    apply (erule UnionE)
+    apply (rule IntI)
+     apply (subgoal_tac "fmap ((\<inter>) C) \<A> = {x. \<exists> y \<in> \<A>. x = C \<inter> y}")
+      apply force
+     apply (rule fmap_set_rep, rule finite)
+     apply (subgoal_tac "fmap ((\<inter>) C) \<A> = {x. \<exists> y \<in> \<A>. x = C \<inter> y}")
+      apply force
+     by (rule fmap_set_rep, rule finite)
   moreover have d: "sum (\<lambda> A. p A) (fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set)) =
                    sum (\<lambda> A. p (C \<inter> A)) \<A>"
     sorry
+  moreover have e: "sum (\<lambda> A. p (C \<inter> A)) \<A> = 
+                    sum (\<lambda> A. p A) (fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set))" 
+    apply (rule sym)
+    by (rule d)
   ultimately show "p(\<Union> A \<in> \<A>. C \<inter> A) = sum (\<lambda> A. p (C \<inter> A)) \<A>"
     apply (subst c)
-    by simp
+    apply (subst e)
+    apply (subst b) 
+    by (rule refl)
 qed
-
 
 
 (* Canonical construction *)
@@ -216,26 +192,36 @@ theorem pmap_ops: "\<forall> x :: ('O :: finite). ops x \<ge> 0 \<Longrightarrow
                    sum ops (UNIV :: ('O :: finite) set) = 1 \<Longrightarrow> pmap ops \<in> prob_dist_def"
   apply (simp add: prob_dist_def_def)
   apply (rule conjI)
-  apply (simp add: pmap_def)
+   apply (simp add: pmap_def)
+  apply (rule allI)
   sorry
 
 definition cond_prob :: "('O :: finite)prob_dist \<Rightarrow> 'O set \<Rightarrow> 'O set \<Rightarrow> real" ("_[_|_]" 50)
   where
-"(P :: ('O :: finite)prob_dist)[A|B] \<equiv> (Rep_prob_dist P (A \<inter> B)) / (Rep_prob_dist P B)"
+"(P :: ('O :: finite)prob_dist)[A|B] \<equiv> (if (Rep_prob_dist P B) = 0 then 0 else Rep_prob_dist P (A \<inter> B)) / (Rep_prob_dist P B)"
 
 lemma cond_prob2: "(Rep_prob_dist P (A \<inter> B)) = ((P :: ('O :: finite)prob_dist)[A|B]) * (Rep_prob_dist P B)"
   apply (subst cond_prob_def)
   apply simp
-  apply (insert prob_dist_and)
+  apply (insert prob_dist_mono)
   apply (drule_tac x = "Rep_prob_dist P" in meta_spec)
-  apply (subgoal_tac "Rep_prob_dist P \<in> prob_dist_def")
-   apply simp
-  apply (thin_tac "(\<And>A::'O set.
-        Rep_prob_dist P \<in> prob_dist_def \<Longrightarrow>
-        \<forall>B::'O set. Rep_prob_dist P (A \<inter> B) = Rep_prob_dist P A * Rep_prob_dist P B)")
-  apply (insert Rep_prob_dist)
-  apply (drule_tac x = P in meta_spec)
-by (simp add: prob_dist_def_def)
+  apply (drule_tac x = "A \<inter> B" in meta_spec)
+  apply (drule_tac x = B in meta_spec)
+  apply (rule impI)
+  apply (subgoal_tac "Rep_prob_dist P (A \<inter> B) \<le> (0 :: real)")
+   apply (subgoal_tac "Rep_prob_dist P (A \<inter> B) \<ge> (0 :: real)")
+    apply simp
+   apply (insert prob_dist_defE1)
+   apply (drule_tac x = "Rep_prob_dist P" in meta_spec)
+   apply (rotate_tac -1)
+   apply (drule meta_mp)
+    apply (rule prob_dist_def_Rep_inv)
+   apply (erule spec)
+  apply (drule meta_mp)
+    apply (rule prob_dist_def_Rep_inv)
+  apply (erule subst)
+  apply (erule meta_mp)
+  by blast
 
 
 theorem law_of_total_probability:
