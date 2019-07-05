@@ -137,14 +137,72 @@ lemma prob_dist_sum: "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq
       p(\<Union> A \<in> \<A>. A) = sum (\<lambda> A. p A) \<A>"
   sorry
 
+
+lemma lem_one: "(\<forall> A \<in> (\<A> :: ('O :: finite) set set). \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow>
+          (\<forall> A \<in> fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set). 
+            \<forall> B \<in> fmap (\<lambda> x. C \<inter> x) \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {})"
+proof (simp add: fmap_set_rep)
+  show "\<forall>A::'O set\<in>\<A>. \<forall>B::('O :: finite) set\<in>\<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {} \<Longrightarrow>
+    \<forall>A::'O set.
+       (\<exists>y::'O set\<in>\<A>. A = C \<inter> y) \<longrightarrow> (\<forall>B::'O set. (\<exists>y::'O set\<in>\<A>. B = C \<inter> y) \<longrightarrow> A \<noteq> B \<longrightarrow> A \<inter> B = {})"
+by blast
+qed
+
+lemma sum_lem: "p \<in> prob_dist_def \<Longrightarrow> 
+                (\<forall> A \<in> (\<A> :: ('O :: finite) set set). \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow>
+               sum p ((\<inter>) C ` (\<A> :: ('O :: finite) set set)) = (\<Sum>A::'O set\<in>\<A>. p (C \<inter> A))"
+proof (rule finite_induct, rule finite, simp)
+  show "\<And>(x::'O set) F::('O :: finite) set set.
+       p \<in> prob_dist_def \<Longrightarrow>
+       \<forall>A::'O set\<in>\<A>. \<forall>B::'O set\<in>\<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {} \<Longrightarrow>
+       finite F \<Longrightarrow>
+       x \<notin> F \<Longrightarrow>
+       sum p ((\<inter>) C ` F) = (\<Sum>A::'O set\<in>F. p (C \<inter> A)) \<Longrightarrow>
+       sum p ((\<inter>) C ` insert x F) = (\<Sum>A::'O set\<in>insert x F. p (C \<inter> A))"
+  proof -
+    fix F x
+    assume IH: "sum p ((\<inter>) C ` F) = (\<Sum>A::'O set\<in>F. p (C \<inter> A))"
+    assume xninF: "x \<notin> F"
+    assume disj:"(\<forall> A \<in> (\<A> :: ('O :: finite) set set). \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {})"
+    have a: "sum p ((\<inter>) C ` insert x F) = p (C \<inter> x) + sum p ((\<inter>) C ` F)" 
+    proof -
+      have x1: "((\<inter>) C ` insert x F) = ({(C \<inter> x)} \<union> ((\<inter>) C ` F))" by blast
+      (* moreover have x1a: "((\<inter>) C ` F) = " *)
+      moreover have x0: "(\<forall> A \<in> fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set). 
+            \<forall> B \<in> fmap (\<lambda> x. C \<inter> x) \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {})"
+        apply (rule lem_one)
+        by (rule disj)
+      moreover have x2: "{(C \<inter> x)} \<inter> ((\<inter>) C ` F) = {}" using xninF x0
+        apply (simp add: image_def fmap_set_rep)
+        
+        sorry
+      ultimately show "sum p ((\<inter>) C ` insert x F) = p (C \<inter> x) + sum p ((\<inter>) C ` F)" 
+        sorry
+    qed
+    moreover have b: "(\<Sum>A::'O set\<in>insert x F. p (C \<inter> A)) =  p (C \<inter> x) + (\<Sum>A::'O set\<in> F. p (C \<inter> A))"
+      by (simp add: xninF)
+     ultimately show "sum p ((\<inter>) C ` insert x F) = (\<Sum>A::'O set\<in>insert x F. p (C \<inter> A))"
+      apply (subst a)
+      apply (subst b)
+      apply simp
+      by (rule IH)
+  qed
+qed
+
+
+
+
 lemma prob_dist_sum': assumes "(\<forall> A \<in> (\<A> :: ('O :: finite) set set). \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {})" 
                               "p \<in> prob_dist_def" 
                             shows "p(\<Union> A \<in> \<A>. C \<inter> A) = sum (\<lambda> A. p (C \<inter> A)) \<A>"
 proof -
   have a: "(\<forall> A \<in> fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set). 
             \<forall> B \<in> fmap (\<lambda> x. C \<inter> x) \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {})" using assms
-    apply (simp add: fmap_def)
-    sorry
+    apply (insert lem_one)
+    apply (drule_tac x = \<A> in meta_spec)
+    apply (drule_tac x = C in meta_spec)
+    apply (drule meta_mp, rule assms)
+    by assumption
   moreover have b: "p(\<Union> A \<in> fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set). A) = 
           sum (\<lambda> A. p A) (fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set))"
     apply (rule prob_dist_sum)
@@ -168,8 +226,11 @@ proof -
       apply force
      by (rule fmap_set_rep, rule finite)
   moreover have d: "sum (\<lambda> A. p A) (fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set)) =
-                   sum (\<lambda> A. p (C \<inter> A)) \<A>"
-    sorry
+                   sum (\<lambda> A. p (C \<inter> A)) \<A>" 
+     apply (subgoal_tac "fmap ((\<inter>) C) \<A> = (\<lambda> x. C \<inter> x) ` \<A>")
+     apply (erule ssubst)
+     apply (rule sum_lem, rule assms, rule assms)
+    by (rule fmap_set_rep', rule finite)
   moreover have e: "sum (\<lambda> A. p (C \<inter> A)) \<A> = 
                     sum (\<lambda> A. p A) (fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set))" 
     apply (rule sym)
