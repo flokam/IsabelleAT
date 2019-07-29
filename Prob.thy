@@ -143,6 +143,7 @@ lemma prob_dist_sum: "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq
 
   sorry
 
+thm image_def
 
 lemma lem_one: "(\<forall> A \<in> (\<A> :: ('O :: finite) set set). \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow>
           (\<forall> A \<in> fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set). 
@@ -377,13 +378,61 @@ definition pmap :: "(('O :: finite) \<Rightarrow> real) \<Rightarrow> 'O set \<R
 "pmap (ops :: ('O :: finite) \<Rightarrow> real) S \<equiv> Finite_Set.fold (\<lambda> x y. ops x + y) 0 S"
 
 
+lemma pmap_ops_lem1[rule_format]: "finite (A :: ('O :: finite) set)  \<Longrightarrow>
+       (\<forall>x::('O :: finite). (0::real) \<le> ops x) \<longrightarrow> (0::real) \<le> Finite_Set.fold (\<lambda>x::'O. (+) (ops x)) (0::real) A"
+  apply (erule_tac F = A in finite_induct)
+   apply simp
+  apply clarify
+  apply (drule_tac x = x in spec)
+  apply (fold fsumap_def)
+  apply (subst fsumap_lem)
+    apply (rule finite)
+   apply assumption
+  by simp
+
+
+lemma sum_fold_ops: "sum ops (S :: ('O :: finite)set)  = Finite_Set.fold (\<lambda>x::'O. (+) (ops x)) (0::real) S"
+proof (rule_tac F = S in finite_induct)
+  show "finite S" by (rule finite)
+next show "sum ops {} = Finite_Set.fold (\<lambda>x::'O. (+) (ops x)) (0::real) {}" by simp
+next show "\<And>(x::'O) F::'O set.
+       finite F \<Longrightarrow>
+       x \<notin> F \<Longrightarrow>
+       sum ops F = Finite_Set.fold (\<lambda>x::'O. (+) (ops x)) (0::real) F \<Longrightarrow>
+       sum ops (insert x F) = Finite_Set.fold (\<lambda>x::'O. (+) (ops x)) (0::real) (insert x F)"
+  apply (fold fsumap_def)
+  apply (subst fsumap_lem)
+    apply (rule finite, assumption)
+    by simp
+qed
+
 theorem pmap_ops: "\<forall> x :: ('O :: finite). ops x \<ge> 0 \<Longrightarrow>
                    sum ops (UNIV :: ('O :: finite) set) = 1 \<Longrightarrow> pmap ops \<in> prob_dist_def"
-  apply (simp add: prob_dist_def_def)
-  apply (rule conjI)
+proof (simp add: prob_dist_def_def, rule conjI)
+  show "\<forall>x::'O. (0::real) \<le> ops x \<Longrightarrow> sum ops UNIV = (1::real) \<Longrightarrow> \<forall>A::'O set. (0::real) \<le> pmap ops A"
    apply (simp add: pmap_def)
-  apply (rule allI)
-  sorry
+   apply (rule allI)
+   apply (rule pmap_ops_lem1)
+    apply (rule finite)
+    by (erule spec)
+next show " \<forall>x::'O. (0::real) \<le> ops x \<Longrightarrow>
+    sum ops (UNIV :: ('O :: finite) set) = (1::real) \<Longrightarrow>
+    pmap ops {} = (0::real) \<and>
+    pmap ops (UNIV :: ('O :: finite) set) = (1::real) \<and>
+    (\<forall>(A::('O :: finite) set) B::'O set. pmap ops (A \<union> B) = pmap ops A + pmap ops B - pmap ops (A \<inter> B))"
+    apply (rule conjI)
+     apply (simp add: pmap_def)
+    apply (rule conjI)
+     apply (simp add: pmap_def)
+    apply (fold sum_fold_ops, assumption)
+(* *)
+    apply (rule allI)
+    apply (rule finite_induct)
+    apply (rule finite)
+     apply (simp add: pmap_def)
+    apply (simp add: pmap_def)
+    by (metis Un_insert_right finite sum_Un sum_fold_ops sup_commute)
+qed
 
 definition cond_prob :: "('O :: finite)prob_dist \<Rightarrow> 'O set \<Rightarrow> 'O set \<Rightarrow> real" ("_[_|_]" 50)
   where

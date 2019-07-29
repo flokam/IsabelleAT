@@ -281,14 +281,31 @@ apply (simp add: comp_fun_commute_def)
    apply simp
   by (simp add: comp_fun_commute_def)
 
+lemma fmap_set_rep_lem[rule_format]: "finite S \<Longrightarrow> 
+        S \<noteq> {} \<longrightarrow> x \<in> Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} S \<longrightarrow> (\<exists>y::'a\<in>S. x = f y)"
+  apply (erule_tac F = S in finite_induct)
+   apply simp
+  apply (case_tac "F = {}")
+   apply (simp add: fold_one)
+  apply simp
+  by (metis (full_types) empty_iff fold_infinite image_fold_insert image_insert insert_iff)
+
+
+
 lemma fmap_set_rep[rule_format]: "finite S \<Longrightarrow>  fmap f S = {x. \<exists> y \<in> S. x = f y}"
 proof (rule equalityI, rule subsetI, rule CollectI)
   show "\<And>x::'b. finite S \<Longrightarrow> x \<in> fmap f S \<Longrightarrow> \<exists>y::'a\<in>S. x = f y"
     apply (simp add: fmap_def)
-    sorry
-  next show "finite S \<Longrightarrow> {x::'b. \<exists>y::'a\<in>S. x = f y} \<subseteq> fmap f S"
-      sorry
-  qed
+    apply (case_tac "S = {}")
+     apply simp
+    by (simp add: fmap_set_rep_lem)
+next show "finite S \<Longrightarrow> {x::'b. \<exists>y::'a\<in>S. x = f y} \<subseteq> fmap f S"
+    apply (rule subsetI)
+    apply (drule CollectD)
+    apply (erule bexE)
+    apply (erule ssubst)
+  by (erule fmap_lem_map, assumption)
+qed
 
 lemma fmap_set_rep'[rule_format]: "finite S \<Longrightarrow>  fmap f S = f `S"
 proof (subst fmap_set_rep, assumption, simp add: image_def)
@@ -362,5 +379,4 @@ primrec map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a list \<Rightarrow> 'b lis
 definition lsum :: "real list \<Rightarrow> real"
   where "lsum rl \<equiv>  fold (\<lambda> x y. x + y) rl 0"
 
-thm fold.simps
 end
