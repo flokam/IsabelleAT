@@ -138,12 +138,18 @@ qed
 
 
 (* simply a generalisation of prob_dist_defE3'*)
-lemma prob_dist_sum: "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow> p \<in> prob_dist_def \<Longrightarrow> 
+lemma prob_dist_sum0[rule_format]: 
+     "(\<forall> A \<in> (\<A> :: ('O :: finite) set set). \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<longrightarrow> p \<in> prob_dist_def \<longrightarrow> 
       p(\<Union> A \<in> \<A>. A) = sum (\<lambda> A. p A) \<A>"
+  apply (rule finite_induct)
+    apply (rule finite)
+  apply (simp add: prob_dist_def_def)+
+  by (simp add: insert_partition)
+  
 
-  sorry
-
-thm image_def
+lemma prob_dist_sum: "(\<forall> A \<in> \<A>. \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow> p \<in> prob_dist_def \<Longrightarrow>
+      p(\<Union> A \<in> \<A>. A) = sum (\<lambda> A. p A) \<A>"
+by (rule prob_dist_sum0, simp+)
 
 lemma lem_one: "(\<forall> A \<in> (\<A> :: ('O :: finite) set set). \<forall> B \<in> \<A>. A \<noteq> B \<longrightarrow> A \<inter> B = {}) \<Longrightarrow>
           (\<forall> A \<in> fmap (\<lambda> x. C \<inter> x) (\<A> :: ('O :: finite) set set). 
