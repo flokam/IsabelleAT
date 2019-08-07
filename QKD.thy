@@ -6,7 +6,7 @@ datatype event = AsOne bool | AchX bool | BchX bool | EchX bool | BmOne bool | E
 datatype protocol = Protocol "event list set"
 
 primrec the_prot :: "protocol \<Rightarrow> event list set"
-  where
+  where 
 "the_prot (Protocol evs) = evs"
 
 definition prot_mem :: "event list \<Rightarrow> protocol \<Rightarrow> bool"  ("_ \<in> _" 50)
@@ -1175,16 +1175,10 @@ lemma qkd_prepostfix_closed: "set (x :: protocol list) \<subseteq> states qkd_Kr
   sorry
 
 
-lemma last_nempty : "(l \<in> (last (x :: protocol list))) \<Longrightarrow> x \<noteq> []"
-  apply (simp add: prot_mem_def the_prot_def)
-  sorry
-
-
-
 lemma qkd_eval_step1: "qkd_Kripke \<turnstile>F negated_policy = {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
 proof (unfold eventually_def F_def, rule equalityI) 
   show "{l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
-    {l::protocol list. (\<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i) \<and> last l \<in> negated_policy}
+    {l::protocol list. (\<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i) \<and> last l \<in> negated_policy \<and> l \<noteq> []}
     \<subseteq> {QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}"
     apply (rule subsetI)
     apply (simp add: negated_policy_def global_policy_def)
@@ -1198,6 +1192,7 @@ proof (unfold eventually_def F_def, rule equalityI)
        set x \<subseteq> states qkd_Kripke \<Longrightarrow>
        hd x \<in> init qkd_Kripke \<Longrightarrow>
        \<forall>i<length x - Suc (0::nat). x ! i \<rightarrow>\<^sub>i x ! Suc i \<Longrightarrow>
+       x \<noteq> [] \<Longrightarrow>
        l \<in> last x \<Longrightarrow>
        AsOne b \<in> set l \<Longrightarrow>
        EmOne b \<in> set l \<Longrightarrow>
@@ -1208,8 +1203,7 @@ proof (unfold eventually_def F_def, rule equalityI)
         apply (rule_tac x = "last x" in qkd_states_form)
          apply (subgoal_tac "last x \<in> set x")
           apply (erule subsetD, assumption)
-         apply (rule last_in_set)
-         apply (erule last_nempty)
+         apply (erule last_in_set)
       apply simp
         apply (erule exE)+
         apply (case_tac "z = True")
@@ -1250,8 +1244,7 @@ proof (unfold eventually_def F_def, rule equalityI)
         apply (rule_tac x = "last x" in qkd_states_form)
          apply (subgoal_tac "last x \<in> set x")
           apply (erule subsetD, assumption)
-         apply (rule last_in_set)
-         apply (erule last_nempty)
+         apply (erule last_in_set)
       apply simp
         apply (erule exE)+
         apply (case_tac "z = True")
@@ -1288,13 +1281,13 @@ proof (unfold eventually_def F_def, rule equalityI)
   qed
 next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
     \<subseteq> {l::protocol list. set l \<subseteq> states qkd_Kripke \<and> hd l \<in> init qkd_Kripke} \<inter>
-       {l::protocol list. (\<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i) \<and> last l \<in> negated_policy}"
+       {l::protocol list. (\<forall>i<length l - 1. l ! i \<rightarrow>\<^sub>i l ! Suc i) \<and> last l \<in> negated_policy \<and> l \<noteq> []}"
     apply (rule subsetI)
     apply simp
   proof -
     have L: "set QKD_L \<subseteq> states qkd_Kripke \<and>
        hd QKD_L \<in> init qkd_Kripke \<and>
-       (\<forall>i<length QKD_L - Suc (0::nat). QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i) \<and> last QKD_L \<in> negated_policy"
+       (\<forall>i<length QKD_L - Suc (0::nat). QKD_L ! i \<rightarrow>\<^sub>i QKD_L ! Suc i) \<and> last QKD_L \<in> negated_policy \<and> QKD_L \<noteq> []"
       apply (rule conjI)
       (* set QKD_L \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_L_def qkd_Kripke_def qkd_scenario_def)
@@ -1328,7 +1321,7 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       by (rule QKD4_bad)
     moreover have La: "set QKD_La \<subseteq> states qkd_Kripke \<and>
        hd QKD_La \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_La - Suc (0::nat). QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i) \<and> last QKD_La \<in> negated_policy"
+       (\<forall>i<length QKD_La - Suc (0::nat). QKD_La ! i \<rightarrow>\<^sub>i QKD_La ! Suc i) \<and> last QKD_La \<in> negated_policy \<and> QKD_La \<noteq> []"
        apply (rule conjI)
       (* set QKD_La \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_La_def qkd_Kripke_def qkd_scenario_def)
@@ -1362,7 +1355,7 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       by (rule QKD4a_bad)
     moreover have Lb: "set QKD_Lb \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lb \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lb - Suc (0::nat). QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i) \<and> last QKD_Lb \<in> negated_policy"
+       (\<forall>i<length QKD_Lb - Suc (0::nat). QKD_Lb ! i \<rightarrow>\<^sub>i QKD_Lb ! Suc i) \<and> last QKD_Lb \<in> negated_policy \<and> QKD_Lb \<noteq> []"
        apply (rule conjI)
       (* set QKD_Lb \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Lb_def qkd_Kripke_def qkd_scenario_def)
@@ -1396,7 +1389,7 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       by (rule QKD4b_bad)
     moreover have Lc: "set QKD_Lc \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lc \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lc - Suc (0::nat). QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i) \<and> last QKD_Lc \<in> negated_policy"
+       (\<forall>i<length QKD_Lc - Suc (0::nat). QKD_Lc ! i \<rightarrow>\<^sub>i QKD_Lc ! Suc i) \<and> last QKD_Lc \<in> negated_policy \<and> QKD_Lc \<noteq> []"
        apply (rule conjI)
       (* set QKD_Lc \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Lc_def qkd_Kripke_def qkd_scenario_def)
@@ -1430,7 +1423,7 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       by (rule QKD4c_bad)
     moreover have Ld: "set QKD_Ld \<subseteq> states qkd_Kripke \<and>
        hd QKD_Ld \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Ld - Suc (0::nat). QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i) \<and> last QKD_Ld \<in> negated_policy"
+       (\<forall>i<length QKD_Ld - Suc (0::nat). QKD_Ld ! i \<rightarrow>\<^sub>i QKD_Ld ! Suc i) \<and> last QKD_Ld \<in> negated_policy \<and> QKD_Ld \<noteq> []"
        apply (rule conjI)
       (* set QKD_Ld \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Ld_def qkd_Kripke_def qkd_scenario_def)
@@ -1464,7 +1457,7 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       by (rule QKD4d_bad)
     moreover have Le: "set QKD_Le \<subseteq> states qkd_Kripke \<and>
        hd QKD_Le \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Le - Suc (0::nat). QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i) \<and> last QKD_Le \<in> negated_policy"
+       (\<forall>i<length QKD_Le - Suc (0::nat). QKD_Le ! i \<rightarrow>\<^sub>i QKD_Le ! Suc i) \<and> last QKD_Le \<in> negated_policy \<and> QKD_Le \<noteq> []"
        apply (rule conjI)
       (* set QKD_Le \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Le_def qkd_Kripke_def qkd_scenario_def)
@@ -1498,7 +1491,7 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
        by (rule QKD4e_bad)
     moreover have Lf: "set QKD_Lf \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lf \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lf - Suc (0::nat). QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i) \<and> last QKD_Lf \<in> negated_policy"
+       (\<forall>i<length QKD_Lf - Suc (0::nat). QKD_Lf ! i \<rightarrow>\<^sub>i QKD_Lf ! Suc i) \<and> last QKD_Lf \<in> negated_policy \<and> QKD_Lf \<noteq> []"
        apply (rule conjI)
       (* set QKD_Lf \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Lf_def qkd_Kripke_def qkd_scenario_def)
@@ -1532,7 +1525,7 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
       by (rule QKD4f_bad)
     moreover have Lg: "set QKD_Lg \<subseteq> states qkd_Kripke \<and>
        hd QKD_Lg \<in> init qkd_Kripke \<and> 
-       (\<forall>i<length QKD_Lg - Suc (0::nat). QKD_Lg ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i) \<and> last QKD_Lg \<in> negated_policy"
+       (\<forall>i<length QKD_Lg - Suc (0::nat). QKD_Lg ! i \<rightarrow>\<^sub>i QKD_Lg ! Suc i) \<and> last QKD_Lg \<in> negated_policy \<and> QKD_Lg \<noteq> []"
        apply (rule conjI)
       (* set QKD_Lg \<subseteq> states qkd_Kripke  *)
        apply (simp add: QKD_Lg_def qkd_Kripke_def qkd_scenario_def)
@@ -1569,7 +1562,8 @@ next show "{QKD_L, QKD_La, QKD_Lb, QKD_Lc, QKD_Ld, QKD_Le, QKD_Lf, QKD_Lg}
     show "x = QKD_L \<or>
        x = QKD_La \<or> x = QKD_Lb \<or> x = QKD_Lc \<or> x = QKD_Ld \<or> x = QKD_Le \<or> x = QKD_Lf \<or> x = QKD_Lg \<Longrightarrow>
        set x \<subseteq> states qkd_Kripke \<and>
-       hd x \<in> init qkd_Kripke \<and> (\<forall>i<length x - Suc (0::nat). x ! i \<rightarrow>\<^sub>i x ! Suc i) \<and> last x \<in> negated_policy"
+       hd x \<in> init qkd_Kripke \<and> (\<forall>i<length x - Suc (0::nat). x ! i \<rightarrow>\<^sub>i x ! Suc i) \<and> last x \<in> negated_policy
+       \<and> x \<noteq> []"
       apply (erule disjE, erule ssubst, rule L)
         apply (erule disjE, erule ssubst, rule La)
       apply (erule disjE, erule ssubst, rule Lb)
