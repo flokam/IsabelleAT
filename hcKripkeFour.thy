@@ -141,7 +141,8 @@ lemma finite_data_imp0:
   apply (simp add: move_graph_a_def)
 by simp+
 *)
-lemma finite_data_imp0: "(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
+lemma finite_data_imp0: 
+"(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
 (\<forall>l::location. (finite {dl::(char list \<times> char list set) \<times> char list. 
                           l \<in> Rep_ledger (ledgra (RRLoopFour.graphI hc_scenarioF)) dl})) \<longrightarrow>
 (\<forall>l::location. finite {dl::(char list \<times> char list set) \<times> char list. 
@@ -168,7 +169,21 @@ lemma finite_data_imp0: "(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure,
   apply assumption+
 (* delete *)
   prefer 2
-  apply simp
+    apply simp
+    apply (rotate_tac 2)
+    apply (drule_tac x = l in spec)
+    apply (rotate_tac -1)
+    apply (rule finite_subset)
+     prefer 2
+     apply assumption
+    apply (rule subsetI)
+    apply clarify
+    apply (case_tac "((aa, b), ba) = ((a, as), n)")
+    
+  apply (rotate_tac -1)
+  apply (erule subst)
+    apply (simp add: ledgra_at_def)
+ 
   sorry
 
 lemma ifte_post: "h \<in> (if B then {h} else {}) \<Longrightarrow> B"
@@ -507,7 +522,7 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
        I' =
        RRLoopFour.infrastructure.Infrastructure
         (RRLoopFour.igraph.Lgraph (RRLoopFour.gra G) (RRLoopFour.agra G) (RRLoopFour.cgra G)
-          (RRLoopFour.lgra G) (ledgra G ((a, as), n) := {}))
+          (RRLoopFour.lgra G) (ledgra G ((a, as), n) := L - {l}))
         (RRLoopFour.delta I) \<Longrightarrow>
        rmapF s \<rightarrow>\<^sub>n rmapF s'"
     apply (rule_tac I = "rmapF s" and I' = "rmapF s'" and h = a and l = l and
@@ -518,18 +533,17 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
                         RRLoopThree.nodes_def nodes_def)
                 apply (simp add: rmapF_def ref_map_def nodes_def RRLoopThree.nodes_def)
            apply (simp add: rmapF_def ref_map_def nodes_def RRLoopThree.nodes_def)
-      prefer 2
-     apply (simp add: rmapF_def ref_map_def)
-    prefer 2
        apply (rule ledgra_ledger_to_loc)
     apply (frule finite_data0)
     apply (erule spec)
     apply (simp add: ledger_to_loc_def)
 (* *)
+    apply (simp add: rmapF_def ref_map_def)
     apply (rule ledger_to_loc_delete)
     apply (frule finite_data0)
     apply (rule allI)
-by (erule spec)
+    apply (erule spec)
+    by (rule no_insider)
 (* put *)
 next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) (G::RRLoopFour.igraph)
        (I::RRLoopFour.infrastructure) (a::char list) (l::location) (I'::RRLoopFour.infrastructure)

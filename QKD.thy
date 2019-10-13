@@ -968,6 +968,10 @@ defines A_def:
 fixes J :: "real \<Rightarrow> bool"
 defines J_def: "J \<equiv> (\<lambda> x. x = 3/4)"
 
+fixes P':: "(outcome)prob_dist"
+defines P'_def: "P' \<equiv> Abs_prob_dist(pmap qkd_ops)"
+
+
 (* define protocol lists representing Eve's successful attacks *)
 fixes QKD_L QKD_La QKD_Lb QKD_Lc QKD_Ld QKD_Le QKD_Lf QKD_Lg :: "protocol list"
 defines QKD_L_def: "QKD_L \<equiv> [qkd_scenario, QKD1, QKD2, QKD3, QKD4]"
@@ -1121,16 +1125,23 @@ apply (case_tac listb)
 (* now = 1 *)
   apply (simp add: sum_def)
   sorry
+(* *)
 
-lemma all_eigth: "(Rep_prob_dist(P:: (outcome)prob_dist)
+
+lemma all_eigth: "(Rep_prob_dist(P':: (outcome)prob_dist)
           ({s :: outcome. (\<exists> e. Rep_outcome s = [e, EchX True, AchX True, AsOne True])})) = 1/8"
+proof (unfold P'_def, subst Abs_prob_dist_inverse, fold prob_dist_def_def, (simp add: qkd_prob_dist_lem))
+  show "pmap qkd_ops {s::outcome. \<exists>e::event. Rep_outcome s = [e, EchX True, AchX True, AsOne True]} =
+    (1::real) / (8::real)"
+    apply (simp add: pmap_def qkd_ops_def)
   sorry
+qed
 
 definition EmOne' :: "outcome set"
   where 
 "(EmOne' :: outcome set) \<equiv> {l :: outcome. hd (Rep_outcome l) = (EmOne True :: event)}"
 
-lemma PEmOne': "(Rep_prob_dist(P:: (outcome)prob_dist)) EmOne' = 1/2"
+lemma PEmOne': "(Rep_prob_dist(P':: (outcome)prob_dist)) EmOne' = 1/2"
   sorry
 
 definition AsOne' :: "outcome set"
@@ -1138,7 +1149,7 @@ definition AsOne' :: "outcome set"
 "(AsOne' :: outcome set) \<equiv> {l :: outcome. (Rep_outcome l) ! 3 = (AsOne True :: event)}"
 
 
-lemma cond_prob_AsOne_EmOne: "(P :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
+lemma cond_prob_AsOne_EmOne: "(P' :: (outcome)prob_dist)[AsOne'|EmOne'] = 3/4"
   sorry
 
 

@@ -124,7 +124,6 @@ qed
 definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" ("_ \<Updown> _" 50)
   where "f  \<Updown> d \<equiv> (Rep_label_fun f) d" 
     
-
 lemma move_graph_eq: "move_graph_a a l l g = g"  
 proof (simp add: move_graph_a_def, case_tac g, force)
 qed
@@ -156,7 +155,7 @@ where
              (ledgra G \<nabla> ((a, as), n)) = L \<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                    (ledgra G ((a, as),n) := {}))
+                    (ledgra G ((a, as),n) := L - {l}))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 | put : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> enables I l (Actor a) put \<Longrightarrow>
@@ -216,6 +215,11 @@ lemma ledger_to_loc_data_unique: "Rep_ledger ld (dl,d) \<noteq> {} \<Longrightar
    apply (erule ssubst)+
   apply (rule refl)
 by (rule Rep_ledger)
+
+lemma ledger_to_loc_data_unique0: "Rep_ledger ld dld \<noteq> {} \<Longrightarrow> 
+                                  \<forall> dld'. Rep_ledger ld dld' \<noteq> {} \<Longrightarrow> fst dld = fst dld'"
+  apply (simp add: ledger_to_loc_data_unique)
+  oops
 
 lemma ledgra_ledger_to_loc: 
       "finite {dl::(char list \<times> char list set) \<times> char list. l \<in> Rep_ledger (ledgra G) dl} \<Longrightarrow>
@@ -442,12 +446,196 @@ next show "\<And>la::location.
 by force
 qed
 
+
+lemma update_empty_lem0: "xa \<in> (f(x := {})) y \<Longrightarrow> xa \<in> f y"
+  by (simp, case_tac "x = y", simp+)
+
+
+lemma ledger_del0: "Rep_ledger (lg x := {}) y \<subseteq> Rep_ledger lg y"
+proof (rule subsetI, simp add: ledgra_upd_def)
+  fix xa
+  show "xa \<in> Rep_ledger (Abs_ledger ((Rep_ledger lg)(x := {}))) y \<Longrightarrow> xa \<in> Rep_ledger lg y"
+  proof -
+    assume a0:  "xa \<in> Rep_ledger (Abs_ledger ((Rep_ledger lg)(x := {}))) y"
+    from a0 ledgra_update_lem have a1: "xa \<in> ((Rep_ledger lg)(x := {})) y" by simp
+    with a0 show "xa \<in> Rep_ledger (Abs_ledger ((Rep_ledger lg)(x := {}))) y \<Longrightarrow>
+               xa \<in> Rep_ledger lg y" 
+      apply (rule_tac f = "\<lambda> y. Rep_ledger lg y" and x = x in update_empty_lem0)
+      by assumption
+  qed
+qed
+
+lemma inset_n_empty: "x \<in> s \<Longrightarrow> s \<noteq> {}"
+  by force
+
+(* not used
+lemma inj_data_trans: "inj Actor \<Longrightarrow> inj data_trans"
+  apply (rule injI)
+  apply (simp add: data_trans_def dlm_to_dlm_def)
+  apply (case_tac x)
+  apply (case_tac y)
+  apply simp
+  apply (case_tac aa)
+  apply (case_tac a)
+  apply simp
+  apply (rule conjI)
+  apply (erule conjE)+
+  apply (erule injD, assumption)
+  thm injD
+  apply (rule_tac f = "fmap Actor" and x = bc and y = bb in inj_onD)
+     apply (rule fmap_inj0)
+     apply assumption
+    apply (erule conjE)+
+    apply assumption
+  sorry
+*)
+
+
+lemma setsub_spec: "A - {x. P x} = A - {x. x \<in> A \<and> P x}"
+  by blast
+
+lemma b32a0: "l \<noteq> x \<Longrightarrow> x \<notin> Rep_ledger lg xa \<Longrightarrow>
+               x \<notin> ((Rep_ledger lg)(((a, as), n) := Rep_ledger lg ((a, as), n) - {l})) xa"
+  apply simp
+  apply (rule impI)
+  apply (erule subst)
+  by assumption
+
 lemma ledger_to_loc_delete:   
   assumes a: "\<forall> l. finite {dl::(char list \<times> char list set) \<times> char list. l \<in> Rep_ledger lg dl}" 
-  shows "(ledgra G \<nabla> ((a, as), n)) = L \<Longrightarrow> l \<in> L \<Longrightarrow>
-      ledger_to_loc (lg ((a, as), n) := {}) =
+      and b: "inj Actor"
+  shows "(lg \<nabla> ((a, as), n)) = L \<Longrightarrow> l \<in> L \<Longrightarrow>
+      ledger_to_loc (lg ((a, as), n) := L - {l}) =
        (ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})"
-  sorry
+proof -
+  assume a0: "(lg \<nabla> ((a, as), n)) = L" and a1: "l \<in> L"
+  have a1a: "l \<in> Rep_ledger lg ((a, as), n)" 
+    by (insert a0 a1, unfold ledgra_at_def, erule ssubst)
+  have a1b: "ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n} =
+             ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). 
+                      (y, x) \<in> ledger_to_loc lg l \<and> x = n}" by blast
+  show "(lg \<nabla> ((a, as), n)) = L \<Longrightarrow> l \<in> L \<Longrightarrow> ledger_to_loc (lg ((a, as), n) := L - {l}) =
+       (ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})"
+  proof(rule ext, case_tac "\<forall> dl. dl \<noteq> ((a,as),n) \<longrightarrow> x \<notin> Rep_ledger lg dl")
+    fix x
+    assume A: "\<forall>dl::(char list \<times> char list set) \<times> char list. dl \<noteq> ((a, as), n) \<longrightarrow> x \<notin> Rep_ledger lg dl" 
+    show "ledger_to_loc (lg ((a, as), n) := L - {l}) x =
+       ((ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})) x"
+    proof (case_tac "l = x", simp)
+      assume lex: "l = x"
+      show "ledger_to_loc (lg ((a, as), n) := L - {x}) x =
+            ledger_to_loc lg x - {(y::actor \<times> actor set, x::char list). x = n}"
+      proof -
+        have b00: "(\<forall> b::(char list \<times> char list set) \<times> char list.
+             x \<notin> ((Rep_ledger lg)(((a, as), n) := Rep_ledger lg ((a, as), n) - {x})) b)"
+          by (rule allI, case_tac "b = ((a,as),n)", simp, simp add: A)
+        have b0: "x \<notin> \<Union> range(Rep_ledger(lg ((a, as), n) := L - {x}))"
+          by (unfold ledgra_upd_def, subst ledgra_update_lem, rule disjI2, 
+              rule inset_n_empty, rule a1a, insert a0, erule subst, unfold ledgra_at_def, 
+              insert b00, blast)
+        have b1: "ledger_to_loc (lg ((a, as), n) := L - {x}) x = {}" using b0 ledger_to_loc_def by simp
+        have b2000: "x \<in> UNION UNIV (Rep_ledger lg)" 
+          by (insert a1a, insert lex, force)
+        have b200: "ledger_to_loc lg x = fmap data_trans {dl. x \<in> Rep_ledger lg dl}" 
+          by (unfold ledger_to_loc_def, insert b2000, simp add: ledgra_at_def)
+        have b21: "{dl::(char list \<times> char list set) \<times> char list. x \<in> Rep_ledger lg dl}
+                   = {((a,as),n)}" 
+          by (rule equalityI, insert A, blast, insert a1a, insert lex, simp)
+        have b22: "{data_trans ((a,as),n)} = fmap data_trans {((a,as),n)}" 
+           by (rule sym, rule fmap_lem_one) 
+        have b20: "ledger_to_loc lg x = {data_trans ((a,as),n)}"
+          by (subst b200, subst b22, subst b21, rule refl)
+        have b2: "ledger_to_loc lg x - {(y::actor \<times> actor set, x::char list). x = n} = {}" 
+               by (subst b20, simp add: data_trans_def)
+        show ?thesis by (subst b1, subst b2, rule refl)
+      qed
+    next assume lnex: "l \<noteq> x" show 
+     "ledger_to_loc (lg ((a, as), n) := L - {l}) x =
+    ((ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})) x"
+      proof (case_tac "x \<in> Rep_ledger lg ((a,as),n)")
+        assume b3: "x \<in> Rep_ledger lg ((a,as),n)"
+          have b300: "x \<in> UNION UNIV (Rep_ledger lg)" 
+             by (insert a1a, insert b3, force)
+          have b30: "x \<in> Rep_ledger (lg ((a,as),n):= L - {l})((a,as),n)" 
+            by (insert lnex, insert b3, insert a0, unfold ledgra_upd_def, subst ledgra_update_lem,
+                  rule disjI2, erule inset_n_empty, simp add: ledgra_at_def)
+          have b3000: "x \<in> UNION UNIV (Rep_ledger (lg ((a, as), n) := L - {l}))"
+            by (insert b300, insert b30, force)
+          have b31a: "ledger_to_loc (lg ((a, as), n) := L - {l}) x =
+                   fmap data_trans {dl. x \<in> Rep_ledger (lg ((a,as),n):= (L - {l})) dl}"
+            by (insert b3000, insert lnex, insert A, unfold ledger_to_loc_def, simp add: ledgra_at_def)
+          have b31b: "{dl. x \<in> Rep_ledger (lg ((a,as),n):= (L - {l})) dl} =
+                       {dl. x \<in> ((Rep_ledger lg)(((a,as),n):= L - {l})) dl}" 
+            by (unfold ledgra_upd_def, subst ledgra_update_lem, 
+                rule disjI2, rule inset_n_empty, rule b3, rule refl)
+          have b31c: "fmap data_trans {dl. x \<in> Rep_ledger (lg ((a,as),n):= (L - {l})) dl} =
+                   fmap data_trans {dl. x \<in> ((Rep_ledger lg)(((a,as),n):= L - {l})) dl}"
+            by (subst b31b, rule refl)
+          have b32a: "{dl. x \<in> ((Rep_ledger lg)(((a, as), n) := L - {l})) dl} = {((a,as),n)}" 
+            apply (rule equalityI)
+             prefer 2
+             apply (insert b3, insert lnex, simp, insert a0, simp add: ledgra_at_def)
+            apply (insert A, insert lnex, insert b3, insert a0)
+            apply (unfold ledgra_at_def)
+            apply (erule subst)
+            apply (rule subsetI)
+            apply (drule CollectD)
+            apply (subgoal_tac "xa = ((a,as),n)")
+             apply simp
+            apply (erule contrapos_pp)
+            apply (drule_tac x = xa in spec)
+            apply (drule mp, assumption)
+            apply (drule b32a0, assumption)
+            apply (rule notE)
+             prefer 2
+            by assumption+
+          have b32: "ledger_to_loc (lg ((a, as), n) := L - {l}) x =
+                    fmap data_trans {((a,as),n)}" 
+              by (subst b31a, subst b31c, subst b32a, rule refl)
+          have b33: "((ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})) x
+                    = (ledger_to_loc lg) x" by (insert lnex ,simp)
+          have b34: "(ledger_to_loc lg) x = fmap data_trans {dl. x \<in> Rep_ledger lg dl}" 
+            by (insert b300, insert b3, unfold ledger_to_loc_def ledgra_at_def, simp)
+          have b35a: "{dl. x \<in> Rep_ledger lg dl} = {((a,as),n)}"
+            by (insert b3, insert A, blast)
+          have b35: "fmap data_trans {dl. x \<in> Rep_ledger lg dl} = fmap data_trans {((a,as),n)}"
+            by (subst b35a, rule refl)
+        show ?thesis
+          by (subst b32, subst b33, subst b34, subst b35, rule refl)
+      next assume b4: "x \<notin> Rep_ledger lg ((a,as),n)"
+        have b40: "x \<notin> Rep_ledger (lg ((a,as),n) := L - {l})((a,as),n)" 
+          by (insert a0, unfold ledgra_at_def, erule subst, unfold ledgra_upd_def,
+              subst ledgra_update_lem, rule disjI2, rule inset_n_empty, rule a1a, 
+              insert b4, erule contrapos_nn, simp)
+        have b40b: "x \<notin> \<Union> range (Rep_ledger lg)" 
+          by (insert A, insert b4, force)
+        have b40a: "x \<notin> \<Union> range (Rep_ledger (lg ((a,as),n) := L - {l}))" 
+          by (insert b40b, insert a0, unfold ledgra_at_def, erule subst, unfold ledgra_upd_def,
+              subst ledgra_update_lem, rule disjI2, rule inset_n_empty, rule a1a, simp) 
+        have b41: "ledger_to_loc (lg ((a, as), n) := L - {l}) x = {}" 
+          by (insert b40a, unfold ledger_to_loc_def, simp)
+        have b420: "((ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})) x
+                   = (ledger_to_loc lg) x"
+          by (insert lnex ,simp)
+        have b42:  "((ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})) x
+                   = {}" 
+          by (subst b420, insert b40b, simp add: ledger_to_loc_def) 
+        show ?thesis
+          by (subst b41, subst b42, rule refl)
+      qed
+    qed
+  next fix x
+    assume B: "\<not> (\<forall>dl::(char list \<times> char list set) \<times> char list. dl \<noteq> ((a, as), n) \<longrightarrow> x \<notin> Rep_ledger lg dl)"
+    show "ledger_to_loc (lg ((a, as), n) := L - {l}) x =
+       ((ledger_to_loc lg)(l := ledger_to_loc lg l - {(y::actor \<times> actor set, x::char list). x = n})) x"
+    proof -
+      have B0: "(\<exists> dl. dl \<noteq> ((a, as), n) \<and> x \<in> Rep_ledger lg dl)" using B by blast
+      show ?thesis 
+        sorry
+  qed
+qed
+qed
+
 
 definition ref_map :: "[RRLoopFour.infrastructure, 
                         [RRLoopThree.igraph, location] \<Rightarrow> policy set]

@@ -502,7 +502,7 @@ qed
 
 definition F:: "('a :: state)set \<Rightarrow> 'a list set"
   where
-"F s \<equiv> {l. (\<forall> i < length l - 1. l ! i \<rightarrow>\<^sub>i l ! (Suc i)) \<and> last l \<in> s}"
+"F s \<equiv> {l. (\<forall> i < length l - 1. l ! i \<rightarrow>\<^sub>i l ! (Suc i)) \<and> last l \<in> s \<and> l \<noteq> []}"
 
 definition eventually :: "[('a :: state)kripke, 'a set] \<Rightarrow> 'a list set" (infixr "\<turnstile>F" 50)
   where
