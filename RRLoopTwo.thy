@@ -3,7 +3,7 @@ theory RRLoopTwo
    Corresponding definitions are defined again for the new type. They co-exist with
    the previous definitions. This is possible thanks to Isabelle's overloading and 
    theory name spacing possibilities! *)
-imports hcKripkeOne (* "/Applications/Isabelle2018.app/Isabelle/src/HOL/Hoare/Hoare_Logic" *)
+imports hcKripkeOne FMap (* "/Applications/Isabelle2018.app/Isabelle/src/HOL/Hoare/Hoare_Logic" *)
 begin
 (* a simple definition of data and instantiating 
 the generic types of the Hoare logic to pairs of owner and data as 
@@ -169,7 +169,7 @@ qed
 
 (* general scheme for map over finite sets.
    This would be a useful provision for the Finite_Set library: everyone needs
-   a simple map on Finite Sets all the time! *)
+   a simple map on Finite Sets all the time! 
 definition fmap :: "['a \<Rightarrow> 'b, 'a set] \<Rightarrow> 'b set"
   where "fmap f S = Finite_Set.fold (\<lambda> x y. insert (f x) y) {} S"
 
@@ -512,7 +512,7 @@ apply (simp add: comp_fun_commute_def)
     apply simp
    apply simp
 by (simp add: comp_fun_commute_def)
-
+*)
 
 definition ref_map :: "[RRLoopTwo.infrastructure, 
                         [RRLoopOne.igraph, RRLoopOne.location] \<Rightarrow> policy set]

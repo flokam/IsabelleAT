@@ -197,6 +197,125 @@ apply (simp add: comp_fun_commute_def)
 by force
 
 
+lemma fmap_empty1: "(fmap f {} = S) \<Longrightarrow> (S = {})"
+  by (simp add: fmap_def)
+
+lemma fmap_empty2: "S = {} \<Longrightarrow> fmap f {} = S"
+  by (simp add: fmap_def)
+
+lemma fmap_empty: "(fmap f {} = S) = (S = {})"
+proof  
+  show "fmap f {} = S \<Longrightarrow> S = {}"
+    by (erule fmap_empty1)
+next show  "S = {} \<Longrightarrow> fmap f {} = S"
+    by (erule fmap_empty2)
+qed
+
+lemma fmap_empty3: "fmap f {} = {}"
+  by (simp add: fmap_def)
+
+lemma fmap_empty4[rule_format]: "finite S \<Longrightarrow> fmap f S = {} \<longrightarrow> S = {}"
+  apply (erule_tac F = S in finite_induct)
+  apply simp
+  apply (simp add: fmap_def)
+  apply (subgoal_tac "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} ({x}) \<noteq> {}")
+  apply (subgoal_tac "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} ({x}) \<subseteq> 
+                      Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} (insert x F)")
+    apply blast
+  apply (subst fold_one)
+   apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+  thm Finite_Set.comp_fun_commute.fold_insert
+   apply (drule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
+     apply simp
+     apply simp
+  apply (erule ssubst)
+    apply simp
+     apply (simp add: comp_fun_commute_def)
+     apply force
+    apply (subst fold_one)
+  by simp
+
+
+lemma insert_delete0: "x \<in> A \<Longrightarrow> A = insert x (A - {x})"
+  by auto
+
+lemma fmap_inj[rule_format]: 
+  assumes "finite S" and "inj f"
+  shows "\<forall> S'. finite S' \<longrightarrow> fmap f S = fmap f S' \<longrightarrow> S = S'"
+  using assms
+proof (erule_tac F = S in finite_induct, clarify)
+  show "\<And>S'::'a set. inj f \<Longrightarrow> finite S \<Longrightarrow> inj f \<Longrightarrow> finite S' \<Longrightarrow> 
+        fmap f {} = fmap f S' \<Longrightarrow> {} = S'"
+    apply (rule sym)
+    apply (rule_tac f = f in fmap_empty4)
+    apply assumption
+by (erule fmap_empty1)
+next show "\<And>(x::'a) F::'a set.
+       inj f \<Longrightarrow>
+       finite F \<Longrightarrow>
+       x \<notin> F \<Longrightarrow>
+       \<forall>S'::'a set. finite S' \<longrightarrow> fmap f F = fmap f S' \<longrightarrow> F = S' \<Longrightarrow>
+       \<forall>S'::'a set. finite S' \<longrightarrow> fmap f (insert x F) = fmap f S' \<longrightarrow> insert x F = S'"
+  proof (clarify)
+    fix x F S'
+    assume a0: "inj f"
+       and a1: "finite F"
+       and a1a: "x \<notin> F"
+       and a2: "\<forall>S'::'a set. finite S' \<longrightarrow> fmap f F = fmap f S' \<longrightarrow> F = S'"
+       and a3: "finite S'"
+       and a4: "fmap f (insert x F) = fmap f S'"
+    show "insert x F = S'"
+    proof -
+      have a5: "insert (f x) (fmap f F) = fmap f S'" 
+        by (insert fmap_lem[of F f x], drule meta_mp, rule a1, erule subst, rule a4) 
+      have a6: "f x \<in> fmap f S'" by (insert a5, erule subst, simp)
+      have a6a: "x \<in> S'" by (rule fmap_lem_map_rev, rule a3, rule a0, rule a6)
+      have a7: "fmap f S' = insert (f x) ((fmap f S') - {f x})" 
+        by (insert insert_delete0[of "f x" "(fmap f S')"],drule meta_mp, rule a6)
+      have a8: "insert (f x) (fmap f F) = insert (f x) ((fmap f S') - {f x})" 
+        by (subst a5, subst a7, rule refl)
+      have a9: "f x \<notin> (fmap f F)" using a0 a1 a1a
+        apply (rule_tac P = "f x \<in> fmap f F" in notI, subgoal_tac "x \<in> F")
+          apply (rule notE, rule a1a, assumption)
+        by (rule fmap_lem_map_rev)
+      have a10: "f x \<notin> ((fmap f S') - {f x})" by simp
+      have a11: "fmap f F = ((fmap f S') - {f x})" by (insert a8 a9 a10, force) 
+      have a12: "x \<in> S' \<Longrightarrow> fmap f F = fmap f (S' - {x})" 
+        apply (insert fmap_lem_del[of S' f x])
+        apply (drule meta_mp)
+         apply (rule a3)
+        apply (drule meta_mp)
+         apply (rule a0)
+        apply (drule meta_mp, assumption)
+        apply (erule ssubst)
+        by (rule a11)
+(*      have a13: "x \<notin> S' \<Longrightarrow> f x \<notin> fmap f S'" 
+        by (erule contrapos_nn, rule fmap_lem_map_rev, rule a3, rule a0)
+      have a14: "x \<notin> S' \<Longrightarrow> fmap f F = (fmap f S')" 
+        by (insert a13, drule meta_mp, assumption, subst a11, simp) *)
+      show "insert x F = S'"
+        apply (insert a6a)
+         apply (insert a2)
+         apply (drule_tac x = "S' - {x}" in spec)
+         apply (drule mp)
+          apply (simp add: a3)
+         apply (drule mp)
+          apply (erule a12)
+         apply (erule ssubst)
+        apply (rule sym)
+        by (erule insert_delete0)
+    qed
+  qed
+qed
+
+lemma fmap_inj0: "inj f \<Longrightarrow> inj_on (fmap f){S. finite S}"
+  apply (rule inj_onI)
+  apply (rule fmap_inj)
+  by simp+
+
+
+
+
 lemma fmap_lem_map_rev0[rule_format]: "finite S \<Longrightarrow> (\<forall>y\<in>S. f y \<noteq> f n) \<longrightarrow> (f n) \<in> (fmap f S) \<longrightarrow> n \<in> S"
   apply (erule_tac F = S in finite_induct)
    apply (simp add: fmap_def)
@@ -310,6 +429,45 @@ qed
 lemma fmap_set_rep'[rule_format]: "finite S \<Longrightarrow>  fmap f S = f `S"
 proof (subst fmap_set_rep, assumption, simp add: image_def)
 qed
+
+lemma fmap_set_del_set0[rule_format]: "finite S \<Longrightarrow>
+   \<forall> S'.  inj_on f S \<longrightarrow> S' \<subseteq> S \<longrightarrow> f ` S - f ` S' = f ` (S - S')"
+  apply (erule_tac F = S in finite_induct)
+   apply simp
+  by (metis Diff_subset inj_on_image_set_diff)
+
+thm inj_on_image_set_diff
+thm fmap_def
+
+lemma fmap_set_del_set1[rule_format]: "inj_on f S \<Longrightarrow> S' \<subseteq> S 
+        \<Longrightarrow> f ` S - f ` S' = f ` (S - S')"
+  by (metis Diff_subset inj_on_image_set_diff)
+
+lemma fmap_set_del_set: "finite S \<Longrightarrow> inj_on f S \<Longrightarrow>
+    S' \<subseteq> S \<Longrightarrow> fmap f S - fmap f S' = fmap f (S - S')" 
+  apply (subst fmap_set_rep', assumption)
+  apply (subst fmap_set_rep')
+   apply (erule finite_subset, assumption)
+  apply (subst fmap_set_rep')
+  apply (rule_tac A = "S - S'" and B = S in finite_subset)
+  apply blast
+  apply assumption
+by (erule fmap_set_del_set0)
+
+lemma fmap_set_del_set: "finite S \<Longrightarrow> inj f \<Longrightarrow>
+    finite S' \<Longrightarrow>  fmap f S - fmap f S' = fmap f (S - S')" 
+  apply (subst fmap_set_rep', assumption)
+  apply (subst fmap_set_rep', assumption)
+  apply (subst fmap_set_rep')
+  apply simp
+
+apply (erule fmap_set_del_set0)
+
+
+
+lemma image_inj[rule_format]: "inj f \<Longrightarrow> f ` S = f ` S' \<Longrightarrow> S = S'"
+  by (simp add: inj_image_eq_iff)
+
 
 
 
