@@ -230,28 +230,6 @@ lemma finite_data0:
    apply (rule finite.emptyI)
 by simp
 
-lemma finite_label_imp0: "(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
-(\<forall>l::location. \<forall> a :: string. \<forall> d :: string. 
-                          l \<in> Rep_ledger (ledgra (RRLoopFour.graphI hc_scenarioF)) ((a,as),d)
-                       \<longrightarrow> finite as) \<longrightarrow>
-(\<forall>l::location.  \<forall> a :: string. \<forall> d :: string. 
-                          l \<in> Rep_ledger (ledgra (RRLoopFour.graphI I)) ((a,as),d)
-                       \<longrightarrow> finite as)"
-  sorry
-
-lemma finite_label0[rule_format]: "(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
-(\<forall>l::location.  \<forall> a :: string. \<forall> d :: string. 
-                          l \<in> Rep_ledger (ledgra (RRLoopFour.graphI I)) ((a,as),d)
-                       \<longrightarrow> finite as)"
-  sorry
-
-
-(*
-"(hc_scenarioF, I) \<in> {(x::RRLoopFour.infrastructure, y::RRLoopFour.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
-\<forall>l::location. finite (RRLoopFour.lgra (RRLoopFour.graphI I) l)"
-  apply (drule finite_data_imp0)
-by (simp add: hc_scenarioR_def ex_graphR_def ex_locsR_def)
-*)
 
 lemma init_state_policy0: "\<lbrakk> \<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z'); 
                           (x,y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<rbrakk> \<Longrightarrow> 
@@ -407,7 +385,7 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
         (RRLoopFour.delta I) \<Longrightarrow>
        rmapF s \<rightarrow>\<^sub>n rmapF s'"
     apply (rule_tac I = "rmapF s" and I' = "rmapF s'" and l = l and h = a and l' = l' and 
-                             h' = a' and  hs = "fmap Actor as" and  n = n
+                             h' = a' and  hs = "Actor ` as" and  n = n
          in RRLoopThree.state_transition_in.get_data)
   apply (rule refl)
         apply (simp add: rmapF_def ref_map_def atI_def RRLoopThree.atI_def)
@@ -421,9 +399,7 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
     apply (simp add: ledger_to_loc_def)
 (* *)
       prefer 2
-      apply (rule fmap_lem_map)
-       apply (erule_tac l = l' and a = a' and d = n in finite_label0)
-    apply (simp add: ledgra_at_def, assumption)
+    apply simp
      prefer 2
      apply (simp add: rmapF_def ref_map_def)
      apply (rule ledger_to_loc_insert)
@@ -526,7 +502,7 @@ next show "\<And>(s::RRLoopFour.infrastructure) (s'::RRLoopFour.infrastructure) 
         (RRLoopFour.delta I) \<Longrightarrow>
        rmapF s \<rightarrow>\<^sub>n rmapF s'"
     apply (rule_tac I = "rmapF s" and I' = "rmapF s'" and h = a and l = l and
-                               hs = "fmap Actor as" and  n = n
+                               hs = "Actor ` as" and  n = n
          in RRLoopThree.state_transition_in.del_data)
   apply (rule refl)
         apply (simp add: rmapF_def ref_map_def atI_def RRLoopThree.actors_graph_def actors_graph_def
@@ -597,7 +573,7 @@ proof (rule strong_mt', simp add: hc_KripkeF_def hc_KripkeR_def hc_statesR_def h
       apply (erule ssubst)
     apply (subst fmap_lem_one)
       apply simp
-      apply (rule fmap_lem_one)
+(*      apply (rule fmap_lem_one) *)
      apply (rule equalityI)
       apply clarify
       apply (unfold cloudF_def)
@@ -615,8 +591,115 @@ qed
 
 (* show attack "Eve can still do put at cloud and since we haven't
    forbidden it, she can overwrite Bob's entry "  *)
+(* show attack "Eve can do put at cloud"  *)
+lemma step1: "hc_scenarioF \<rightarrow>\<^sub>n hc_scenarioF'"
+proof (rule_tac l = homeF and a = "''Patient''" and l' = cloudF in move)
+  show "graphI hc_scenarioF = graphI hc_scenarioF" by (rule refl)
+next show "''Patient'' @\<^bsub>graphI hc_scenarioF\<^esub> homeF" 
+    by (simp add: hc_scenarioF_def ex_graphF_def ex_locF_ass_def atI_def nodes_def)
+next show "homeF \<in> nodes (graphI hc_scenarioF)"
+    by (simp add: hc_scenarioF_def ex_graphF_def ex_locF_ass_def atI_def nodes_def, blast)
+next show "cloudF \<in> nodes (graphI hc_scenarioF)"
+    by (simp add: hc_scenarioF_def nodes_def ex_graphF_def, blast)
+next show "''Patient'' \<in> actors_graph (graphI hc_scenarioF)"
+    by (simp add: actors_graph_def hc_scenarioF_def ex_graphF_def ex_locF_ass_def nodes_def, blast)
+next show "enables hc_scenarioF cloudF (Actor ''Patient'') move"
+    by (simp add: enables_def hc_scenarioF_def ex_graphF_def local_policiesF_def
+        ex_credsF_def ex_locsF_def has_def credentials_def)
+next show "hc_scenarioF' =
+    Infrastructure (move_graph_a ''Patient'' homeF cloudF (graphI hc_scenarioF)) (delta hc_scenarioF)"
+    apply (simp add: hc_scenarioF'_def ex_graphF'_def move_graph_a_def 
+                   hc_scenarioF_def ex_graphF_def homeF_def cloudF_def hospitalF_def
+                    ex_locF_ass_def ex_credsF_def)
+    apply (rule ext)
+    by (simp add: hospitalF_def)
+qed
+
+lemma step1r: "hc_scenarioF  \<rightarrow>\<^sub>n* hc_scenarioF'"
+proof (simp add: state_transition_in_refl_def)
+  show " (hc_scenarioF, hc_scenarioF') \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*"
+  by (insert step1, auto)
+qed
+
+lemma step2: "hc_scenarioF'  \<rightarrow>\<^sub>n hc_scenarioF''"
+proof (rule_tac l = hospitalF and a = "''Eve''" and l' = cloudF in move, rule refl)
+  show "''Eve'' @\<^bsub>graphI hc_scenarioF'\<^esub> hospitalF"
+   by (simp add: hc_scenarioF'_def ex_graphF'_def hospitalF_def cloudF_def atI_def nodes_def)
+next show "hospitalF \<in> nodes (graphI hc_scenarioF')"
+    by (simp add: hc_scenarioF'_def ex_graphF'_def hospitalF_def cloudF_def atI_def nodes_def, blast)
+next show "cloudF \<in> nodes (graphI hc_scenarioF')"
+    by (simp add: hc_scenarioF'_def nodes_def ex_graphF'_def, blast)
+next show "''Eve'' \<in> actors_graph (graphI hc_scenarioF')"
+    by (simp add: actors_graph_def hc_scenarioF'_def ex_graphF'_def nodes_def
+                     hospitalF_def cloudF_def, blast)
+next show "enables hc_scenarioF' cloudF (Actor ''Eve'') move"
+    by (simp add: enables_def hc_scenarioF'_def ex_graphF_def local_policiesF_def
+                  ex_credsF_def ex_locsF_def has_def credentials_def cloudF_def sphoneF_def)
+next show "hc_scenarioF'' =
+    Infrastructure (move_graph_a ''Eve'' hospitalF cloudF (graphI hc_scenarioF')) (delta hc_scenarioF')"
+    apply (simp add: hc_scenarioF'_def ex_graphF''_def move_graph_a_def hc_scenarioF''_def 
+                     ex_graphF'_def homeF_def cloudF_def hospitalF_def ex_credsF_def)
+    apply (rule ext)
+    apply (simp add: hospitalF_def)
+    by blast
+qed
+
+lemma step2r: "hc_scenarioF'  \<rightarrow>\<^sub>n* hc_scenarioF''"
+proof (simp add: state_transition_in_refl_def)
+  show "(hc_scenarioF', hc_scenarioF'') \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*"
+    by (insert step2, auto)
+qed
+
+lemma hcF_ref: "[\<N>\<^bsub>(IhcF,shcF)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcF,shcF)\<^esup> \<sqsubseteq>
+                  [\<N>\<^bsub>(IhcF,HCF')\<^esub>, \<N>\<^bsub>(HCF',shcF)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcF,shcF)\<^esup>"  
+proof (rule_tac l = "[]" and l' = "[\<N>\<^bsub>(IhcF,HCF')\<^esub>, \<N>\<^bsub>(HCF',shcF)\<^esub>]" and
+                  l'' = "[]" and si = IhcF and si' = IhcF and 
+                  si'' = shcF and si''' = shcF in refI, simp, rule refl)
+  show "([\<N>\<^bsub>(IhcF, HCF')\<^esub>, \<N>\<^bsub>(HCF', shcF)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcF, shcF)\<^esup>) =
+    ([] @ [\<N>\<^bsub>(IhcF, HCF')\<^esub>, \<N>\<^bsub>(HCF', shcF)\<^esub>] @ [] \<oplus>\<^sub>\<and>\<^bsup>(IhcF, shcF)\<^esup>)"
+  by simp
+qed
+
+
+lemma att_hcF: "\<turnstile>[\<N>\<^bsub>(IhcF,HCF')\<^esub>, \<N>\<^bsub>(HCF',shcF)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcF,shcF)\<^esup>"
+proof (subst att_and, simp, rule conjI)
+  show " \<turnstile>\<N>\<^bsub>(IhcF, HCF')\<^esub>"
+   apply (simp add: IhcF_def HCF'_def att_base)
+   apply (subst state_transition_infra_def)
+   by (rule step1)
+next show "\<turnstile>[\<N>\<^bsub>(HCF', shcF)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(HCF', shcF)\<^esup>"
+   apply (subst att_and, simp)
+   apply (simp add: HCF'_def shcF_def att_base)
+   apply (subst state_transition_infra_def)
+   apply (rule_tac x = hc_scenarioF'' in exI)
+   apply (rule conjI)
+   apply (simp add: global_policyF_def hc_scenarioF''_def hc_actorsF_def 
+                    enables_def local_policiesF_def cloudF_def sphoneF_def)
+    by (rule step2)
+qed
+
+lemma hcF_abs_att: "\<turnstile>\<^sub>V [\<N>\<^bsub>(IhcF,shcF)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcF,shcF)\<^esup>"
+proof (rule ref_valI, rule hcF_ref, rule att_hcF)
+qed
+
+lemma hcF_att: "hc_KripkeF \<turnstile> EF {x. \<not>(global_policyF x ''Eve'')}"
+proof -
+  have a: " \<turnstile>[\<N>\<^bsub>(IhcF, HCF')\<^esub>, \<N>\<^bsub>(HCF', shcF)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcF, shcF)\<^esup>"
+    by (rule att_hcF)
+  hence "(IhcF,shcF) = attack ([\<N>\<^bsub>(IhcF, HCF')\<^esub>, \<N>\<^bsub>(HCF', shcF)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcF, shcF)\<^esup>)"
+    by simp
+  hence "Kripke {s::infrastructure. \<exists>i::infrastructure\<in>IhcF. i \<rightarrow>\<^sub>i* s} IhcF \<turnstile> EF shcF"
+    apply (insert a)
+    apply (erule AT_EF)
+    by simp
+  thus  "hc_KripkeF \<turnstile> EF {x::infrastructure. \<not> global_policyF x ''Eve''}"
+    by (simp add: hc_KripkeF_def hc_statesF_def IhcF_def shcF_def)
+qed
+
+
 theorem hc_EFF: "hc_KripkeF \<turnstile> EF shcF"  
-  sorry
+proof (insert hcF_att, simp add: shcF_def) 
+qed  
 
 theorem Ledger_con: "h \<in> hc_actorsF \<Longrightarrow> h' \<in> hc_actorsF \<Longrightarrow> l \<in> hc_locationsF \<Longrightarrow> 
                    l' \<in> hc_locationsF \<Longrightarrow> l \<in> (ledgra G  \<nabla> ((h, hs), n)) \<Longrightarrow> 

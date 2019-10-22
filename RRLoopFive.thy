@@ -122,9 +122,8 @@ where
   move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
           (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
          I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
-| get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
-        enables I l' (Actor a) get \<Longrightarrow> 
-(* naive version omits the following two checks of the DLM labels *)
+| get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow> 
+        enables I l (Actor a) get \<Longrightarrow> 
         (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow> l' \<in> L  \<Longrightarrow>  a \<in> as \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
@@ -134,16 +133,16 @@ where
 | process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l (Actor a) eval \<Longrightarrow> 
         (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow>
-        a \<in> as \<Longrightarrow>
+        a \<in> as  \<or> a = a'\<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                                 ((ledgra G (f :: label_fun) \<Updown> ((a', as), n) := L)
-                                    ((a', as), n) := {}))
+                                 ((ledgra G ((a', as), n) := {}
+                                    (f :: label_fun) \<Updown> ((a', as), n) := L)))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"  
 (* Can't have del_data or at least not the unrestricted form *)
+(* the "ledgra G \<nabla> ((a, as),n) = {}" is the decisive pre-condition *)
 | put : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> enables I l (Actor a) put \<Longrightarrow>
-        (* the next is the decisive pre-condition *)
         ledgra G \<nabla> ((a, as),n) = {} \<Longrightarrow>
         I' = Infrastructure 
                   (Lgraph (gra G)(agra G)(cgra G)(lgra G)
@@ -176,5 +175,10 @@ definition ref_map :: "[RRLoopFive.infrastructure,
                                         (RRLoopFive.cgra (graphI I))(RRLoopFive.lgra (graphI I))
                                         (RRLoopFive.ledgra (graphI I)))
                                  lp"
+
+lemma delta_invariant: "\<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z')"
+  apply clarify
+  apply (erule state_transition_in.cases)
+  by simp+
 
 end

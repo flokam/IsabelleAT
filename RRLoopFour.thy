@@ -191,7 +191,7 @@ definition data_trans :: "RRLoopFour.dlm \<times> data \<Rightarrow> RRLoopThree
 
 definition ledger_to_loc:: "[ledger, location] \<Rightarrow> RRLoopThree.acond" (* acond is abbrev for (dlm \<times> data) set *)
   where 
-   "ledger_to_loc ld l \<equiv> if l \<in> \<Union> range(Rep_ledger ld) 
+   "ledger_to_loc ld l \<equiv> if l \<in> \<Union> (range(Rep_ledger ld)) 
                           then fmap data_trans {dl. l \<in> (ld \<nabla> dl)} else {}"
 
 lemma ledger_to_loc_data_unique: "Rep_ledger ld (dl,d) \<noteq> {} \<Longrightarrow> 
@@ -525,7 +525,7 @@ proof -
         have b00: "(\<forall> b::(char list \<times> char list set) \<times> char list.
              x \<notin> ((Rep_ledger lg)(((a, as), n) := Rep_ledger lg ((a, as), n) - {x})) b)"
           by (rule allI, case_tac "b = ((a,as),n)", simp, simp add: A)
-        have b0: "x \<notin> \<Union> range(Rep_ledger(lg ((a, as), n) := L - {x}))"
+        have b0: "x \<notin> \<Union> (range(Rep_ledger(lg ((a, as), n) := L - {x})))"
           by (unfold ledgra_upd_def, subst ledgra_update_lem, rule disjI2, 
               rule inset_n_empty, rule a1a, insert a0, erule subst, unfold ledgra_at_def, 
               insert b00, blast)
@@ -596,9 +596,9 @@ proof -
           by (insert a0, unfold ledgra_at_def, erule subst, unfold ledgra_upd_def,
               subst ledgra_update_lem, rule disjI2, rule inset_n_empty, rule a1a, 
               insert b4, erule contrapos_nn, simp)
-        have b40b: "x \<notin> \<Union> range (Rep_ledger lg)" 
+        have b40b: "x \<notin> \<Union> (range (Rep_ledger lg))" 
           by (insert A, insert b4, force)
-        have b40a: "x \<notin> \<Union> range (Rep_ledger (lg ((a,as),n) := L - {l}))" 
+        have b40a: "x \<notin> \<Union> (range (Rep_ledger (lg ((a,as),n) := L - {l})))" 
           by (insert b40b, insert a0, unfold ledgra_at_def, erule subst, unfold ledgra_upd_def,
               subst ledgra_update_lem, rule disjI2, rule inset_n_empty, rule a1a, simp) 
         have b41: "ledger_to_loc (lg ((a, as), n) := L - {l}) x = {}" 
@@ -629,7 +629,7 @@ proof -
             by (insert a0, insert a1, insert lex, simp add: ledgra_at_def)
           have c00: "x \<in> UNION UNIV (Rep_ledger lg)" 
               by (insert a1a, insert lex, force)
-          have c0: "x \<in> \<Union> range(Rep_ledger(lg ((a, as), n) := L - {x}))"
+          have c0: "x \<in> \<Union> (range(Rep_ledger(lg ((a, as), n) := L - {x})))"
             by (unfold ledgra_upd_def, subst ledgra_update_lem, rule disjI2, rule inset_n_empty, 
                 rule a1a, insert B0, erule exE, insert a0, erule subst, unfold ledgra_at_def, force)
           have c1: "ledger_to_loc (lg ((a, as), n) := L - {x}) x =
@@ -718,7 +718,7 @@ proof -
   qed
 qed
 qed
-
+qed
 
 definition ref_map :: "[RRLoopFour.infrastructure, 
                         [RRLoopThree.igraph, location] \<Rightarrow> policy set]

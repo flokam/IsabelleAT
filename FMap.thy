@@ -462,7 +462,7 @@ lemma fmap_set_del_set: "finite S \<Longrightarrow> inj f \<Longrightarrow>
   apply simp
 
 apply (erule fmap_set_del_set0)
-
+  oops
 
 
 lemma image_inj[rule_format]: "inj f \<Longrightarrow> f ` S = f ` S' \<Longrightarrow> S = S'"
