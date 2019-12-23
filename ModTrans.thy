@@ -4,12 +4,12 @@ begin
 
 (* Improvement possibility:
 The first two conditions in mod_trans could be part of Kripke type_def and thus become implicit *)
-definition mod_trans :: "[('a::state) kripke,('a'::state) \<Rightarrow> 'a, 'a' kripke] \<Rightarrow> bool" ("(_ \<sqsubseteq>\<^sub>_ _)" 50)  
+definition refinement :: "[('a::state) kripke,('a'::state) \<Rightarrow> 'a, 'a' kripke] \<Rightarrow> bool" ("(_ \<sqsubseteq>\<^sub>_ _)" 50)  
   where "K \<sqsubseteq>\<^sub>E K' = (init K' \<subseteq> states K' \<and> init K \<subseteq> states K \<and>
     (\<forall> s' \<in> (states K'). (\<forall> s \<in> (init K'). (s \<rightarrow>\<^sub>i* s') \<longrightarrow> (E s) \<in> (init K) \<and> (E s) \<rightarrow>\<^sub>i* (E s'))))"
 
 lemma init_ref: "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> E ` (init K') \<subseteq> (init K)"
-  apply (simp add: mod_trans_def)
+  apply (simp add: refinement_def)
   apply (rule subsetI)
   apply (erule imageE)
   apply (rotate_tac -2)
@@ -28,7 +28,7 @@ theorem prop_pres:  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> (\<forall> s' 
                       (K' \<turnstile> EF s') \<longrightarrow> (Kripke (states K)(E ` (init K')) \<turnstile> EF (E ` s')))" 
   apply clarify
   apply (frule init_ref)
-  apply (unfold mod_trans_def)
+  apply (unfold refinement_def)
   apply (erule conjE)+
   apply (simp add: check_def)
   apply (rule subsetI)
@@ -79,7 +79,7 @@ by (erule init_ref)
 theorem strong_mt[rule_format]: 
 "init K' \<subseteq> states K' \<and> init K \<subseteq> states K \<and> E ` (init K') \<subseteq> (init K) \<and> (\<forall> s s'. s \<rightarrow>\<^sub>i s' \<longrightarrow> (E s) \<rightarrow>\<^sub>i (E s')) \<Longrightarrow>
                                 K \<sqsubseteq>\<^sub>E K'"
-  apply (unfold mod_trans_def)
+  apply (unfold refinement_def)
   apply simp
   apply (erule conjE)+
   apply (rule ballI)+
@@ -103,7 +103,7 @@ theorem strong_mt'[rule_format]:
 "init K' \<subseteq> states K' \<and> init K \<subseteq> states K \<and> E ` (init K') \<subseteq> (init K) \<and> 
      (\<forall> s s'. (\<exists> s0 \<in> init K'. s0  \<rightarrow>\<^sub>i* s) \<longrightarrow> s \<rightarrow>\<^sub>i s' \<longrightarrow> (E s) \<rightarrow>\<^sub>i (E s')) \<Longrightarrow>
                                 K \<sqsubseteq>\<^sub>E K'"
-  apply (unfold mod_trans_def)
+  apply (unfold refinement_def)
   apply simp
   apply (erule conjE)+
   apply (rule ballI)+
