@@ -1,44 +1,51 @@
+section "Attack Trees"
 theory AT
 imports MC 
 begin
 
-(* Attack trees with a Kripke semantics;
- Generalised attacktree structure with only one generic base_attack type 'a
-  that encompasses all of abstract attack annotation 'a (could be string but also
-  the type of predicates for representing the actual attack predicate
-  inside the attack tree explicitly rather than just its name) as
-  well as the type of base attacks.
-   For the example Infrastructure framework 'a would contain the actor and the action
-     *)
+text \<open>Attack Trees are an intuitive and practical formal method to analyse and quantify
+attacks on security and privacy. They are very useful to identify the steps an attacker
+takes through a system when approaching the attack goal. Here, we provide 
+a proof calculus to analyse concrete attacks using a notion of attack validity.
+We define a state based semantics with Kripke models and the temporal logic
+CTL in the proof assistant Isabelle \cite{npw:02} using its Higher Order Logic 
+(HOL). We prove the correctness and completeness (adequacy) of Attack Trees in Isabelle 
+with respect to the model.\<close>
+
+
+subsection "Attack Tree datatype"
+text \<open>The following datatype definition @{text \<open>attree\<close>} defines attack trees.
+The simplest case of an attack tree is a base attack.
+The principal idea is that base attacks are defined by a pair of
+state sets representing the initial states and the {\it attack property}
+-- a set of states characterized by the fact that this property holds
+in them. 
+Attacks can also be combined as the conjunction or disjunction of other attacks. 
+The operator @{text \<open>\<oplus>\<^sub>\<or>\<close>} creates or-trees and @{text \<open>\<oplus>\<^sub>\<and>\<close>} creates and-trees.
+And-attack trees @{text \<open>l \<oplus>\<^sub>\<and> s\<close>} and or-attack trees @{text \<open>l \<oplus>\<^sub>\<or> s\<close>} 
+combine lists of attack trees $l$ either conjunctively or disjunctively and
+consist of a list of sub-attacks -- again attack trees.\<close>
 datatype ('s :: state) attree = BaseAttack "('s set) * ('s set)" ("\<N>\<^bsub>(_)\<^esub>") |
                   AndAttack "('s attree) list" "('s set) * ('s set)" ("_ \<oplus>\<^sub>\<and>\<^bsup>(_)\<^esup>" 50) | 
                   OrAttack  "('s attree) list" "('s set) * ('s set)" ("_ \<oplus>\<^sub>\<or>\<^bsup>(_)\<^esup>" 51)
 
-             
 primrec attack :: "('s :: state) attree \<Rightarrow> ('s set) * ('s set)"
   where 
 "attack (BaseAttack b) = b"|
 "attack (AndAttack as s) = s"  | 
 "attack (OrAttack as s) = s"
 
-(* The relation refines_to "constructs" the attack tree. Here the above 
-   defined attack vectors are used to define how nodes in an attack tree 
-   can be expanded into more detailed (refined) attack sequences. This 
-   process of refinement "\<sqsubseteq>" allows to eventually reach a fully detailed
-   attack that can then be proved using "\<turnstile>" .
-  New idea for a general refinement and proof calculus only assuming a
-  general state transition:
-  'a attree nodes consist two sets of 'a states (I0,P) where I0 represents
-  the initial states for that attack and P represents the property that
-  defines the attack, e.g. enables cockpit Eve put.
-  The refinement can now similarly to the special version for Insiders
-  relate pre-state(s) with state transition and post-state.
-  End-points, i.e. base attacks, are those where either no state change or
-  just one step. This is subject of the \<turnstile> rules. The refinement rules
-  are probably mostly unchanged yet there might be an additional one for
-  or because the pre-set allows different alternative starting points
-  for disjunctive attacks. 
-*)
+subsection \<open>Attack Tree refinement\<close>
+text \<open>When we develop an attack tree, we proceed from an abstract attack, given
+by an attack goal, by breaking it down into a series of sub-attacks. This
+proceeding corresponds to a process of {\it refinement}. Therefore, as part of
+the attack tree calculus, we provide a notion of attack tree refinement.
+
+The relation @{text \<open>refines_to\<close>} "constructs" the attack tree. Here the above
+defined attack vectors are used to define how nodes in an attack tree 
+can be expanded into more detailed (refined) attack sequences. This 
+process of refinement @{text "\<sqsubseteq>"} allows to eventually reach a fully detailed
+attack that can then be proved using @{text "\<turnstile>"}.\<close>
 inductive refines_to :: "[('s :: state) attree, 's attree] \<Rightarrow> bool" ("_ \<sqsubseteq> _" 50)
 where 
 refI: "\<lbrakk>  A = ((l @ [ \<N>\<^bsub>(si',si'')\<^esub>] @ l'')\<oplus>\<^sub>\<and>\<^bsup>(si,si''')\<^esup> );
@@ -49,6 +56,7 @@ ref_or: "\<lbrakk> as \<noteq> []; \<forall> A' \<in> set(as). A  \<sqsubseteq> 
 ref_trans: "\<lbrakk> A \<sqsubseteq> A'; A' \<sqsubseteq> A'' \<rbrakk> \<Longrightarrow> A \<sqsubseteq> A''"|
 ref_refl : "A \<sqsubseteq> A"
 
+text \<open>Some specialised list induction schemes for following lemmas.\<close>
 lemma non_empty_list_induction[rule_format] : "(\<forall> a . (P::'a::type list \<Rightarrow> bool) [a]) \<longrightarrow>
 (\<forall> (x1::'a::type) x2::'a::type list. P x2 \<longrightarrow> P (x1 # x2)) \<longrightarrow>
 (list \<noteq> [] \<longrightarrow> P (list::'a::type list))"    
@@ -74,7 +82,66 @@ proof (rule impI)
   by simp+
 qed
 
-(* Central constructive predicate to define the validity of an attack tree *)
+subsection \<open>Validity of Attack Trees\<close>
+text \<open>A valid attack, intuitively, is one which is fully refined into fine-grained
+attacks that are feasible in a model. The general model we provide is
+a Kripke structure, i.e., a set of states and a generic state transition.
+Thus, feasible steps in the model are single steps of the state transition.
+We call them valid base attacks.
+The composition of sequences of valid base attacks into and-attacks yields
+again valid attacks if the base attacks line up with respect to the states
+in the state transition. If there are different valid attacks for the same
+attack goal starting from the same initial state set, these can be 
+summarized in an or-attack.
+More precisely, the different cases of the validity predicate are distinguished
+by pattern matching over the attack tree structure.
+\begin{itemize}
+\item A  base attack @{text \<open>\<N>(s0,s1)\<close>} is  valid if from all
+states in the pre-state set @{text \<open>s0\<close>} we can get with a single step of the 
+state transition relation to a state in the post-state set \<open>s1\<close>. Note,
+that it is sufficient for a post-state to exist for each pre-state. After all,
+we are aiming to validate attacks, that is, possible attack paths to some
+state that fulfills the attack property.
+\item An and-attack @{text \<open>As \<oplus>\<^sub>\<and> (s0,s1)\<close>} is a valid attack
+ if either of the following cases holds:
+  \begin{itemize}
+   \item empty attack sequence @{text \<open>As\<close>}: in this case 
+       all pre-states in @{text \<open>s0\<close>} must already be attack states 
+       in @{text \<open>s1\<close>}, i.e., @{text \<open>s0 \<subseteq> s1\<close>};
+   \item attack sequence @{text \<open>As\<close>} is singleton: in this case, the 
+      singleton element attack @{text \<open>a\<close>} in @{text \<open>[a]\<close>}, 
+      must be a valid attack and it must be an attack with pre-state 
+      @{text \<open>s0\<close>} and post-state @{text \<open>s1\<close>};
+   \item otherwise, @{text \<open>As\<close>} must be a list matching @{text \<open>a # l\<close>} for
+     some attack @{text \<open>a\<close>} and tail of attack list @{text \<open>l\<close>} such that
+     @{text \<open>a\<close>} is a valid attack with pre-state identical to the overall 
+     pre-state @{text \<open>s0\<close>} and the goal of the tail @{text \<open>l\<close>} is 
+     @{text \<open>s1\<close>} the goal of the  overall attack. The pre-state of the
+     attack represented by @{text \<open>l\<close>} is @{text \<open>snd(attack a)\<close>} since this is 
+     the post-state set of the first step @{text \<open>a\<close>}.
+\end{itemize}
+ \item An or-attack @{text \<open>As  \<oplus>\<^sub>\<or>(s0,s1)\<close>} is a valid attack 
+  if either of the following cases holds: 
+  \begin{itemize}
+   \item the empty attack case is identical to the and-attack above: 
+       @{text \<open>s0 \<subseteq> s1\<close>};
+   \item attack sequence @{text \<open>As\<close>} is singleton: in this case, the 
+      singleton element attack @{text \<open>a\<close>}
+      must be a valid attack and 
+      its pre-state must include the overall attack pre-state set @{text \<open>s0\<close>} 
+      (since @{text \<open>a\<close>} is singleton in the or) while the post-state of 
+      @{text \<open>a\<close>} needs to be included in the global attack goal @{text \<open>s1\<close>};
+   \item otherwise, @{text \<open>As\<close>} must be a list  @{text \<open>a # l\<close>} for
+     an attack @{text \<open>a\<close>} and a list @{text \<open>l\<close>} of alternative attacks.
+     The pre-states can be just a subset of @{text \<open>s0\<close>} (since there are
+     other attacks in @{text \<open>l\<close>} that can cover the rest) and the goal
+     states @{text \<open>snd(attack a)\<close>} need to lie all in the overall goal
+     state @{text \<open>set s1\<close>}. The other or-attacks in @{text \<open>l\<close>} need
+     to cover only the pre-states @{text \<open>fst s - fst(attack a)\<close>}
+     (where @{text \<open>-\<close>} is set difference) and have the same goal @{text \<open>snd s\<close>}.
+   \end{itemize}
+\end{itemize}
+The proof calculus is thus completely described by one recursive function. \<close>
 fun is_attack_tree :: "[('s :: state) attree] \<Rightarrow> bool"  ("\<turnstile>_" 50) 
 where 
 att_base:  "(\<turnstile> \<N>\<^bsub>s\<^esub>) = ( (\<forall> x \<in> (fst s). (\<exists> y \<in> (snd s). x  \<rightarrow>\<^sub>i y )))" |
@@ -91,9 +158,11 @@ att_or: " (\<turnstile> (As :: ('s :: state attree list)) \<oplus>\<^sub>\<or>\<
                 | (a # l) \<Rightarrow> (( \<turnstile> a) \<and> fst(attack a) \<subseteq> fst s \<and> 
                               snd(attack a) \<subseteq> snd s \<and>
                        ( \<turnstile> l \<oplus>\<^sub>\<or>\<^bsup>(fst s - fst(attack a), snd s)\<^esup>)))" 
-
+text \<open>Since the definition is constructive, code can be generated directly from it, here
+into the programming language Scala.\<close>
 export_code is_attack_tree in Scala    
 
+subsection "Lemmas for Attack Tree validity"
 lemma att_and_one: assumes "\<turnstile> a" and  "attack a = s"
   shows  "\<turnstile>[a] \<oplus>\<^sub>\<and>\<^bsup>s\<^esup>"
 proof -
@@ -301,18 +370,17 @@ proof -
     by (rule assms)
 qed
 
-(***** att_elem_seq is the main lemma for Correctness. ******
+text \<open>The lemma @{text \<open>att_elem_seq\<close>} is the main lemma for Correctness.
   It shows that for a given attack tree x1, for each element in the set of start sets 
   of the first attack, we can reach in zero or more steps a state in the states in which 
-  the attack is successful (the final attack state snd(attack x1)).
-  This proof is a Big alternative to an earlier version of the proof with
-  first_step etc that mapped first on a sequence of sets of states .
-*)    
+  the attack is successful (the final attack state @{text \<open>snd(attack x1)\<close>}).
+  This proof is a big alternative to an earlier version of the proof with
+  @{text \<open>first_step\<close>} etc that mapped first on a sequence of sets of states.\<close>
 lemma att_elem_seq[rule_format]: "\<turnstile> x1 \<longrightarrow> (\<forall> x \<in> fst(attack x1).
                      (\<exists> y. y \<in> snd(attack x1) \<and> x \<rightarrow>\<^sub>i* y))"
-(* first attack tree induction *)
+text \<open>First attack tree induction\<close>
 proof (induct_tac x1)
-  (* base case *)
+  text \<open>Base case\<close>
     show "\<And>x::'a set \<times> 'a set. \<turnstile>\<N>\<^bsub>x\<^esub> \<longrightarrow> (\<forall>xa::'a\<in>fst (attack \<N>\<^bsub>x\<^esub>). \<exists>y::'a. y \<in> snd (attack \<N>\<^bsub>x\<^esub>) \<and> xa \<rightarrow>\<^sub>i* y)"
       apply (simp add: att_base)
       apply clarify
@@ -323,7 +391,7 @@ proof (induct_tac x1)
       apply (rule conjI, assumption)
       apply (simp add: state_transition_refl_def)
       by force
-(* second case \<and> -- setting it for induction *)
+text \<open>Second case @{text\<open>\<and>\<close>} -- setting it for induction\<close>
   next show "\<And>(x1a::'a attree list) x2::'a set \<times> 'a set.
        (\<And>x1aa::'a attree.
            x1aa \<in> set x1a \<Longrightarrow>
@@ -339,7 +407,7 @@ proof (induct_tac x1)
        prefer 2
        apply (rotate_tac -1)
        apply assumption
-(* induction for \<and>*)
+text \<open>Induction for @{text \<open>\<and>\<close>}\<close>
     proof (rule_tac list = "x1a" in list.induct)
       show "(\<forall>x1aa::'a attree.
            x1aa \<in> set [] \<longrightarrow>
@@ -354,7 +422,7 @@ proof (induct_tac x1)
         apply (drule att_and_empty) 
         apply (erule subsetD, assumption)
         by (simp add: state_transition_refl_def)
-      (* \<and> induction case nonempty  *)
+      text \<open>The @{text \<open>\<and>\<close>} induction case nonempty\<close>
     next show "\<And>(x1a::'a attree list) (x2::'a set \<times> 'a set) (x1::'a attree) (x2a::'a attree list).
        (\<And>x1aa::'a attree.
            (x1aa \<in> set x1a) \<Longrightarrow>
@@ -376,8 +444,8 @@ proof (induct_tac x1)
            (\<forall>xa::'a\<in>fst (attack (x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)).
                (\<exists>y::'a. y \<in> snd (attack (x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and> (xa \<rightarrow>\<^sub>i* y)))))"
       apply (rule impI, rule allI, rule impI)
-      (* free IH *)
-      apply (subgoal_tac " (\<forall>x::'a set \<times> 'a set.
+      text \<open>Set free the Induction Hypothesis\<close>
+      apply (subgoal_tac "(\<forall>x::'a set \<times> 'a set.
                              \<turnstile>x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup> \<longrightarrow>
                              (\<forall>xa::'a\<in>fst (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)).
                               \<exists>y::'a. y \<in> snd (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y))")
@@ -404,29 +472,29 @@ proof (induct_tac x1)
           (\<forall>xa::'a\<in>fst (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)). \<exists>y::'a. y \<in> snd (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y) \<Longrightarrow>
        \<forall>xa::'a\<in>fst (attack (x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)). \<exists>y::'a. y \<in> snd (attack (x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y"
        apply (rule ballI)
-       (* prepare the steps *)
+          text \<open>Prepare the steps\<close> 
        apply (drule_tac x = "(snd(attack x1), snd x)" in spec)
        apply (rotate_tac -1)
        apply (erule impE)
        apply (erule att_andD2)
-       (* premise for x1 *)
+       text \<open>Premise for x1\<close>
        apply (drule_tac x = x1 in spec)
        apply (drule mp)
        apply simp
        apply (drule mp)
        apply (erule att_andD1)
-       (* instantiate first step for xa *)
+       text \<open>Instantiate first step for xa\<close>
        apply (rotate_tac -1)
        apply (drule_tac x = xa in bspec)
        apply (erule att_and_fst_lem, assumption)
        apply (erule exE)
        apply (erule conjE)
-       (* take this y and put it as first into the second part *)
+       text \<open>Take this y and put it as first into the second part\<close>
        apply (drule_tac x = y in bspec)
        apply simp
        apply (erule exE)
        apply (erule conjE)
-       (* bind the first xa \<rightarrow>\<^sub>i* y  and second y \<rightarrow>\<^sub>i* ya together for solution *)
+       text \<open>Bind the first @{text \<open>xa \<rightarrow>\<^sub>i* y\<close>} and second @{text \<open>y \<rightarrow>\<^sub>i* ya\<close>} together for solution\<close>
        apply (rule_tac x = ya in exI)
        apply (rule conjI)
        apply simp
@@ -439,15 +507,15 @@ proof (induct_tac x1)
        \<forall>x1aa::'a attree.
           x1aa \<in> set x1a \<longrightarrow> \<turnstile>x1aa \<longrightarrow> (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y)"
    by simp
-qed
-(* or_attack case ! *) 
+     qed
+   text \<open>The "or" attack case\<close> 
 next show "\<And>(x1a::'a attree list) x2::'a set \<times> 'a set.
        (\<And>x1aa::'a attree.
            x1aa \<in> set x1a \<Longrightarrow>
            \<turnstile>x1aa \<longrightarrow> (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y)) \<Longrightarrow>
        \<turnstile>x1a \<oplus>\<^sub>\<or>\<^bsup>x2\<^esup> \<longrightarrow>
        (\<forall>x::'a\<in>fst (attack (x1a \<oplus>\<^sub>\<or>\<^bsup>x2\<^esup>)). \<exists>y::'a. y \<in> snd (attack (x1a \<oplus>\<^sub>\<or>\<^bsup>x2\<^esup>)) \<and> x \<rightarrow>\<^sub>i* y)"
-    (* set up for induction *)
+    text \<open>Set up for induction\<close> 
      apply (rule_tac x = x2 in spec)
      apply (subgoal_tac "(\<forall> x1aa::'a attree.
                                 x1aa \<in> set x1a \<longrightarrow>
@@ -457,12 +525,8 @@ next show "\<And>(x1a::'a attree list) x2::'a set \<times> 'a set.
      prefer 2
      apply (rotate_tac -1)
      apply assumption
-  (*   apply (thin_tac "(\<And>x1aa::'a attree.
-           x1aa \<in> set x1a \<Longrightarrow>
-           \<turnstile>x1aa \<longrightarrow>
-           (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y))") *)
   proof (rule_tac list = "x1a" in list.induct)
-  (* \<and> induction empty case *)
+    text \<open>The @{text \<open>\<and>\<close>} induction empty case\<close>
     show "(\<forall>x1aa::'a attree.
            x1aa \<in> set [] \<longrightarrow>
            \<turnstile>x1aa \<longrightarrow> (\<forall>x::'a\<in>fst (attack x1aa). \<exists>y::'a. y \<in> snd (attack x1aa) \<and> x \<rightarrow>\<^sub>i* y)) \<longrightarrow>
@@ -476,7 +540,7 @@ next show "\<And>(x1a::'a attree list) x2::'a set \<times> 'a set.
      apply (drule att_or_empty) 
      apply (erule subsetD, assumption)
      by (simp add: state_transition_refl_def)
-(* \<or> induction case nonempty *)
+   text \<open>The @{text \<open>\<or>\<close>} induction case nonempty\<close>
  next show "\<And>(x1a::'a attree list) (x2::'a set \<times> 'a set) (x1::'a attree) x2a::'a attree list.
        (\<And>x1aa::'a attree.
            (x1aa \<in> set x1a) \<Longrightarrow>
@@ -498,7 +562,7 @@ next show "\<And>(x1a::'a attree list) x2::'a set \<times> 'a set.
            (\<forall>xa::'a\<in>fst (attack (x1 # x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)).
                (\<exists>y::'a. y \<in> snd (attack (x1 # x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y)))" 
       apply (rule impI, rule allI, rule impI)
-      (* free IH *)
+     text \<open>Set free the Induction Hypothesis\<close>
       apply (subgoal_tac "(\<forall>x::'a set \<times> 'a set.
                            \<turnstile>x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup> \<longrightarrow>
                             (\<forall>xa::'a\<in>fst (attack (x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)).
@@ -527,22 +591,24 @@ next show "\<And>(x1a::'a attree list) x2::'a set \<times> 'a set.
           (\<forall>xa::'a\<in>fst (attack (x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)). \<exists>y::'a. y \<in> snd (attack (x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y) \<Longrightarrow>
        \<forall>xa::'a\<in>fst (attack (x1 # x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)). \<exists>y::'a. y \<in> snd (attack (x1 # x2a \<oplus>\<^sub>\<or>\<^bsup>x\<^esup>)) \<and> xa \<rightarrow>\<^sub>i* y"
      apply (rule ballI)
-     (* prepare the step for xa*)    
+       text \<open>Prepare the step for xa\<close>   
      apply (drule_tac x = x1 in spec)
      apply (drule mp)
      apply simp
      apply (drule mp)
      apply (erule att_orD1)
      apply simp
-     (* apply or_att_fst_sup to infer from xa \<in> fst x that it is in
-       ((\<Union> y::'s attree\<in> set (x1 # x2a). fst (attack y)). Then UnE should
-       provide that xa \<in> fst (attack x1) or xa \<in> fst (attack x2) for some x2 \<in> (set x2a)  *)  
+     text \<open>Apply @{text \<open>or_att_fst_sup\<close>} to infer from @{text \<open>xa \<in> fst x\<close>} that it is in
+       @{text \<open>((\<Union> y::'s attree\<in> set (x1 # x2a). fst (attack y))\<close>}. Then @{text \<open>UnE\<close>} 
+       provides that 
+     @{text \<open>xa \<in> fst (attack x1)\<close>} or @{text \<open>xa \<in> fst (attack x2)\<close>} for some 
+     @{text \<open>x2 \<in> (set x2a)\<close>}\<close>
      apply (frule or_att_fst_sup)
      apply (drule subsetD, assumption)
      apply (erule UnionE)
      apply simp
      apply (erule disjE)
-     (* case xa \<in> fst(attack x1) *)
+     text \<open>Case @{text \<open>xa \<in> fst(attack x1)\<close>}\<close>
      apply (drule_tac x = xa in bspec, erule subst, assumption)
      apply (erule exE)
      apply (erule conjE)
@@ -552,7 +618,7 @@ next show "\<And>(x1a::'a attree list) x2::'a set \<times> 'a set.
      apply simp
      apply (erule subsetD, assumption)
      apply assumption
-     (* second case: xa \<in> X; X \<in> (\<lambda>y::'a attree. fst (attack y)) ` set x2a *)
+     text \<open>Second case: @{text \<open>xa \<in> X\<close>} and @{text \<open>X \<in> (\<lambda>y::'a attree. fst (attack y)) ` set x2a\<close>}\<close>
      apply (drule_tac x = "fst x - fst(attack x1)" in spec)
      apply (drule_tac x = "snd x" in spec)
      apply (drule mp)
@@ -567,7 +633,7 @@ next show "\<And>(x1a::'a attree list) x2::'a set \<times> 'a set.
      apply simp
      apply (erule subsetD, assumption)
      apply assumption
-     (*xa \<notin> fst (attack x1) *)
+     text \<open>@{text \<open>xa \<notin> fst (attack x1)\<close>}\<close>
      apply (rotate_tac -2)
      apply (drule_tac x = xa in bspec)
      apply simp
@@ -592,7 +658,7 @@ proof (clarify)
   by (rule att_elem_seq)
 qed
           
-(*** Valid refinements ****)      
+subsection \<open>Valid refinements\<close>
 definition valid_ref :: "[('s :: state) attree, 's attree] \<Rightarrow> bool" ("_ \<sqsubseteq>\<^sub>V _" 50)
   where
 "A \<sqsubseteq>\<^sub>V A' \<equiv>  ( A \<sqsubseteq> A' \<and>  \<turnstile> A')"
@@ -607,22 +673,16 @@ proof (simp add: ref_validity_def valid_ref_def)
     by (rule exI, rule conjI)
 qed
 
-(* Main theorems of Correctness and Completeness
-   between AT and Kripke, \<turnstile> (init K, p) \<equiv>  K \<turnstile> EF p *) 
-(* This proof roughly goes in two steps:
-    First, the attack can be refined into an or of single-step attack sequences: 
-       \<turnstile> A \<Longrightarrow> 
-       \<exists> A'.  A \<sqsubseteq> A' \<and> attack A = attack A' \<and>
-          let seq = att_seq A' 
-          in (\<forall> i < length seq. nth i seq \<rightarrow>\<^sub>i nth (Suc i) seq) 
-    Second, let A' as in previous step, then for all these single-step seq, they 
-    are witness for EF s, where s is the final state set of each seq:
-    \<lbrakk> attack A = (I,s); seq = att_seq A;  
-      (\<forall> i < length seq. nth i seq \<rightarrow>\<^sub>i nth (Suc i) seq) \<rbrakk>
-    \<Longrightarrow> Kripke(I,  \<rightarrow>\<^sub>i) \<turnstile> EF s
-Proof with induction over definition of EF 
-*)    
+section "Correctness and Completeness"
+text \<open>This section presents the main theorems of Correctness and Completeness
+      between AT and Kripke, essentially: 
 
+@{text \<open>\<turnstile> (init K, p) \<equiv>  K \<turnstile> EF p\<close>}.
+
+First, we proof a number of lemmas needed for both directions before we 
+show the Correctness theorem followed by the Completeness theorem.
+\<close>    
+subsection \<open>Lemma for Correctness and Completeness\<close>
 lemma nth_app_eq[rule_format]: "\<forall> sl x. sl \<noteq> [] \<longrightarrow> sl ! (length sl - Suc (0::nat)) = x \<longrightarrow> 
                     (l @ sl) ! (length l + length sl - Suc (0::nat)) = x"    
 proof (rule_tac list = l in list.induct)
@@ -779,11 +839,11 @@ lemma list_eq1[rule_format]: "sl \<noteq> [] \<longrightarrow>
 proof (induct_tac sl, auto)
 qed
 
-lemma attack_eq1: " snd (attack (x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) = snd (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>(snd (attack x1), snd x)\<^esup>))"
+lemma attack_eq1: "snd (attack (x1 # x2a \<oplus>\<^sub>\<and>\<^bsup>x\<^esup>)) = snd (attack (x2a \<oplus>\<^sub>\<and>\<^bsup>(snd (attack x1), snd x)\<^esup>))"
 proof (simp)
 qed
 
-lemma attack_eq2 : " (fst (attack x1), snd (attack x1)) = attack x1"
+lemma attack_eq2 : "(fst (attack x1), snd (attack x1)) = attack x1"
 proof (simp)
 qed
 
@@ -827,18 +887,6 @@ next show "\<And>(A::'a attree) (A'::'a attree) A''::'a attree.
 next show "\<And>A::'a attree. attack A = attack A" by (rule refl)
 qed
 
-(* Same goes clearly for \<sqsubseteq>\<^sub>V *)
-   
-(* Not generally true: a \<and> refinement does not automatically guarantee that 
-   the refined AT is valid even if the initial was: the refinement can insert a 
-   new subtree that isn't valid. To achieve this, a prerequisite is needed in the 
-   below theorem, we need additional assumptions in the intermediate lemmas. 
-lemma att_ref_rev [rule_format]: "A \<sqsubseteq> A' \<Longrightarrow> \<turnstile> (A :: ('s :: state) attree) \<longrightarrow>  \<turnstile> A'"
-
-Even the specialisation to just base attacks is not valid for the same reasons as above   
-lemma att_ref_rev [rule_format]: " \<turnstile> (A :: ('s :: state) attree) \<Longrightarrow> A \<sqsubseteq> \<N>\<^bsub>attack A\<^esub> \<longrightarrow>  \<turnstile> \<N>\<^bsub>attack A\<^esub>"
-*)    
-
 lemma  base_subset: 
     assumes "xa \<subseteq> xc"
     shows  "\<turnstile>\<N>\<^bsub>(x, xa)\<^esub> \<Longrightarrow> \<turnstile>\<N>\<^bsub>(x, xc)\<^esub>" 
@@ -854,7 +902,28 @@ proof (simp add: att_base)
     by assumption
 qed
 
-(**** Correctness theorem ****)  
+subsection "Correctness Theorem"
+text \<open>This proof roughly goes in two steps:
+
+    First, the attack can be refined into an or of single-step attack sequences: 
+
+      @{text \<open>\<turnstile> A \<Longrightarrow> 
+       \<exists> A'.  A \<sqsubseteq> A' \<and> attack A = attack A' \<and>
+          let seq = att_seq A' 
+          in (\<forall> i < length seq. nth i seq \<rightarrow>\<^sub>i nth (Suc i) seq)\<close>}.
+
+    Second, let A' as in previous step, then for all these single-step seq, they 
+    are witness for EF s, where s is the final state set of each seq:
+
+    @{text \<open>\<lbrakk> attack A = (I,s); seq = att_seq A;  
+      (\<forall> i < length seq. nth i seq \<rightarrow>\<^sub>i nth (Suc i) seq) \<rbrakk>
+    \<Longrightarrow> Kripke(I,  \<rightarrow>\<^sub>i) \<turnstile> EF s\<close>}
+
+Proof with induction over the definition of EF using the main 
+lemma @{text \<open>att_elem_seq0\<close>}. 
+
+There is also a second version of Correctness for valid refinements.\<close>
+
 theorem AT_EF: assumes " \<turnstile> (A :: ('s :: state) attree)"
                and  "attack A = (I,s)"
                shows "Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s"    
@@ -903,7 +972,17 @@ proof (simp add: ref_validity_def)
     by (simp add: ref_pres_att)
 qed
     
-(***** Completeness *****)
+subsection "Completeness Theorem"
+text \<open>This section contains the completeness direction, informally:
+
+@{text \<open>\<turnstile> EF s \<Longrightarrow> \<exists> A. \<turnstile> A \<and> attack A = (I,s)\<close>}.
+
+The main theorem is presented last since its
+proof just summarises a number of main lemmas @{text \<open>Compl_step1, Compl_step2,
+Compl_step3a, Compl_step3b\<close>} which are presented first together with other
+auxiliary lemmas.\<close>
+
+subsubsection "Lemma @{text \<open>Compl_step1\<close>}"
 lemma Compl_step1: 
 "Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s 
 \<Longrightarrow> \<forall> x \<in> I. \<exists> y \<in> s. x \<rightarrow>\<^sub>i* y"
@@ -922,6 +1001,9 @@ proof (simp add:check_def, clarify)
    qed
  qed
 
+
+subsubsection "Lemma @{text \<open>Compl_step2\<close>}"
+text \<open>First, we prove some auxiliary lemmas.\<close>
 lemma rtrancl_imp_singleton_seq2: "x \<rightarrow>\<^sub>i* y \<Longrightarrow> 
           x = y \<or> (\<exists> s. s \<noteq> [] \<and> (tl s \<noteq> []) \<and> s ! 0 = x \<and> s ! (length s - 1) = y \<and> 
                (\<forall> i < (length s - 1). (s ! i) \<rightarrow>\<^sub>i (s ! (Suc i))))"
@@ -1142,6 +1224,8 @@ proof (rule ballI, drule_tac x = x in bspec, assumption, erule bexE)
   qed
 qed
 
+subsubsection "Lemma @{text \<open>Compl_step3a'\<close>}"
+text \<open>First, we need a few lemmas.\<close>
 lemma map_hd_lem[rule_format] : "n > 0 \<longrightarrow> (f 0 #  map (\<lambda>i::nat. f i) [1::nat..<n]) = map  (\<lambda>i::nat. f i) [0..<n]"    
 proof (simp add : hd_map upt_rec)
 qed
@@ -1177,7 +1261,6 @@ proof (erule finite_induct, simp)
       by simp+
   qed
 qed
-
 
 primrec nodup :: "['a, 'a list] \<Rightarrow> bool"
   where 
@@ -1309,6 +1392,8 @@ proof -
   qed
 qed
 
+subsubsection \<open>Lemma @{text \<open>Compl_step3b\<close>}\<close>
+text \<open>Again, we need some additional lemmas first.\<close>
 lemma list_one_tl_empty[rule_format]: "length l = Suc (0 :: nat) \<longrightarrow> tl l = []"
 proof (rule_tac list = l in list.induct, simp+)
 qed
@@ -1321,9 +1406,7 @@ lemma or_empty: "\<turnstile> [] \<oplus>\<^sub>\<or>\<^bsup>({}, s)\<^esup>"
 proof (simp add: att_or)
 qed
 
-(* for any l not valid     
-    lemma or_empty_list: "\<turnstile> l \<oplus>\<^sub>\<or>\<^bsup>({}, s)\<^esup>" 
-*)
+text \<open>Note, this is not valid for any l, i.e., @{text \<open>\<turnstile> l \<oplus>\<^sub>\<or>\<^bsup>({}, s)\<^esup>\<close>} is not a theorem.\<close>
 
 lemma list_or_upt[rule_format]: 
  "\<forall> l . lI \<noteq> [] \<longrightarrow> length l = length lI \<longrightarrow> nodup_all lI \<longrightarrow>
@@ -1373,7 +1456,7 @@ proof (rule_tac list = lI in list.induct, simp, clarify)
      apply simp
      apply (erule conjE)
      apply simp
-    (* tl instance !*)
+    text \<open>The tl instance !\<close>
      apply (drule_tac x  = "ab # listb" in spec)
      apply (drule mp)
      apply simp
@@ -1392,9 +1475,12 @@ proof (rule_tac list = lI in list.induct, simp, clarify)
      apply (frule_tac x = 0 in spec)
      apply (drule mp)
      apply simp
-    (* additional assumption nodup (x1 # a # list) to show that
-       (insert x1 (insert a (set list)) - fst (attack (l ! (0::nat))) = insert a (set list)
-       given that fst(attack (l ! 0)) = {x1} *)
+    text \<open>Additional assumption 
+          @{text \<open>nodup (x1 # a # list)\<close>}
+           to show that
+          @\<open>text \<open>(insert x1 (insert a (set list)) - fst (attack (l ! (0::nat))) = insert a (set list)\<close>\<close>
+           given that 
+          @{text \<open>fst(attack (l ! 0)) = {x1}\<close>}.\<close>
      apply (subgoal_tac "fst (attack aa) = {x1}")
      apply (rotate_tac -1)
      apply (erule ssubst)
@@ -1643,17 +1729,13 @@ proof (erule exE, erule conjE, erule exE, erule conjE)
        apply simp
        apply (rule subsetI)
        apply (drule CollectD)
-       apply (erule conjE, assumption)
-       apply (rule conjI)
-       apply (rule subsetI)
-       apply (drule CollectD)
-       apply (erule conjE, assumption)
+         apply (erule conjE, assumption)
        apply (rotate_tac -1)
        apply (erule ssubst)
        apply (subst att_or)
        apply simp
        apply (rule subst, rule d)
-     (* induction over list lI *)
+      text \<open>Induction over list lI\<close>
       proof (rule_tac lI = lI in list_or_upt)
         show "lI \<noteq> []"
         proof - 
@@ -1737,6 +1819,7 @@ next show "attack
 qed
 qed
 
+subsubsection \<open>Main Theorem Completeness\<close> 
 theorem Completeness: "I \<noteq> {} \<Longrightarrow> finite I \<Longrightarrow> 
 Kripke {s :: ('s :: state). \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF s 
 \<Longrightarrow> \<exists> (A :: ('s :: state) attree). \<turnstile> A \<and> attack A = (I,s)"
@@ -1753,7 +1836,7 @@ next show "I \<noteq> {} \<Longrightarrow> finite I \<Longrightarrow>
      by (erule Compl_step1)
  qed
 
-(* Contrapositions of Correctness and Completeness *)    
+ subsubsection \<open>Contrapositions of Correctness and Completeness\<close>   
 lemma contrapos_compl: 
   "I \<noteq> {} \<Longrightarrow> finite I \<Longrightarrow> 
   (\<not> (\<exists> (A :: ('s :: state) attree). \<turnstile> A \<and> attack A = (I, - s))) \<Longrightarrow>

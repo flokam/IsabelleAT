@@ -1,9 +1,13 @@
-theory MC 
+section "Kripke structures and CTL"
+
+text \<open>We apply Kripke structures and CTL to model state based systems and analyse properties under 
+dynamic state changes. Snapshots of systems are the states on which we define a state transition. 
+Temporal logic is then employed to express security and privacy properties.\<close>
+theory MC
 imports Main
 begin
-declare [[show_types]]
 
-thm monotone_def
+subsection "Lemmas to support least and greatest fixpoints"
 definition monotone :: "('a set \<Rightarrow> 'a set) \<Rightarrow> bool"
 where "monotone \<tau> \<equiv> (\<forall> p q. p \<subseteq> q \<longrightarrow> \<tau> p \<subseteq> \<tau> q )"
 
@@ -86,12 +90,13 @@ lemma no_infinite_subset_chain:
     and    "monotone (\<tau> :: ('a set \<Rightarrow> 'a set))"
     and    "\<forall>i :: nat. ((\<tau> :: 'a set \<Rightarrow> 'a set) ^ i) {} \<subset> (\<tau> ^ i + (1 :: nat)) ({} :: 'a set)" 
   shows   "False"
-(* idea: Since UNIV is finite, we have from ex_card that there is
-    an n with card UNIV = n. Now, use infchain_outruns_all to show as 
+text \<open>Proof idea: since @{term "UNIV"} is finite, we have from @{text \<open>ex_card\<close>} that there is
+    an n with @{term "card UNIV = n"}. Now, use @{text \<open>infchain_outruns_all\<close>} to show as 
     contradiction point that
-    \<exists>i\<Colon>nat. card UNIV < card ((\<tau> ^ i) {}). Since all sets
-    are subsets of UNIV, we also have card ((\<tau> ^ i) {}) \<le> card UNIV:
-    Contradiction!, i.e. proof of False  *)
+    @{term "\<exists> i :: nat. card UNIV < card ((\<tau> ^ i) {})"}. 
+    Since all sets are subsets of @{term "UNIV"}, we also have 
+    @{term "card ((\<tau> ^ i) {}) \<le> card UNIV"}:
+    Contradiction!, i.e. proof of False  \<close>
 proof -
   have a: "\<forall> (j :: nat). (\<exists> (i :: nat). (j :: nat) < card((\<tau> ^ i)({} :: 'a set)))" using assms
     apply (erule_tac \<tau> = \<tau> in infchain_outruns_all)
@@ -119,14 +124,23 @@ lemma finite_fixp:
   assumes "finite(UNIV :: 'a set)" 
       and "monotone (\<tau> :: ('a set \<Rightarrow> 'a set))"
     shows "\<exists> i. (\<tau> ^ i) ({}) = (\<tau> ^(i + 1))({})"
-(* idea: 
-with predtrans_empty we know \<forall> i. (\<tau> ^ i) ({}) \<subseteq> (\<tau> ^(i + 1))({}) (1).
-If we can additionally show \<exists> i.  (\<tau> ^ i) ({}) \<supseteq> (\<tau> ^(i + 1))({}) (2),
-we can get the goal together with equalityI (\<subseteq> + \<supseteq> \<longrightarrow> =). To prove
-(1) we observe that (\<tau> ^ i) ({}) \<supseteq> (\<tau> ^(i + 1))({}) can be inferred
-from \<not> ( (\<tau> ^ i) ({}) \<subset> (\<tau> ^(i + 1))({})) and (1).
-Finally, the latter is solved directly by no_infinite_subset_chain.
- *)
+text \<open>Proof idea: 
+with @{text predtrans_empty} we know 
+
+@{term "\<forall> i. (\<tau> ^ i){} \<subseteq> (\<tau> ^(i + 1))({})"} (1).
+
+If we can additionally show 
+
+@{term "\<exists> i.  (\<tau> ^ i)({}) \<supseteq> (\<tau> ^(i + 1))({})"} (2),
+
+we can get the goal together with equalityI 
+@{text "\<subseteq> + \<supseteq> \<longrightarrow> ="}. 
+To prove (1) we observe that 
+@{term "(\<tau> ^ i)({}) \<supseteq> (\<tau> ^(i + 1))({})"} 
+can be inferred from 
+@{term "\<not>((\<tau> ^ i)({}) \<subseteq> (\<tau> ^(i + 1))({}))"} 
+and (1).
+Finally, the latter is solved directly by @{text \<open>no_infinite_subset_chain\<close>}.\<close>
 proof -
   have a: "\<forall>i::nat. (\<tau> ^ i) ({}:: 'a set) \<subseteq> (\<tau> ^ i + (1::nat)) {}" 
     thm predtrans_empty
@@ -218,7 +232,6 @@ proof -
     .
 qed
 
-
 lemma down_chain_reaches_empty:
   assumes "finite (UNIV :: 'a set)" and "monotone (\<tau> :: 'a set \<Rightarrow> 'a set)"
    and "(\<forall>i :: nat. ((\<tau> :: 'a set \<Rightarrow> 'a set) ^ i + (1 :: nat)) UNIV \<subset> (\<tau> ^ i) UNIV)"
@@ -299,10 +312,10 @@ proof -
    by (rule exI) 
 qed
 
-(* These next two are produced as duals from the corresponding
-   theorems in HOL/ZF/Nat.thy. Why are they not in the HOL/Library? *)
+text \<open>These next two are repeated from the corresponding
+   theorems in HOL/ZF/Nat.thy for the sake of self-containedness of the exposition.\<close>
 lemma Kleene_iter_gpfp:
-assumes "mono f" and "p \<le> f p" shows "p \<le> (f^^k) (top::'a::order_top)"
+  assumes "mono f" and "p \<le> f p" shows "p \<le> (f^^k) (top::'a::order_top)"
 proof(induction k)
   case 0 show ?case by simp
 next
@@ -356,14 +369,29 @@ proof -
     by simp
 qed
 
-
-(* Definitions of the generic type of state with state transition and CTL Operators*)
-class state = 
+subsection \<open>Generic type of state with state transition and CTL operators\<close>
+text \<open>The system states and their transition relation are defined as a class called
+ @{text \<open>state\<close>} containing an abstract constant@{text \<open>state_transition\<close>}. It introduces the 
+syntactic infix notation @{text \<open>I \<rightarrow>\<^sub>i I'\<close>} to denote that system state @{text \<open>I\<close>} and @{text \<open>I’\<close>} 
+are in this relation over an arbitrary (polymorphic) type @{text \<open>'a\<close>}.\<close>
+class state =
   fixes state_transition :: "['a :: type, 'a] \<Rightarrow> bool"  ("(_ \<rightarrow>\<^sub>i _)" 50)
+
+text \<open>The above class definition lifts Kripke structures and CTL to a general level. 
+The definition of the inductive relation is given by a set of specific rules which are, 
+however, part of an application like infrastructures. Branching time temporal logic CTL 
+is defined in general over Kripke structures with arbitrary state transitions and can later 
+be applied to suitable theories, like infrastructures.
+Based on the generic state transition @{text \<open>\<rightarrow>\<close>} of the type class state, the CTL-operators 
+EX and AX express that property f holds in some or all next states, respectively.\<close> 
     
 definition AX where "AX f \<equiv> {s. {f0. s \<rightarrow>\<^sub>i f0} \<subseteq> f}"
 definition EX' where "EX' f \<equiv> {s . \<exists> f0 \<in> f. s \<rightarrow>\<^sub>i f0 }"
 
+text \<open>The CTL formula @{text \<open>AG f\<close>} means that on all paths branching from a state @{text \<open>s\<close>} 
+the formula @{text \<open>f\<close>} is always true (@{text \<open>G\<close>} stands for ‘globally’). It can be defined 
+using the Tarski fixpoint theory by applying the greatest fixpoint operator. In a similar way, 
+the other CTL operators are defined.\<close>
 definition AF where "AF f \<equiv> lfp (\<lambda> Z. f \<union> AX Z)"
 definition EF where "EF f \<equiv> lfp (\<lambda> Z. f \<union> EX' Z)"
 definition AG where "AG f \<equiv> gfp (\<lambda> Z. f \<inter> AX Z)"
@@ -373,20 +401,26 @@ definition EU where "EU f1 f2 \<equiv> lfp(\<lambda> Z. f2 \<union> (f1 \<inter>
 definition AR where "AR f1 f2 \<equiv> gfp(\<lambda> Z. f2 \<inter> (f1 \<union> AX Z))"
 definition ER where "ER f1 f2 \<equiv> gfp(\<lambda> Z. f2 \<inter> (f1 \<union> EX' Z))"
 
-(* Kripke and Modelchecking  -- FIXME:  typedef to incorporate init K \<subseteq> states K *)
+subsection  \<open>Kripke structures and Modelchecking\<close>
 datatype 'a kripke = 
   Kripke "'a set" "'a set"
 
 primrec states where "states (Kripke S I) = S" 
 primrec init where "init (Kripke S I) = I" 
 
+text \<open>The formal Isabelle definition of what it means that formula f holds 
+in a Kripke structure M can be stated as: the initial states of the Kripke 
+structure init M need to be contained in the set of all states states M that 
+imply f.\<close>
 definition check ("_ \<turnstile> _" 50)
  where "M \<turnstile> f \<equiv> (init M) \<subseteq> {s \<in> (states M). s \<in> f }"
 
 definition state_transition_refl ("(_ \<rightarrow>\<^sub>i* _)" 50)
 where "s \<rightarrow>\<^sub>i* s' \<equiv> ((s,s') \<in> {(x,y). state_transition x y}\<^sup>*)"
   
-(* Support lemmas *)
+subsection \<open>Lemmas for CTL operators\<close>
+
+subsubsection \<open>EF lemmas\<close>
 lemma EF_lem0: "(x \<in> EF f) = (x \<in> f \<union> EX' (lfp (\<lambda>Z :: ('a :: state) set. f \<union> EX' Z)))"
 proof -
   have "lfp (\<lambda>Z :: ('a :: state) set. f \<union> EX' Z) = 
@@ -616,7 +650,7 @@ proof (clarify)
     by (erule EF_step_star_rev)
 qed
   
-(* AG lemmas *)  
+subsubsection \<open>AG lemmas\<close> 
 
 lemma AG_in_lem:   "x \<in> AG s \<Longrightarrow> x \<in> s"  
 proof (simp add: AG_def gfp_def)
@@ -760,6 +794,7 @@ proof (rule notI, simp add: check_def)
   qed
 qed
 
+text \<open>A simplified way of Modelchecking is given by the following lemma.\<close>
 lemma check2_def: "(Kripke S I \<turnstile> f) = (I \<subseteq> S \<inter> f)"
 proof (simp add: check_def)
   show "(I \<subseteq> {s::'a \<in> S. s \<in> f}) = (I \<subseteq> S \<and> I \<subseteq> f)" by blast
