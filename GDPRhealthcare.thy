@@ -268,17 +268,17 @@ qed
 lemma att_gdpr: "\<turnstile>[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
 proof (subst att_and, simp, rule conjI)
   show " \<turnstile>\<N>\<^bsub>(Igdpr, GDPR')\<^esub>"
-   apply (simp add: Igdpr_def GDPR'_def att_base)
-   apply (subst state_transition_infra_def)
-   by (rule step1)
+    apply (simp add: Igdpr_def GDPR'_def att_base)
+    apply (subst state_transition_infra_def)
+    by (rule step1)
 next show "\<turnstile>[\<N>\<^bsub>(GDPR', sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(GDPR', sgdpr)\<^esup>"
-   apply (subst att_and, simp)
-   apply (simp add: GDPR'_def sgdpr_def att_base)
-   apply (subst state_transition_infra_def)
-   apply (rule_tac x = gdpr_scenario'' in exI)
-   apply (rule conjI)
-   apply (simp add: global_policy'_def gdpr_scenario''_def gdpr_actors_def 
-                    enables_def local_policies_def cloud_def sphone_def)
+    apply (subst att_and, simp)
+    apply (simp add: GDPR'_def sgdpr_def att_base)
+    apply (subst state_transition_infra_def)
+    apply (rule_tac x = gdpr_scenario'' in exI)
+    apply (rule conjI)
+     apply (simp add: global_policy'_def gdpr_scenario''_def gdpr_actors_def 
+                      enables_def local_policies_def cloud_def sphone_def)
     by (rule step2)
 qed
 
@@ -319,7 +319,7 @@ proof -
   have b: "Igdpr \<noteq> {}" by (simp add: Igdpr_def)
   thus "\<exists>A::infrastructure attree. \<turnstile>A \<and> attack A = (Igdpr, sgdpr)" 
     apply (rule Completeness)
-    apply (simp add: Igdpr_def)
+     apply (simp add: Igdpr_def)
     apply (insert a)
     by (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
 qed
@@ -334,8 +334,8 @@ proof -
     apply (erule exE)
     apply (erule conjE)
     apply (drule AT_EF)
-    apply assumption
-by (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def)
+     apply assumption
+    by (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def)
 qed
 (* However, when integrating DLM into the model and hence labeling 
    information becomes part of the conditions of the get_data rule this isn't
@@ -381,16 +381,16 @@ next show "h \<in> gdpr_actors \<Longrightarrow>
     l \<in> gdpr_locations \<Longrightarrow>
     owns (Igraph gdpr_scenario) l (Actor h) d \<Longrightarrow>
     gdpr_scenario \<in> AG {x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}"
-      apply (unfold AG_def)
-      apply (simp add: gfp_def)
-      apply (rule_tac x = "{x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}" in exI)
-      apply (rule conjI)
-      apply (rule subset_refl)
-      apply (rule conjI)
-      apply (unfold AX_def)
-      apply (simp add: owns_def)
-      by (simp add: gdpr_scenario_def owns_def)
-  qed
+    apply (unfold AG_def)
+    apply (simp add: gfp_def)
+    apply (rule_tac x = "{x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}" in exI)
+    apply (rule conjI)
+     apply (rule subset_refl)
+    apply (rule conjI)
+     apply (unfold AX_def)
+     apply (simp add: owns_def)
+    by (simp add: gdpr_scenario_def owns_def)
+qed
 
 text \<open>The final application example of Correctness contraposition 
    shows that there is no attack to ownership possible.
@@ -413,9 +413,9 @@ proof (rule_tac I = Igdpr and
     attack A = (Igdpr, - {x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}) \<Longrightarrow>
     \<not> Kripke {s::infrastructure. \<exists>i::infrastructure\<in>Igdpr. i \<rightarrow>\<^sub>i* s}
         Igdpr \<turnstile> EF (- {x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d})"
-      apply (rule AG_imp_notnotEF)
-      apply (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
-      apply (drule gdpr_three, assumption, assumption)
+    apply (rule AG_imp_notnotEF)
+     apply (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
+    apply (drule gdpr_three, assumption, assumption)
     by (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
 qed
   
