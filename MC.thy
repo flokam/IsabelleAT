@@ -21,12 +21,10 @@ next show "\<And>(i::nat) n::nat. (\<tau> ^^ n) {} \<subseteq> (\<tau> ^^ (n + (
     fix i n
     assume a : " (\<tau> ^^ n) {} \<subseteq> (\<tau> ^^ (n + (1::nat))) {}"
     have "(\<tau> ((\<tau> ^^ n) {})) \<subseteq> (\<tau> ((\<tau> ^^ (n + (1 :: nat))) {}))" using assms
-      apply (rule monoE)
-      by (rule a)
+      using a monoE by blast
     thus "(\<tau> ^^ Suc n) {} \<subseteq> (\<tau> ^^ (Suc n + (1::nat))) {}" by simp
   qed
 qed
-
 
 lemma ex_card: "finite S \<Longrightarrow> \<exists> n:: nat. card S = n"
 by simp
@@ -43,31 +41,16 @@ proof (rule allI, induct_tac j)
     apply (drule_tac x = 0 in spec)
     apply (rule_tac x = 1 in exI)
     apply simp
-    apply (subgoal_tac "card {} = 0")
-    apply (erule subst)
-    apply (rule psubset_card_mono)
-    apply (rule_tac B = UNIV in finite_subset)
-    apply simp
-    apply assumption+
-      by simp
-  next show "\<And>(j::nat) n::nat. \<exists>i::nat. n < card ((\<tau> ^^ i) {}) 
+    by (metis bot.not_eq_extremum card_gt_0_iff finite_subset subset_UNIV)
+next show "\<And>(j::nat) n::nat. \<exists>i::nat. n < card ((\<tau> ^^ i) {}) 
              \<Longrightarrow> \<exists>i::nat. Suc n < card ((\<tau> ^^ i) {})"
     proof -
       fix j n
       assume a: "\<exists>i::nat. n < card ((\<tau> ^^ i) {})"
-      obtain i where "n < card ((\<tau> ^^ (i :: nat)) {})" 
-        apply (rule exE)
-         apply (rule a)
-        by simp
+      obtain i where "n < card ((\<tau> ^^ (i :: nat)) {})"
+        using a by blast 
       thus "\<exists> i. Suc n < card ((\<tau> ^^ i) {})" using assms
-        apply (rule_tac x = "i + 1" in exI)
-        apply (subgoal_tac "card((\<tau> ^^ i) {}) < card((\<tau> ^^ (i + (1 :: nat))) {})")
-        apply arith
-        apply (rule psubset_card_mono)
-        apply (rule_tac B = UNIV in finite_subset)
-        apply simp
-        apply (rule assms)
-        by (erule spec)
+        by (meson finite_subset le_less_trans le_simps(3) psubset_card_mono subset_UNIV)
     qed
   qed
 
@@ -192,28 +175,13 @@ lemma UNIV_tau_i_is_empty:
   assumes "finite (UNIV :: 'a set)" and "mono (\<tau> :: ('a set \<Rightarrow> 'a set))"
     and   "(\<forall>i :: nat. ((\<tau> :: 'a set \<Rightarrow> 'a set) ^^ (i + (1 :: nat)))(UNIV :: 'a set) \<subset> (\<tau> ^^ i) UNIV)"
   shows "(\<tau> ^^ (card (UNIV ::'a set))) (UNIV ::'a set) = {}"
-proof - 
-  have "card ((\<tau> ^^ card (UNIV ::'a set)) UNIV) \<le> (0::nat)" using assms
-    apply (rule card_UNIV_tau_i_below_zero) 
-    .
-  thus "(\<tau> ^^ (card (UNIV ::'a set))) (UNIV ::'a set) = {}" using assms
-    apply (rule_tac S = "(\<tau> ^^ (card (UNIV ::'a set))) (UNIV ::'a set)" in finite_card_zero_empty)
-     apply (rule finite_subset)
-      apply (rule subset_UNIV)
-    .
-qed
+  by (meson assms card_UNIV_tau_i_below_zero finite_card_zero_empty finite_subset subset_UNIV)
 
 lemma down_chain_reaches_empty:
   assumes "finite (UNIV :: 'a set)" and "mono (\<tau> :: 'a set \<Rightarrow> 'a set)"
    and "(\<forall>i :: nat. ((\<tau> :: 'a set \<Rightarrow> 'a set) ^^ (i + (1 :: nat))) UNIV \<subset> (\<tau> ^^ i) UNIV)"
  shows "\<exists> (j :: nat). (\<tau> ^^ j) UNIV = {}"
-proof -
-  have "(\<tau> ^^ ((card (UNIV :: 'a set)))) UNIV = {}" using assms
-    apply (rule UNIV_tau_i_is_empty)
-    .
-  thus "\<exists> (j :: nat). (\<tau> ^^ j) UNIV = {}" 
-    by (rule exI)
-qed
+  using UNIV_tau_i_is_empty assms by blast
 
 lemma no_infinite_subset_chain2: 
   assumes "finite (UNIV :: 'a set)" and "mono (\<tau> :: ('a set \<Rightarrow> 'a set))"
@@ -221,8 +189,7 @@ lemma no_infinite_subset_chain2:
   shows "False"
 proof -
   have "\<exists> j :: nat. (\<tau> ^^ j) UNIV = {}" using assms
-    apply (rule down_chain_reaches_empty)
-    .
+    by (rule down_chain_reaches_empty)
   from this obtain j where a: "(\<tau> ^^ j) UNIV = {}" by (erule exE)
   have "(\<tau> ^^ (j + (1::nat))) UNIV \<subset> (\<tau> ^^ j) UNIV" using assms
     by (erule_tac x = j in spec)
@@ -234,14 +201,11 @@ lemma finite_fixp2:
   shows "\<exists> i. (\<tau> ^^ i) UNIV = (\<tau> ^^(i + 1)) UNIV"
 proof -
   have "\<forall>i::nat. (\<tau> ^^ (i + (1::nat))) UNIV \<subseteq> (\<tau> ^^ i) UNIV" 
-    apply (rule predtrans_UNIV) using assms
-    by (simp add: assms(2))
+    by (rule predtrans_UNIV , simp add: assms(2))  
   moreover have "\<exists>i::nat. \<not> (\<tau> ^^ (i + (1::nat))) UNIV \<subset> (\<tau> ^^ i) UNIV" using assms
   proof -
-    have "\<not> (\<forall> i :: nat. (\<tau> ^^ i) UNIV \<supset> (\<tau> ^^(i + 1)) UNIV)" 
-      apply (rule notI) 
-      apply (rule no_infinite_subset_chain2) using assms
-      .
+    have "\<not> (\<forall> i :: nat. (\<tau> ^^ i) UNIV \<supset> (\<tau> ^^(i + 1)) UNIV)"
+      using assms(1) assms(2) no_infinite_subset_chain2 by blast 
     thus "\<exists>i::nat. \<not> (\<tau> ^^ (i + (1::nat))) UNIV \<subset> (\<tau> ^^ i) UNIV" by blast
   qed
   ultimately show "\<exists> i. (\<tau> ^^ i) UNIV = (\<tau> ^^(i + 1)) UNIV" 
@@ -291,7 +255,7 @@ next
 qed
 
 
-(* same as gfp_Kleen_iter just instantited to UNIV = top *)
+(* same as gfp_Kleen_iter just instantiated to UNIV = top *)
 lemma gfp_Kleene_iter_set: 
   assumes "mono (f :: ('a set \<Rightarrow> 'a set))"
       and "(f ^^ Suc(n)) UNIV = (f ^^ n) UNIV"
@@ -307,11 +271,7 @@ proof -
     by (rule finite_fixp2)
   from this obtain i where "(\<tau> ^^ i)(UNIV :: 'b set) = (\<tau> ^^ (i + (1::nat))) UNIV" by (erule exE)
   thus "\<exists> n . gfp \<tau>  = (\<tau> ^^ n)(UNIV :: 'b set)" using assms
-    apply (rule_tac x = i in exI)
-    apply (rule gfp_Kleene_iter_set) 
-    apply assumption
-    apply (rule sym)
-    by simp
+    by (metis Suc_eq_plus1 gfp_Kleene_iter_set)
 qed
 
 subsection \<open>Generic type of state with state transition and CTL operators\<close>
@@ -370,10 +330,7 @@ lemma EF_lem0: "(x \<in> EF f) = (x \<in> f \<union> EX' (lfp (\<lambda>Z :: ('a
 proof -
   have "lfp (\<lambda>Z :: ('a :: state) set. f \<union> EX' Z) = 
                     f \<union> (EX' (lfp (\<lambda>Z :: 'a set. f \<union> EX' Z)))"
-    apply (rule def_lfp_unfold)
-     apply (rule reflexive)
-    apply (unfold mono_def EX'_def)
-    by auto
+    by (rule def_lfp_unfold, rule reflexive, unfold mono_def EX'_def, auto)
   thus "(x \<in> EF (f :: ('a :: state) set)) = (x \<in> f \<union> EX' (lfp (\<lambda>Z :: ('a :: state) set. f \<union> EX' Z)))"
     by (simp add: EF_def) 
 qed
@@ -381,18 +338,15 @@ qed
 lemma EF_lem00: "(EF f) = (f \<union> EX' (lfp (\<lambda> Z :: ('a :: state) set. f \<union> EX' Z)))"
 proof (rule equalityI)
   show "EF f \<subseteq> f \<union> EX' (lfp (\<lambda>Z::'a set. f \<union> EX' Z))"
-   apply (rule subsetI)
-   by (simp add: EF_lem0)
+   by (rule subsetI, simp add: EF_lem0)
   next show "f \<union> EX' (lfp (\<lambda>Z::'a set. f \<union> EX' Z)) \<subseteq> EF f"
-   apply (rule subsetI)
-   by (simp add: EF_lem0)
+   by (rule subsetI, simp add: EF_lem0)
  qed
 
 lemma EF_lem000: "(EF f) = (f \<union> EX' (EF f))"
 proof (subst EF_lem00)
   show "f \<union> EX' (lfp (\<lambda>Z::'a set. f \<union> EX' Z)) = f \<union> EX' (EF f)"
-    apply (fold EF_def)  
-    by (rule refl)
+    by (fold EF_def, rule refl)
 qed
 
 lemma EF_lem1: "x \<in> f \<or> x \<in> (EX' (EF f)) \<Longrightarrow> x \<in> EF f"
@@ -402,13 +356,9 @@ proof (simp add: EF_def)
   proof -
     have b: "lfp (\<lambda>Z :: ('a :: state) set. f \<union> EX' Z) =
                     f \<union> (EX' (lfp (\<lambda>Z :: ('a :: state) set. f \<union> EX' Z)))"
-      apply (rule def_lfp_unfold)
-       apply (rule reflexive)
-      apply (unfold mono_def EX'_def)
-      by auto
+      by (rule def_lfp_unfold, rule reflexive, unfold mono_def EX'_def, auto)
     thus "x \<in> lfp (\<lambda>Z::'a set. f \<union> EX' Z)" using a
-      apply (subst b)
-      by blast
+      by (subst b, blast)
   qed   
 qed
 
@@ -417,15 +367,13 @@ lemma EF_lem2b:
    shows "x \<in> EF f"
 proof (rule EF_lem1)
   show "x \<in> f \<or> x \<in> EX' (EF f)" 
-    apply (rule disjI2)
-    by (rule assms)
+    by (rule disjI2, rule assms)
 qed
 
 lemma EF_lem2a: assumes "x \<in> f" shows "x \<in> EF f"
 proof (rule EF_lem1)
   show "x \<in> f \<or> x \<in> EX' (EF f)"
-    apply (rule disjI1)
-    by (rule assms)
+    by (rule disjI1, rule assms)
 qed
 
 lemma EF_lem2c: assumes "x \<notin> f" shows "x \<in> EF (- f)"
@@ -441,20 +389,14 @@ proof -
   have "x \<in> f \<Longrightarrow> x \<in> EF f" 
     by (erule EF_lem2a)
   thus "x \<notin> f" using assms
-    thm contrapos_nn
     apply (erule_tac P = "x \<in> f" in contrapos_nn)
-    apply (erule meta_mp)
-    .
+    by (erule meta_mp)
 qed
 
 lemma EF_lem3b: assumes "x \<in> EX' (f \<union> EX' (EF f))" shows "x \<in> (EF f)"
 proof (simp add: EF_lem0)
-  show "x \<in> f \<or> x \<in> EX' (lfp (\<lambda>Z::'a set. f \<union> EX' Z))" 
-   apply (rule disjI2)
-   apply (fold EF_def)
-   apply (subst EF_lem00)
-   apply (fold EF_def)
-   by (rule assms)
+  show "x \<in> f \<or> x \<in> EX' (lfp (\<lambda>Z::'a set. f \<union> EX' Z))"
+    by (metis EF_def EF_lem00 assms) 
 qed
 
 lemma EX_lem0l: "x \<in> (EX' f) \<Longrightarrow> x \<in> (EX' (f \<union> g))"
@@ -471,40 +413,30 @@ qed
 
 lemma EX_step: assumes "x  \<rightarrow>\<^sub>i y" and "y \<in> f" shows "x \<in> EX' f"
 proof (unfold EX'_def)
-  show " x \<in> {s::'a. \<exists>f0::'a\<in>f. s \<rightarrow>\<^sub>i f0}" 
-    apply simp
-    apply (rule_tac x = y in bexI)
-    by (rule assms)+
+  show " x \<in> {s::'a. \<exists>f0::'a\<in>f. s \<rightarrow>\<^sub>i f0}"
+    using assms(1) assms(2) by blast 
 qed
 
 lemma EF_E[rule_format]: "\<forall> f. x \<in> (EF (f :: ('a :: state) set)) \<longrightarrow> x \<in> (f \<union> EX' (EF f))"
 proof -
   have a: "\<And>f::'a set. EF (f :: ('a :: state) set) = f \<union> EX' (EF f)"
     by (rule EF_lem000)
-  thus "(\<forall> f. x \<in> EF (f :: ('a :: state) set) \<longrightarrow> x \<in> f \<union> EX' (EF f))" 
-    apply (rule_tac P = "(\<lambda> f. x \<in> EF (f :: ('a :: state) set) \<longrightarrow> x \<in> f \<union> EX' (EF f))" in allI)
-    apply (subst a) 
-    apply (rule impI)
-    by assumption
+  thus "(\<forall> f. x \<in> EF (f :: ('a :: state) set) \<longrightarrow> x \<in> f \<union> EX' (EF f))"
+    by auto 
 qed
 
 lemma EF_step: assumes "x  \<rightarrow>\<^sub>i y" and "y \<in> f" shows "x \<in> EF f"
 proof (rule EF_lem3b)
-  show "x \<in> EX' (f \<union> EX' (EF f))" 
-    apply (rule EX_step)
-    apply (rule assms(1))
-    by (simp add: assms(2))
+  show "x \<in> EX' (f \<union> EX' (EF f))"
+    using EX_step assms(1) assms(2) by blast 
 qed
 
 lemma EF_step_step: assumes "x  \<rightarrow>\<^sub>i y" and "y \<in> EF f" shows  "x \<in> EF f"
 proof -
   have "y \<in> f \<union> EX' (EF f)"
-    apply (rule EF_E)
-    by (rule assms(2))
+    by (rule EF_E, rule assms(2))
   thus "x \<in> EF f"
-    apply (rule_tac x = x and f = f in EF_lem3b)
-    apply (rule EX_step)
-    by (rule assms)
+    using EF_lem3b EX_step assms(1) by blast
 qed
 
 lemma EF_step_star: "\<lbrakk> x  \<rightarrow>\<^sub>i* y; y \<in> f \<rbrakk> \<Longrightarrow> x \<in> EF f"
@@ -516,9 +448,7 @@ proof (simp add: state_transition_refl_def)
     next show "\<And>(ya::'a) z::'a. y \<in> f \<Longrightarrow>
                  (ya, z) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y} \<Longrightarrow>
                  (z, y) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y}\<^sup>* \<Longrightarrow> z \<in> EF f \<Longrightarrow> ya \<in> EF f"
-        apply (clarify)
-        apply (erule EF_step_step)
-        by assumption
+        by (simp add: EF_step_step)
     qed
   qed
 
@@ -532,10 +462,7 @@ proof -
   show "(\<And>x::'a::state.
      x \<in> ((\<lambda> Z. (f::'a::state set) \<union> EX' Z)(lfp (\<lambda> Z. (f::'a::state set) \<union> EX' Z) \<inter> {x::'a::state. (P::'a::state \<Rightarrow> bool) x})) \<Longrightarrow> P x) \<Longrightarrow>
       P a"
-    apply (rule_tac A = "EF f" in def_lfp_induct_set) 
-       apply (rule EF_def)
-      apply (rule assms(2))
-    by (simp add: EF_def assms)+
+    by (rule_tac A = "EF f" in def_lfp_induct_set, rule EF_def, rule assms(2), (simp add: EF_def assms)+)
 qed
 
 lemma EF_induct: "(a::'a::state) \<in> EF (f :: 'a :: state set) \<Longrightarrow>
@@ -547,24 +474,19 @@ proof (simp add: EF_def)
   show "a \<in> lfp (\<lambda>Z::'a set. f \<union> EX' Z) \<Longrightarrow>
     mono (\<lambda>Z::'a set. f \<union> EX' Z) \<Longrightarrow>
     (\<And>x::'a. x \<in> f \<or> x \<in> EX' (lfp (\<lambda>Z::'a set. f \<union> EX' Z) \<inter> Collect P) \<Longrightarrow> P x) \<Longrightarrow> P a"
-    apply (erule EF_induct_prep)
-     apply assumption
-    by simp
+    by (erule EF_induct_prep, assumption, simp)
 qed
 
 lemma valEF_E: "M \<turnstile> EF f \<Longrightarrow> x \<in> init M \<Longrightarrow> x \<in> EF f"
 proof (simp add: check_def) 
   show "init M \<subseteq> {s::'a \<in> states M. s \<in> EF f} \<Longrightarrow> x \<in> init M \<Longrightarrow> x \<in> EF f"
-    apply (drule subsetD)
-     apply assumption
-    by simp
+    by blast
 qed
 
 lemma EF_step_star_rev[rule_format]: "x \<in> EF s \<Longrightarrow>  (\<exists> y \<in> s.  x  \<rightarrow>\<^sub>i* y)"
 proof (erule EF_induct)
   show "mono (\<lambda>Z::'a set. s \<union> EX' Z)"
-    apply (simp add: mono_def EX'_def)
-    by force
+    by (simp add: mono_def EX'_def, force)
 next show "\<And>x::'a. x \<in> s \<union> EX' (EF s \<inter> {x::'a. \<exists>y::'a\<in>s. x \<rightarrow>\<^sub>i* y}) \<Longrightarrow> \<exists>y::'a\<in>s. x \<rightarrow>\<^sub>i* y"
     apply (erule UnE)
      apply (rename_tac x)
@@ -590,11 +512,7 @@ lemma EF_step_inv: "(I \<subseteq> {sa::'s :: state. (\<exists>i::'s\<in>I. i \<
          \<Longrightarrow> \<forall> x \<in> I. \<exists> y \<in> s. x \<rightarrow>\<^sub>i* y"
 proof (clarify)
   show "\<And>x::'s. I \<subseteq> {sa::'s. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> EF s} \<Longrightarrow> x \<in> I \<Longrightarrow> \<exists>y::'s\<in>s. x \<rightarrow>\<^sub>i* y"
-    apply (drule subsetD)
-     apply assumption
-    apply (drule CollectD)
-    apply (erule conjE)
-    by (erule EF_step_star_rev)
+    using EF_step_star_rev by fastforce
 qed
   
 subsubsection \<open>AG lemmas\<close> 
@@ -602,9 +520,7 @@ subsubsection \<open>AG lemmas\<close>
 lemma AG_in_lem:   "x \<in> AG s \<Longrightarrow> x \<in> s"  
 proof (simp add: AG_def gfp_def)
   show "\<exists>xa\<subseteq>s. xa \<subseteq> AX xa \<and> x \<in> xa \<Longrightarrow> x \<in> s"
-    apply (erule exE)
-    apply (erule conjE)+
-    by (erule subsetD, assumption)
+    by blast
 qed
 
 lemma AG_lem1: "x \<in> s \<and> x \<in> (AX (AG s)) \<Longrightarrow> x \<in> AG s"
@@ -635,23 +551,13 @@ qed
 lemma AG_lem3: "AG s = (s \<inter> (AX (AG s)))"    
 proof (rule equalityI) 
   show "AG s \<subseteq> s \<inter> AX (AG s)"
-    apply (rule subsetI)
-    by (erule AG_lem2)
+    using AG_lem2 by blast
   next show "s \<inter> AX (AG s) \<subseteq> AG s"
-    apply (rule subsetI)
-    apply (rule AG_lem1)
-    by simp
+      using AG_lem1 by blast
 qed
 
-lemma AG_step: "y \<rightarrow>\<^sub>i z \<Longrightarrow> y \<in> AG s \<Longrightarrow> z \<in> AG s"  
-proof (drule AG_lem2)
-  show "y \<rightarrow>\<^sub>i z \<Longrightarrow> y \<in> s \<inter> AX (AG s) \<Longrightarrow> z \<in> AG s"
-    apply (erule IntE) 
-    apply (unfold AX_def) 
-    apply simp 
-    apply (erule subsetD) 
-    by simp
-qed
+lemma AG_step: "y \<rightarrow>\<^sub>i z \<Longrightarrow> y \<in> AG s \<Longrightarrow> z \<in> AG s"
+  using AG_lem2 AX_def by blast  
 
 lemma AG_all_s: " x \<rightarrow>\<^sub>i* y \<Longrightarrow> x \<in> AG s \<Longrightarrow> y \<in> AG s"
 proof (simp add: state_transition_refl_def)
@@ -663,8 +569,7 @@ proof (simp add: state_transition_refl_def)
        x \<in> AG s \<Longrightarrow>
        (x, y) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y}\<^sup>* \<Longrightarrow> 
        (y, z) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y} \<Longrightarrow> y \<in> AG s \<Longrightarrow> z \<in> AG s"
-      apply clarify
-      by (erule AG_step, assumption)
+      by (simp add: AG_step)
   qed
 qed
 
@@ -691,33 +596,21 @@ proof (rule notI, simp add: check_def)
             hence "x \<in> s \<and> x \<in> -s"
             proof -
               have a6: "x \<in> s" using a5
-                apply (subgoal_tac "x \<in> AG s")
-                apply (erule AG_in_lem)
-                by simp
+                using AG_in_lem by blast
               moreover have "x \<in> -s" using a5
               proof -
-                have "x \<in> EF s" 
-                  apply (rule_tac y = x in EF_step_star)
-                  apply (simp add: state_transition_refl_def)
-                  by (rule a6)                  
+                have "x \<in> EF s"
+                  by (simp add: EF_lem2a calculation) 
                 thus "x \<in> -s" using a5
                 proof -
                   have "x \<in> EF (- s)" using a5
                     by simp
                   moreover from this obtain y where a7: "y \<in> - s \<and> x \<rightarrow>\<^sub>i* y" 
-                    apply (rotate_tac -1)
-                     apply (drule EF_step_star_rev)
-                    by blast
+                    using EF_step_star_rev by blast
                   moreover have "y \<in> AG s" using a7 a5
-                    apply (subgoal_tac "x \<in> AG s")
-                    apply (erule conjE)
-                     apply (drule AG_all_s)
-                      apply assumption+
-                    by simp
+                    using AG_all_s by blast
                   ultimately show "x \<in> -s" using a5
-                     apply (rotate_tac -1)
-                     apply (drule AG_in_lem)
-                     by blast
+                    using AG_in_lem by blast
                 qed
               qed
               ultimately show "x \<in> s \<and> x \<in> -s"
@@ -732,10 +625,8 @@ proof (rule notI, simp add: check_def)
       qed
     moreover have b: "? x. x : I" using a0
       by blast
-    moreover obtain x where "x \<in> I" 
-        apply (rule exE)
-         apply (rule b)
-      by simp
+    moreover obtain x where "x \<in> I"
+      using b by blast 
     ultimately show "False" using a0 a1 a2
       by blast
   qed
