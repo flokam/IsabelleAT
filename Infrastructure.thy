@@ -10,7 +10,7 @@ Actors are given by an abstract type @{text \<open>actor\<close>} and a function
 (conditions) and sets of (enabled) actions.\<close>
 subsection \<open>Actors, actions, and data labels\<close>
 theory Infrastructure
-imports AT 
+  imports AT 
 begin
 datatype action = get | move | eval | put
 
@@ -20,7 +20,7 @@ consts Actor :: "string \<Rightarrow> actor"
 type_synonym policy = "((actor \<Rightarrow> bool) * action set)"
 
 definition ID :: "[actor, string] \<Rightarrow> bool"
-where "ID a s \<equiv> (a = Actor s)"
+  where "ID a s \<equiv> (a = Actor s)"
 text \<open>The Decentralised Label Model (DLM) \cite{ml:98} introduced the idea to
 label data by owners and readers. We pick up this idea and formalize
 a new type to encode the owner and the set of readers as a pair.
@@ -124,7 +124,7 @@ proof (auto)
   by (rule_tac x = id in exI, simp)
 qed
 
-definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" ("_ \<Updown> _" 50)
+definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" (infixr "\<Updown>" 50)
   where "f  \<Updown> d \<equiv> (Rep_label_fun f) d" 
 
 (* This part is relevant to model Insiders but is not needed for Infrastructures.
@@ -271,8 +271,8 @@ where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transiti
 end
       
 lemma move_graph_eq: "move_graph_a a l l g = g"  
-proof (simp add: move_graph_a_def, case_tac g, force)
-qed     
+  by (simp add: move_graph_a_def, case_tac g, force)
+     
        
 end
 

@@ -280,7 +280,7 @@ text \<open>The system states and their transition relation are defined as a cla
 syntactic infix notation @{text \<open>I \<rightarrow>\<^sub>i I'\<close>} to denote that system state @{text \<open>I\<close>} and @{text \<open>I’\<close>} 
 are in this relation over an arbitrary (polymorphic) type @{text \<open>'a\<close>}.\<close>
 class state =
-  fixes state_transition :: "['a :: type, 'a] \<Rightarrow> bool"  ("(_ \<rightarrow>\<^sub>i _)" 50)
+  fixes state_transition :: "['a :: type, 'a] \<Rightarrow> bool"  (infixr "\<rightarrow>\<^sub>i" 50)
 
 text \<open>The above class definition lifts Kripke structures and CTL to a general level. 
 The definition of the inductive relation is given by a set of specific rules which are, 
@@ -320,7 +320,7 @@ imply f.\<close>
 definition check ("_ \<turnstile> _" 50)
  where "M \<turnstile> f \<equiv> (init M) \<subseteq> {s \<in> (states M). s \<in> f }"
 
-definition state_transition_refl ("(_ \<rightarrow>\<^sub>i* _)" 50)
+definition state_transition_refl (infixr "\<rightarrow>\<^sub>i*" 50)
 where "s \<rightarrow>\<^sub>i* s' \<equiv> ((s,s') \<in> {(x,y). state_transition x y}\<^sup>*)"
   
 subsection \<open>Lemmas for CTL operators\<close>
@@ -445,9 +445,9 @@ proof (simp add: state_transition_refl_def)
   proof (erule converse_rtrancl_induct)
     show "y \<in> f \<Longrightarrow> y \<in> EF f" 
       by (erule EF_lem2a)
-    next show "\<And>(ya::'a) z::'a. y \<in> f \<Longrightarrow>
-                 (ya, z) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y} \<Longrightarrow>
-                 (z, y) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y}\<^sup>* \<Longrightarrow> z \<in> EF f \<Longrightarrow> ya \<in> EF f"
+    next show "\<And>ya z::'a. y \<in> f \<Longrightarrow>
+                 (ya, z) \<in> {(x,y). x \<rightarrow>\<^sub>i y} \<Longrightarrow>
+                 (z, y) \<in> {(x,y). x \<rightarrow>\<^sub>i y}\<^sup>* \<Longrightarrow> z \<in> EF f \<Longrightarrow> ya \<in> EF f"
         by (simp add: EF_step_step)
     qed
   qed
@@ -489,23 +489,8 @@ proof (erule EF_induct)
     by (simp add: mono_def EX'_def, force)
 next show "\<And>x::'a. x \<in> s \<union> EX' (EF s \<inter> {x::'a. \<exists>y::'a\<in>s. x \<rightarrow>\<^sub>i* y}) \<Longrightarrow> \<exists>y::'a\<in>s. x \<rightarrow>\<^sub>i* y"
     apply (erule UnE)
-     apply (rename_tac x)
-     apply (rule_tac x = x in bexI)
-      apply (simp add: state_transition_refl_def)
-     apply assumption
-    apply (simp add: EX'_def)
-    apply (erule bexE)
-    apply (erule IntE)
-    apply (drule CollectD)
-    apply (erule bexE)
-    apply (rename_tac xb)
-    apply (rule_tac x = xb in bexI)
-     apply (simp add: state_transition_refl_def)
-     apply (rule rtrancl_trans)
-      apply (rule r_into_rtrancl)
-      apply (rule CollectI)
-      apply simp
-    by assumption+
+    using state_transition_refl_def apply auto[1]
+    by (auto simp add: EX'_def state_transition_refl_def intro: converse_rtrancl_into_rtrancl)
 qed
 
 lemma EF_step_inv: "(I \<subseteq> {sa::'s :: state. (\<exists>i::'s\<in>I. i \<rightarrow>\<^sub>i* sa) \<and> sa \<in> EF s})  
@@ -561,14 +546,13 @@ lemma AG_step: "y \<rightarrow>\<^sub>i z \<Longrightarrow> y \<in> AG s \<Longr
 
 lemma AG_all_s: " x \<rightarrow>\<^sub>i* y \<Longrightarrow> x \<in> AG s \<Longrightarrow> y \<in> AG s"
 proof (simp add: state_transition_refl_def)
-  show "(x, y) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y}\<^sup>* \<Longrightarrow> x \<in> AG s \<Longrightarrow> y \<in> AG s"
-    apply (erule rtrancl_induct) 
-  proof -
+  show "(x, y) \<in> {(x,y). x \<rightarrow>\<^sub>i y}\<^sup>* \<Longrightarrow> x \<in> AG s \<Longrightarrow> y \<in> AG s" 
+  proof (erule rtrancl_induct)
     show "x \<in> AG s \<Longrightarrow> x \<in> AG s" by assumption
   next show "\<And>(y::'a) z::'a.
        x \<in> AG s \<Longrightarrow>
-       (x, y) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y}\<^sup>* \<Longrightarrow> 
-       (y, z) \<in> {(x::'a, y::'a). x \<rightarrow>\<^sub>i y} \<Longrightarrow> y \<in> AG s \<Longrightarrow> z \<in> AG s"
+       (x, y) \<in> {(x,y). x \<rightarrow>\<^sub>i y}\<^sup>* \<Longrightarrow> 
+       (y, z) \<in> {(x,y). x \<rightarrow>\<^sub>i y} \<Longrightarrow> y \<in> AG s \<Longrightarrow> z \<in> AG s"
       by (simp add: AG_step)
   qed
 qed
