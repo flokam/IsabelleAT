@@ -174,8 +174,8 @@ next show "enables gdpr_scenario cloud (Actor ''Patient'') move"
 next show "gdpr_scenario' =
     Infrastructure (move_graph_a ''Patient'' home cloud (graphI gdpr_scenario)) (delta gdpr_scenario)"
     apply (simp add: gdpr_scenario'_def ex_graph'_def move_graph_a_def 
-                   gdpr_scenario_def ex_graph_def home_def cloud_def hospital_def
-                    ex_loc_ass_def ex_creds_def)
+                     gdpr_scenario_def ex_graph_def home_def cloud_def hospital_def
+                     ex_loc_ass_def ex_creds_def)
     apply (rule ext)
     by (simp add: hospital_def)
 qed
@@ -235,7 +235,7 @@ we first derive a valid and-attack using the attack tree proof calculus.
 The set @{text \<open>GDPR'\<close>} (see above) is an intermediate state where Eve accesses the cloud.\<close>
 
 lemma gdpr_ref: "[\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup> \<sqsubseteq>
-                  [\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"  
+                  ([\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>)"  
 proof (rule_tac l = "[]" and l' = "[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>]" and
                   l'' = "[]" and si = Igdpr and si' = Igdpr and 
                   si'' = sgdpr and si''' = sgdpr in refI, simp, rule refl)
@@ -244,13 +244,12 @@ proof (rule_tac l = "[]" and l' = "[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bs
   by simp
 qed
 
-lemma att_gdpr: "\<turnstile>[\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
+lemma att_gdpr: "\<turnstile>([\<N>\<^bsub>(Igdpr,GDPR')\<^esub>, \<N>\<^bsub>(GDPR',sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>)"
 proof (subst att_and, simp, rule conjI)
   show " \<turnstile>\<N>\<^bsub>(Igdpr, GDPR')\<^esub>"
     apply (simp add: Igdpr_def GDPR'_def att_base)
-    apply (subst state_transition_infra_def)
-    by (rule step1)
-next show "\<turnstile>[\<N>\<^bsub>(GDPR', sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(GDPR', sgdpr)\<^esup>"
+    using state_transition_infra_def step1 by blast
+next show "\<turnstile>([\<N>\<^bsub>(GDPR', sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(GDPR', sgdpr)\<^esup>)"
     apply (subst att_and, simp)
     apply (simp add: GDPR'_def sgdpr_def att_base)
     apply (subst state_transition_infra_def)
@@ -261,9 +260,8 @@ next show "\<turnstile>[\<N>\<^bsub>(GDPR', sgdpr)\<^esub>] \<oplus>\<^sub>\<and
     by (rule step2)
 qed
 
-lemma gdpr_abs_att: "\<turnstile>\<^sub>V [\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>"
-proof (rule ref_valI, rule gdpr_ref, rule att_gdpr)
-qed
+lemma gdpr_abs_att: "\<turnstile>\<^sub>V([\<N>\<^bsub>(Igdpr,sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr,sgdpr)\<^esup>)"
+  by (rule ref_valI, rule gdpr_ref, rule att_gdpr)
 
 text \<open>We can then simply apply the Correctness theorem @{text \<open>AT EF\<close>} to immediately 
       prove the following CTL statement.
@@ -274,24 +272,27 @@ This application of the meta-theorem of Correctness of attack trees saves us
 proving the CTL formula tediously by exploring the state space.\<close>
 lemma gdpr_att: "gdpr_Kripke \<turnstile> EF {x. \<not>(global_policy' x ''Eve'')}"
 proof -
-  have a: " \<turnstile>[\<N>\<^bsub>(Igdpr, GDPR')\<^esub>, \<N>\<^bsub>(GDPR', sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr, sgdpr)\<^esup>"
+  have a: " \<turnstile>([\<N>\<^bsub>(Igdpr, GDPR')\<^esub>, \<N>\<^bsub>(GDPR', sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr, sgdpr)\<^esup>)"
     by (rule att_gdpr)
   hence "(Igdpr,sgdpr) = attack ([\<N>\<^bsub>(Igdpr, GDPR')\<^esub>, \<N>\<^bsub>(GDPR', sgdpr)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(Igdpr, sgdpr)\<^esup>)"
     by simp
   hence "Kripke {s::infrastructure. \<exists>i::infrastructure\<in>Igdpr. i \<rightarrow>\<^sub>i* s} Igdpr \<turnstile> EF sgdpr"
-    apply (insert a)
-    apply (erule AT_EF)
-    by simp
-  thus  "gdpr_Kripke \<turnstile> EF {x::infrastructure. \<not> global_policy' x ''Eve''}"
+    using ATV_EF gdpr_abs_att by fastforce 
+  thus "gdpr_Kripke \<turnstile> EF {x::infrastructure. \<not> global_policy' x ''Eve''}"
     by (simp add: gdpr_Kripke_def gdpr_states_def Igdpr_def sgdpr_def)
 qed
 
-theorem gdpr_EF: "gdpr_Kripke \<turnstile> EF sgdpr"  
-proof (insert gdpr_att, simp add: sgdpr_def)
-qed
+theorem gdpr_EF: "gdpr_Kripke \<turnstile> EF sgdpr"
+  using gdpr_att sgdpr_def by blast 
 
-text \<open>Similarly, vice-versa, the CTL statement can now be directly translated into
-    Attack Trees using the Completeness Theorem.\<close>
+text \<open>Similarly, vice-versa, the CTL statement proved in @{text \<open>gdpr_EF\<close>}
+    can now be directly translated into Attack Trees using the Completeness 
+    Theorem\footnote{This theorem could easily 
+    be proved as a direct instance of @{text \<open>att_gdpr\<close>} above but we want to illustrate
+    an alternative proof method using Completeness here.}.\<close>
+theorem gdpr_AT: "\<exists> A. \<turnstile> A \<and> attack A = (Igdpr,sgdpr)"
+  using att_gdpr attack.simps(2) by blast  
+(* old proof that uses Completeness and does not use att_gdpr:
 theorem gdpr_AT: "\<exists> A. \<turnstile> A \<and> attack A = (Igdpr,sgdpr)"
 proof -
   have a: "gdpr_Kripke \<turnstile> EF sgdpr " by (rule gdpr_EF)
@@ -302,16 +303,18 @@ proof -
     apply (insert a)
     by (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
 qed
+*)
 
-(* Conversely, if we had the attack given, we could immediately 
-   infer EF s *)
+text \<open>Conversely, since we have an attack given by rule @{text \<open>gdpr_AT\<close>}, we can immediately 
+   infer @{text \<open>EF s\<close>} using Correctness @{text \<open>AT_EF\<close>}\footnote{Clearly, this theorem is identical
+   to @{text \<open>gdpr_EF\<close>} and could thus be inferred from that one but we want to show here an 
+   alternative way of proving it using the Correctness theorem @{text \<open>AT_EF\<close>}.}.\<close>
 theorem gdpr_EF': "gdpr_Kripke \<turnstile> EF sgdpr"
-proof -
-  have a: "\<exists>A::infrastructure attree. \<turnstile>A \<and> attack A = (Igdpr, sgdpr)" by (rule gdpr_AT)
-  thus "gdpr_Kripke \<turnstile> EF sgdpr"
-    by (auto simp: gdpr_Kripke_def gdpr_states_def Igdpr_def dest: AT_EF)
-qed
-(* However, when integrating DLM into the model and hence labeling 
+  using gdpr_EF by auto
+(* older version of  proof that uses AT_EF and does not use gdpr_EF:
+    by (auto simp: gdpr_Kripke_def gdpr_states_def Igdpr_def dest: AT_EF) *)
+
+(* However, when integrating DLM into the model and hence labeling
    information becomes part of the conditions of the get_data rule this isn't
    possible any more: gdpr_EF is not true any more *)    
 (** GDPR properties  for the illustration of the DLM labeling **)    
@@ -356,8 +359,7 @@ next show "h \<in> gdpr_actors \<Longrightarrow>
     gdpr_scenario \<in> AG {x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}"
     apply (simp add: AG_def gfp_def)
     apply (rule_tac x = "{x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}" in exI)
-    apply (auto simp: AX_def gdpr_scenario_def owns_def)
-    done
+    by (auto simp: AX_def gdpr_scenario_def owns_def)
 qed
 
 text \<open>The final application example of Correctness contraposition 
@@ -379,9 +381,9 @@ proof (rule_tac I = Igdpr and
     l \<in> gdpr_locations \<Longrightarrow>
     owns (Igraph gdpr_scenario) l (Actor h) d \<Longrightarrow>
     attack A = (Igdpr, - {x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}) \<Longrightarrow>
-    \<not> Kripke {s::infrastructure. \<exists>i::infrastructure\<in>Igdpr. i \<rightarrow>\<^sub>i* s}
-        Igdpr \<turnstile> EF (- {x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d})"
-    apply (rule AG_imp_notnotEF)
+    \<not> (Kripke {s::infrastructure. \<exists>i::infrastructure\<in>Igdpr. i \<rightarrow>\<^sub>i* s}
+        Igdpr \<turnstile> EF (- {x::infrastructure. \<forall>l::location\<in>gdpr_locations. owns (Igraph x) l (Actor h) d}))"
+    apply (rule AG_imp_notnotEF) 
      apply (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)
     apply (drule gdpr_three, assumption, assumption)
     by (simp add: gdpr_Kripke_def Igdpr_def gdpr_states_def)

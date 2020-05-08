@@ -54,7 +54,7 @@ datatype location = Location nat
                            "location \<Rightarrow> string * (dlm * data) set"
 datatype infrastructure = 
          Infrastructure "igraph" 
-                        "[igraph ,location] \<Rightarrow> policy set" 
+                        "[igraph, location] \<Rightarrow> policy set" 
                        
 primrec loc :: "location \<Rightarrow> nat"
 where  "loc(Location n) = n"
@@ -113,16 +113,11 @@ definition actor_can_delete ::   "[infrastructure, actor, location] \<Rightarrow
 where actor_can_delete_def: "actor_can_delete I h l \<equiv>  
                    (\<forall> as n. ((h, as), n) \<notin> (snd (lgra (graphI I) l)))"
 *)
-
 text \<open>We define a type of functions that preserves the security labeling and a 
    corresponding function application  operator.\<close>  
 typedef label_fun = "{f :: dlm * data \<Rightarrow> dlm * data. 
                         \<forall> x:: dlm * data. fst x = fst (f x)}"  
-proof (auto)
-  show "\<exists>x::(actor \<times> actor set) \<times> nat \<Rightarrow> (actor \<times> actor set) \<times> nat.
-       \<forall>(a::actor) (b::actor set) ba::nat. (a, b) = fst (x ((a, b), ba))"
-  by (rule_tac x = id in exI, simp)
-qed
+  by (fastforce)
 
 definition secure_process :: "label_fun \<Rightarrow> dlm * data \<Rightarrow> dlm * data" (infixr "\<Updown>" 50)
   where "f  \<Updown> d \<equiv> (Rep_label_fun f) d" 
@@ -196,12 +191,12 @@ primrec jonce :: "['a, 'a list] \<Rightarrow> bool"
 where
 jonce_nil: "jonce a [] = False" |
 jonce_cons: "jonce a (x#ls) = (if x = a then (a \<notin> (set ls)) else jonce a ls)"
-
+(*
 primrec nodup :: "['a, 'a list] \<Rightarrow> bool"
   where 
     nodup_nil: "nodup a [] = True" |
     nodup_step: "nodup a (x # ls) = (if x = a then (a \<notin> (set ls)) else nodup a ls)"
-
+*)
 definition move_graph_a :: "[identity, location, location, igraph] \<Rightarrow> igraph"
 where "move_graph_a n l l' g \<equiv> Lgraph (gra g) 
                     (if n \<in> ((agra g) l) &  n \<notin> ((agra g) l') then 
@@ -273,7 +268,6 @@ end
 lemma move_graph_eq: "move_graph_a a l l g = g"  
   by (simp add: move_graph_a_def, case_tac g, force)
      
-       
 end
 
   
