@@ -19,11 +19,14 @@ defines E1_def: "E1 \<equiv> Location 2"
 
 fixes ex_loc_ass :: "location \<Rightarrow> identity set"
 defines ex_loc_ass_def: "ex_loc_ass \<equiv>
-          (\<lambda> x. if x = N3 then {''Alice''}  
-                 else (if x = SE1 then {''Charly'', ''David'', ''Flo''} 
-                       else {}))"
+          (\<lambda> x. if x = N3 then {''Bob''}  
+                 else (if x = SE1 then {''Alice''} 
+                       else (if x = E1 then {''CI''}
+                        else {})))"
 fixes ex_loc_ass' :: "location \<Rightarrow> identity set"
 defines ex_loc_ass'_def: "ex_loc_ass' \<equiv>
-          (\<lambda> x. if x = pub then {''Alice'', ''Eve''}  
-                 else (if x = shop then { ''Bob'', ''Charly'', ''David'', ''Flo''} 
-                       else {}))"
+          (\<lambda> x. if x = N3 then {''Bob'', ''Alice''}  
+                 else (if x = SE1 then {} 
+                       else (if x = E1 then {''CI''}
+                        else {})))"
+end
