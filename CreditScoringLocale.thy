@@ -29,4 +29,15 @@ defines ex_loc_ass'_def: "ex_loc_ass' \<equiv>
                  else (if x = SE1 then {} 
                        else (if x = E1 then {''CI''}
                         else {})))"
+(* data *)
+fixes ex_data :: "identity \<Rightarrow> (dlm \<times> data)"
+defines ex_data_def: \<open>ex_data \<equiv> (\<lambda> x :: identity. 
+                                     (if x = ''Bob'' then ((Actor ''Bob'',{Actor ''CI''}),(N3, 35000, 1968, white))
+                                      else (if x = ''Alice'' then 
+                                                 ((Actor ''Alice'',{Actor ''CI''}),(SE1, 40000,1982, black))
+                                            else (if x = ''CI'' then 
+                                                 ((Actor ''CI'',{}), (E1, 1000000,1900,white))
+                                                  else 
+                                                    ((Actor '''',{}),(E1,0,0,white))))))\<close>
+
 end
