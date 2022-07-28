@@ -133,17 +133,17 @@ defines ex_graphV''_def: "ex_graphV'' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)
 (* In an alternative run, Alice moves to N3 first *)
 fixes ex_graphV''' :: "igraph"
 defines ex_graphV'''_def: "ex_graphV''' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
-                                         ex_loc_ass ex_data'' black_box ex_requests'''"
+                                         ex_loc_ass' ex_data'' black_box ex_requests'''"
 
 (* Alice now puts in an application from N3 *)
 fixes ex_graphV'''' :: "igraph"
 defines ex_graphV''''_def: "ex_graphV'''' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
-                                         ex_loc_ass ex_data'' black_box ex_requests''''"
+                                         ex_loc_ass' ex_data'' black_box ex_requests''''"
 
 (* This time, CI evaluates to positive *)
 fixes ex_graphX :: "igraph"
 defines ex_graphX_def: "ex_graphX \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
-                                         ex_loc_ass ex_data'' black_box ex_requestsV'"
+                                         ex_loc_ass' ex_data'' black_box ex_requestsV'"
 
 
 fixes local_policies :: "[igraph, location] \<Rightarrow> policy set"
@@ -189,6 +189,7 @@ defines CCCc_def: \<open>CCCc \<equiv> Infrastructure ex_graphX local_policies\<
 
 begin 
 
+(* lemmas for the state transitions: a bit tedious but almost all done by sledgehammer automatically*)
 lemma stepI_C: "Ini  \<rightarrow>\<^sub>n C"
 proof (rule_tac l = N3 and a = "''Bob''" in put)
   show "graphI Ini = graphI Ini" by (rule refl)
@@ -255,4 +256,160 @@ next show \<open>Ca =
     by force
 qed
 
+lemma stepCa_CCa: "Ca  \<rightarrow>\<^sub>n CCa"
+proof (rule_tac l = N3 and a = "''Bob''" in put)
+  show "graphI Ca = graphI Ca" by (rule refl)
+next show \<open>''Bob'' @\<^bsub>graphI Ca\<^esub> N3\<close>
+    by (simp add: Ca_def atI_def ex_graph'''_def ex_loc_ass_def)
+next show \<open>N3 \<in> nodes (graphI Ca)\<close>
+    using Ca_def ex_graph'''_def nodes_def by auto
+next show \<open>enables Ca N3 (Actor ''Bob'') put\<close>
+    by (simp add: Ca_def enables_def local_policies_def)
+next show \<open>CCa =
+    Infrastructure
+     (Lgraph (gra (graphI Ca)) (agra (graphI Ca)) (dgra (graphI Ca)) (bb (graphI Ca))
+       (insert (''Bob'', None) (requests (graphI Ca))))
+     (delta Ca)\<close>
+    by (simp add: CCa_def Ca_def ex_graph''''_def ex_graph'''_def ex_requests'_def ex_requests_def)
+qed
+
+lemma stepCCa_CCCa: "CCa  \<rightarrow>\<^sub>n CCCa"
+proof (rule_tac l = N3 and a = "''Bob''" and c = \<open>''CI''\<close> in eval)
+  show \<open>graphI CCa = graphI CCa\<close> by (rule refl)
+next show \<open>''Bob'' @\<^bsub>graphI CCa\<^esub> N3\<close>
+    by (simp add: CCa_def atI_def ex_graph''''_def ex_loc_ass_def)
+next show \<open>N3 \<in> nodes (graphI CCa)\<close>
+    using CCa_def ex_graph''''_def nodes_def by auto
+next show \<open>''CI'' \<in> actors_graph (graphI CCa)\<close>
+    apply (simp add: actors_graph_def)
+    by (metis (no_types, lifting) CCa_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graph''''_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
+next show \<open>(''Bob'', None) \<in> requests (graphI CCa)\<close>
+    by (simp add: CCa_def ex_graph''''_def ex_requests'_def)
+next show \<open> ((Actor ''Bob'',{Actor ''CI''}),(N3, 40000, 1968, white)) = dgra (graphI CCa) ''Bob''\<close>
+    by (simp add: CCa_def ex_graph''''_def ex_data'_def)
+next show \<open>Actor ''CI'' \<in> snd (Actor ''Bob'', {Actor ''CI''})\<close>
+    by force
+next show \<open>enables CCa N3 (Actor ''CI'') eval\<close>
+    by (simp add: CCa_def enables_def local_policies_def)
+next show \<open>CCCa =
+    Infrastructure
+     (Lgraph (gra (graphI CCa)) (agra (graphI CCa)) (dgra (graphI CCa)) (bb (graphI CCa))
+       (insert (''Bob'', Some (bb (graphI CCa) (N3, 40000, 1968, white))) (requests (graphI CCa) - {(''Bob'', None)})))
+     (delta CCa) \<close>
+    by (simp add: CCCa_def ex_graphV_def CCa_def ex_graph''''_def ex_requests'''_def black_box_def ex_requests'_def)
+qed
+
+lemma stepCCCa_Cb: "CCCa  \<rightarrow>\<^sub>n Cb"
+proof (rule_tac l = SE1 and a = "''Alice''"  in put)
+  show \<open>graphI CCCa = graphI CCCa\<close> by (rule refl)
+next show \<open>''Alice'' @\<^bsub>graphI CCCa\<^esub> SE1\<close>
+    by (simp add: CCCa_def N3_def SE1_def atI_def ex_graphV_def ex_loc_ass_def)
+next show \<open>SE1 \<in> nodes (graphI CCCa)\<close>
+    using CCCa_def ex_graphV_def nodes_def by auto
+next show \<open>enables CCCa SE1 (Actor ''Alice'') put\<close>
+    by (simp add: CCCa_def enables_def local_policies_def)
+next show \<open>Cb =
+    Infrastructure
+     (Lgraph (gra (graphI CCCa)) (agra (graphI CCCa)) (dgra (graphI CCCa)) (bb (graphI CCCa))
+       (insert (''Alice'', None) (requests (graphI CCCa))))
+     (delta CCCa) \<close>
+    by (simp add: CCCa_def Cb_def ex_graphV'_def ex_graphV_def ex_requests''''_def ex_requests'''_def)
+qed
+
+lemma stepCb_CCb: "Cb  \<rightarrow>\<^sub>n CCb"
+proof (rule_tac l = SE1 and a = "''Alice''"  and c = "''CI''" in eval)
+  show \<open>graphI Cb = graphI Cb\<close> by (rule refl)
+next show \<open>''Alice'' @\<^bsub>graphI Cb\<^esub> SE1\<close>
+    by (simp add: Cb_def N3_def SE1_def atI_def ex_graphV'_def ex_loc_ass_def)
+next show \<open>SE1 \<in> nodes (graphI Cb)\<close>
+    using Cb_def ex_graphV'_def nodes_def by auto
+next show \<open>''CI'' \<in> actors_graph (graphI Cb)\<close>
+    apply (simp add: actors_graph_def)
+    by (metis (no_types, lifting) Cb_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graphV'_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
+next show \<open>(''Alice'', None) \<in> requests (graphI Cb)\<close>
+    by (simp add: Cb_def ex_graphV'_def ex_requests''''_def)
+next show \<open>((Actor ''Alice'',{Actor ''CI''}),(SE1, 40000,1982, black)) = dgra (graphI Cb) ''Alice''\<close>
+    by (simp add: Cb_def ex_graphV'_def ex_data'_def)
+next show \<open>Actor ''CI'' \<in> snd (Actor ''Alice'', {Actor ''CI''})\<close>
+    by force
+next show \<open>enables Cb SE1 (Actor ''CI'') eval\<close>
+    by (simp add: Cb_def enables_def local_policies_def) 
+next show \<open>CCb =
+    Infrastructure
+     (Lgraph (gra (graphI Cb)) (agra (graphI Cb)) (dgra (graphI Cb)) (bb (graphI Cb))
+       (insert (''Alice'', Some (bb (graphI Cb) (SE1, 40000, 1982, black)))
+         (requests (graphI Cb) - {(''Alice'', None)})))
+     (delta Cb) \<close>
+    by (simp add: CCb_def ex_graphV''_def Cb_def ex_graphV'_def ex_requestsV_def ex_requests''''_def
+                     black_box_def SE1_def N3_def)
+qed
+
+lemma stepCCCa_Cc: "CCCa  \<rightarrow>\<^sub>n Cc"
+proof (rule_tac l = SE1 and l' = N3 and a = "''Alice''"  in move)
+  show \<open>graphI CCCa = graphI CCCa\<close> by (rule refl)
+next show \<open>''Alice'' @\<^bsub>graphI CCCa\<^esub> SE1\<close>
+    by (simp add: CCCa_def N3_def SE1_def atI_def ex_graphV_def ex_loc_ass_def)
+next show \<open>SE1 \<in> nodes (graphI CCCa)\<close>
+    using CCCa_def ex_graphV_def nodes_def by auto
+next show \<open>N3 \<in> nodes (graphI CCCa)\<close>
+    using CCCa_def ex_graphV_def nodes_def by auto
+next show \<open>''Alice'' \<in> actors_graph (graphI CCCa)\<close>
+    apply (simp add: actors_graph_def)
+    by (smt (verit, ccfv_SIG) CCCa_def N3_def One_nat_def SE1_def Zero_not_Suc agra.simps ex_graphV_def ex_loc_ass_def gra.simps graphI.simps insertI1 location.inject mem_Collect_eq nodes_def)
+next show \<open>enables CCCa N3 (Actor ''Alice'') move\<close>
+    by (simp add: CCCa_def enables_def local_policies_def)
+next show \<open>Cc = Infrastructure (move_graph_a ''Alice'' SE1 N3 (graphI CCCa)) (delta CCCa)\<close>
+    apply (simp add: move_graph_a_def Cc_def ex_graphV'''_def CCCa_def ex_graphV_def ex_loc_ass_def
+             ex_loc_ass'_def ex_data'_def ex_data''_def SE1_def N3_def)
+    apply (rule conjI)
+    apply (rule ext)
+     apply (simp add: SE1_def insert_commute)
+    apply (rule ext)
+    by (simp add: N3_def)
+qed
+
+lemma stepCc_CCc: "Cc  \<rightarrow>\<^sub>n CCc"
+proof (rule_tac l = N3 and a = "''Alice''"  in put)
+  show \<open>graphI Cc = graphI Cc\<close> by (rule refl)
+next show \<open>''Alice'' @\<^bsub>graphI Cc\<^esub> N3\<close>
+    by (simp add: Cc_def atI_def ex_graphV'''_def ex_loc_ass'_def) 
+next show \<open> N3 \<in> nodes (graphI Cc)\<close>
+    using Cc_def ex_graphV'''_def nodes_def by auto
+next show \<open> enables Cc N3 (Actor ''Alice'') put\<close>
+    by (simp add: Cc_def enables_def local_policies_def)
+next show \<open> CCc =
+    Infrastructure
+     (Lgraph (gra (graphI Cc)) (agra (graphI Cc)) (dgra (graphI Cc)) (bb (graphI Cc))
+       (insert (''Alice'', None) (requests (graphI Cc))))
+     (delta Cc) \<close>
+    by (simp add: CCc_def ex_graphV''''_def ex_loc_ass'_def Cc_def ex_graphV'''_def ex_requests'''_def
+                     ex_requests''''_def)
+qed
+
+lemma stepCCc_CCCc: "CCc  \<rightarrow>\<^sub>n CCCc"
+proof (rule_tac l = N3 and a = "''Alice''" and c = "''CI''" in eval)
+  show \<open>graphI CCc = graphI CCc\<close> by (rule refl)
+next show \<open>''Alice'' @\<^bsub>graphI CCc\<^esub> N3\<close>
+    by (simp add: CCc_def atI_def ex_graphV''''_def ex_loc_ass'_def)
+next show \<open>N3 \<in> nodes (graphI CCc)\<close>
+    using CCc_def ex_graphV''''_def nodes_def by auto
+next show \<open>''CI'' \<in> actors_graph (graphI CCc)\<close>
+    apply (simp add: actors_graph_def CCc_def ex_graphV''''_def nodes_def ex_loc_ass'_def E1_def SE1_def N3_def)
+    by blast 
+next show \<open> (''Alice'', None) \<in> requests (graphI CCc)\<close>
+    by (simp add: CCc_def ex_graphV''''_def ex_requests''''_def)
+next show \<open>((Actor ''Alice'',{Actor ''CI''}),(N3, 40000,1982, black)) = dgra (graphI CCc) ''Alice''\<close>
+    by (simp add: CCc_def ex_graphV''''_def ex_data''_def)
+next show \<open> Actor ''CI'' \<in> snd (Actor ''Alice'', {Actor ''CI''})\<close> by simp
+next show \<open>enables CCc N3 (Actor ''CI'') eval\<close>
+    by (simp add: CCc_def enables_def local_policies_def)
+next show \<open>CCCc =
+    Infrastructure
+     (Lgraph (gra (graphI CCc)) (agra (graphI CCc)) (dgra (graphI CCc)) (bb (graphI CCc))
+       (insert (''Alice'', Some (bb (graphI CCc) (N3, 40000, 1982, black)))
+         (requests (graphI CCc) - {(''Alice'', None)})))
+     (delta CCc)\<close>
+    by (simp add: CCCc_def ex_graphX_def CCc_def ex_graphV''''_def ex_requestsV'_def ex_requests''''_def
+                     black_box_def)
+qed
 end
