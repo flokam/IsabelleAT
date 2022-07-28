@@ -155,7 +155,7 @@ defines local_policies_def: "local_policies G \<equiv>
 
 (* scenario states *)
 fixes Ini :: \<open>infrastructure\<close>
-defines Ini: \<open>Ini \<equiv> Infrastructure ex_graph local_policies\<close>
+defines Ini_def: \<open>Ini \<equiv> Infrastructure ex_graph local_policies\<close>
 
 fixes C :: \<open>infrastructure\<close>
 defines C_def: \<open>C \<equiv> Infrastructure ex_graph' local_policies\<close>
@@ -193,17 +193,17 @@ lemma stepI_C: "Ini  \<rightarrow>\<^sub>n C"
 proof (rule_tac l = N3 and a = "''Bob''" in put)
   show "graphI Ini = graphI Ini" by (rule refl)
 next show "''Bob'' @\<^bsub>graphI Ini\<^esub> N3"
-    by (simp add: Ini atI_def ex_graph_def ex_loc_ass_def)
+    by (simp add: Ini_def atI_def ex_graph_def ex_loc_ass_def)
 next show "N3 \<in> nodes (graphI Ini)"
-    using Ini ex_graph_def nodes_def by auto
+    using Ini_def ex_graph_def nodes_def by auto
 next show \<open>enables Ini N3 (Actor ''Bob'') put\<close>
-    by (simp add: Ini enables_def local_policies_def)
+    by (simp add: Ini_def enables_def local_policies_def)
 next show \<open>C =
     Infrastructure
      (Lgraph (gra (graphI Ini)) (agra (graphI Ini)) (dgra (graphI Ini)) (bb (graphI Ini))
        (insert (''Bob'', None) (requests (graphI Ini))))
      (delta Ini)\<close>
-    using C_def Ini agra.simps bb.simps delta.simps dgra.simps ex_graph'_def ex_graph_def ex_requests'_def ex_requests_def gra.simps graphI.simps requests.simps by presburger
+    using C_def Ini_def agra.simps bb.simps delta.simps dgra.simps ex_graph'_def ex_graph_def ex_requests'_def ex_requests_def gra.simps graphI.simps requests.simps by presburger
 qed
 
 lemma stepC_CC: "C  \<rightarrow>\<^sub>n CC"
@@ -230,6 +230,29 @@ next show "CC =
        (insert (''Bob'', Some (bb (graphI C) (N3, 35000, 1968, white))) (requests (graphI C) - {(''Bob'', None)})))
      (delta C)"
     by (simp add: C_def CC_def ex_graph'_def ex_graph''_def black_box_def ex_requests''_def ex_requests'_def)
+qed
+
+lemma stepI_Ca: "Ini  \<rightarrow>\<^sub>n Ca"
+proof (rule_tac l = N3 and a = "''Bob''" and m = "40000" in get)
+  show "graphI Ini = graphI Ini" by (rule refl)
+next show "''Bob'' @\<^bsub>graphI Ini\<^esub> N3"
+    by (simp add: Ini_def atI_def ex_graph_def ex_loc_ass_def) 
+next show \<open>N3 \<in> nodes (graphI Ini)\<close>
+    using Ini_def ex_graph_def nodes_def by auto
+next show \<open>enables Ini N3 (Actor ''Bob'') get\<close>
+    by (simp add: Ini_def enables_def local_policies_def)
+next show \<open>Ca =
+    Infrastructure
+     (Lgraph (gra (graphI Ini)) (agra (graphI Ini))
+       ((dgra (graphI Ini))
+        (''Bob'' :=
+           (fst (dgra (graphI Ini) ''Bob''), fst (snd (dgra (graphI Ini) ''Bob'')), 40000,
+            snd (snd (snd (dgra (graphI Ini) ''Bob''))))))
+       (bb (graphI Ini)) (requests (graphI Ini)))
+     (delta Ini) \<close>
+    apply (simp add: Ini_def Ca_def ex_graph_def ex_graph'''_def ex_data_def ex_data'_def)
+    apply (rule ext)
+    by force
 qed
 
 end
