@@ -218,9 +218,8 @@ next show \<open>''CI'' \<in> actors_graph (graphI C)\<close>
     by (metis (no_types, lifting) C_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graph'_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
 next show "(''Bob'', None) \<in> requests (graphI C)"
     by (simp add: C_def ex_graph'_def ex_requests'_def)
-next show " ((Actor ''Bob'',{Actor ''CI''}),(N3, 40000, 1968, white)) = dgra (graphI C) ''Bob''"
-    apply (rule sym)
-    sorry
+next show " ((Actor ''Bob'',{Actor ''CI''}),(N3, 35000, 1968, white)) = dgra (graphI C) ''Bob''"
+    by (simp add: C_def ex_graph'_def ex_data_def)
 next show \<open> Actor ''CI'' \<in> snd (Actor ''Bob'', {Actor ''CI''})\<close>
     by fastforce
 next show \<open>enables C N3 (Actor ''CI'') eval\<close>
@@ -228,9 +227,9 @@ next show \<open>enables C N3 (Actor ''CI'') eval\<close>
 next show "CC =
     Infrastructure
      (Lgraph (gra (graphI C)) (agra (graphI C)) (dgra (graphI C)) (bb (graphI C))
-       (insert (''Bob'', Some (bb (graphI C) (N3, 40000, 1968, white))) (requests (graphI C) - {(''Bob'', None)})))
-     (delta C) "
-    sorry
+       (insert (''Bob'', Some (bb (graphI C) (N3, 35000, 1968, white))) (requests (graphI C) - {(''Bob'', None)})))
+     (delta C)"
+    by (simp add: C_def CC_def ex_graph'_def ex_graph''_def black_box_def ex_requests''_def ex_requests'_def)
 qed
 
 end
