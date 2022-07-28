@@ -205,8 +205,8 @@ definition \<open>closest s s' s'' \<equiv> ((s \<rightarrow>\<^sub>n*  s') \<an
                (\<forall> s0. s0 \<rightarrow>\<^sub>n* s' \<and> s0 \<rightarrow>\<^sub>n* s' \<longrightarrow> s0 \<rightarrow>\<^sub>n* s))\<close>
 
 text \<open>Using the definition of closest we can define counterfactuals for a state s wrt a desirable property
-      P as states s'' with common predecessor s' if this exists.\<close>
-definition \<open>counterfactual s P \<equiv> (SOME s'. \<exists> s''. P s'' \<and> s' \<rightarrow>\<^sub>n* s'' \<and> closest s s' s'')\<close>
+      P as states s'' with common predecessor s' if these exist. \<close>
+definition \<open>counterfactuals s P \<equiv> {s''. P s'' \<and> (\<exists> s'. (s' \<rightarrow>\<^sub>n* s'') \<and> closest s s' s'')}\<close>
 
 
 end
