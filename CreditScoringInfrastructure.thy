@@ -198,5 +198,16 @@ definition state_transition_in_refl ("(_ \<rightarrow>\<^sub>n* _)" 50)
 where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transition_in x y}\<^sup>*)"
 
 end
+
+text \<open>PCR algorithm\<close>
+text \<open>The definition of closest gives a unique predecessor s wrt @{text \<open>\<rightarrow>\<^sub>n*\<close>} for two points s' s''.\<close>
+definition \<open>closest s s' s'' \<equiv> ((s \<rightarrow>\<^sub>n*  s') \<and> (s \<rightarrow>\<^sub>n* s'') \<and>
+               (\<forall> s0. s0 \<rightarrow>\<^sub>n* s' \<and> s0 \<rightarrow>\<^sub>n* s' \<longrightarrow> s0 \<rightarrow>\<^sub>n* s))\<close>
+
+text \<open>Using the definition of closest we can define counterfactuals for a state s wrt a desirable property
+      P as states s'' with common predecessor s' if this exists.\<close>
+definition \<open>counterfactual s P \<equiv> (SOME s'. \<exists> s''. P s'' \<and> s' \<rightarrow>\<^sub>n* s'' \<and> closest s s' s'')\<close>
+
+
 end
 
