@@ -187,6 +187,21 @@ defines CCc_def: \<open>CCc \<equiv> Infrastructure ex_graphV'''' local_policies
 fixes CCCc :: \<open>infrastructure\<close>
 defines CCCc_def: \<open>CCCc \<equiv> Infrastructure ex_graphX local_policies\<close>
 
+(* The Credit scoring Kripke structure *)
+fixes Credit_states
+defines Credit_states_def: \<open>Credit_states \<equiv> {s. Ini \<rightarrow>\<^sub>i* s }\<close>
+fixes Credit_Kripke
+defines Credit_Kripke_def: \<open>Credit_Kripke \<equiv> Kripke Credit_states {Ini}\<close>
+fixes M
+defines M_def: \<open>M \<equiv> Credit_Kripke\<close>
+
+(* The desirable outcome DO *)
+fixes DO :: \<open>identity \<Rightarrow> infrastructure \<Rightarrow> bool\<close>
+defines DO_def: \<open>DO a s \<equiv> (a, Some True) \<in> requests (graphI s)\<close>
+
+fixes ndobob
+defines ndobob_def: \<open>ndobob \<equiv> {(s :: infrastructure). \<not>(DO ''Bob''  s)}\<close>
+
 begin 
 
 (* lemmas for the state transitions: a bit tedious but almost all done by sledgehammer automatically*)
@@ -412,4 +427,48 @@ next show \<open>CCCc =
     by (simp add: CCCc_def ex_graphX_def CCc_def ex_graphV''''_def ex_requestsV'_def ex_requests''''_def
                      black_box_def)
 qed
+
+(* Application of PCR cycle *)
+
+(* Step 1: find an attack *)
+lemma att_Kripke: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},{CC})\<^esup>)\<close>
+proof (subst att_and, simp, rule conjI)
+  show \<open>\<turnstile>\<N>\<^bsub>({Ini}, {C})\<^esub>\<close>
+    apply (simp add: att_base)
+    using state_transition_infra_def stepI_C by fastforce
+next show \<open> \<turnstile>[\<N>\<^bsub>({C}, {CC})\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({C}, {CC})\<^esup> \<close>
+    apply (subst att_and, simp)
+    by (simp add: is_attack_tree.simps(1) state_transition_infra_def stepC_CC)
+qed
+
+lemma att_ndobob_Kripke: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},ndobob)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndobob)\<^esup>)\<close>
+proof (subst att_and, simp, rule conjI)
+  show \<open>\<turnstile>\<N>\<^bsub>({Ini}, {C})\<^esub>\<close>
+    apply (simp add: att_base)
+    using state_transition_infra_def stepI_C by fastforce
+next show \<open>\<turnstile>[\<N>\<^bsub>({C}, ndobob)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({C}, ndobob)\<^esup>\<close>
+    apply (subst att_and, simp)
+    apply (simp add: ndobob_def is_attack_tree.simps(1) state_transition_infra_def)
+    apply (rule_tac x = CC in exI)
+    apply (rule conjI)
+    prefer 2
+    using stepC_CC apply blast
+    by (simp add: DO_def CC_def ex_graph''_def ex_requests''_def)
+qed
+
+(* The attack gives us the CTL formula by Correctness of AT *)
+lemma Credit_att: "M \<turnstile> EF ndobob"
+proof -
+  have a: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},ndobob)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndobob)\<^esup>)\<close> by (rule att_ndobob_Kripke)
+  hence "({Ini}, ndobob) = attack (([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},ndobob)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndobob)\<^esup>))" by simp
+  hence \<open>Kripke {s::infrastructure. \<exists>i::infrastructure\<in> {Ini}. i \<rightarrow>\<^sub>i* s} {Ini} \<turnstile> EF ndobob\<close>
+    using AT_EF att_ndobob_Kripke by fastforce
+  thus \<open>M \<turnstile> EF ndobob\<close>
+    by (simp add: Credit_Kripke_def Credit_states_def M_def)
+qed
+
+(* Step 2: Now, apply counterfactuals to find a close state with DO and first precondition:
+  Find an initial precondition that yields the desirable outcome DO 
+  in a closest state using counterfactuals. *) 
+
 end
