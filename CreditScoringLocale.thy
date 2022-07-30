@@ -74,17 +74,21 @@ defines ex_requests'_def: \<open>ex_requests' \<equiv> {(''Bob'', None)}\<close>
 fixes ex_requests'':: \<open>(identity \<times> bool option)set\<close>
 defines ex_requests''_def: \<open>ex_requests'' \<equiv> {(''Bob'', Some(False))}\<close>
 
+fixes ex_requests''a:: \<open>(identity \<times> bool option)set\<close>
+defines ex_requests''a_def: \<open>ex_requests''a \<equiv> {(''Bob'', None), (''Bob'', Some(False))}\<close>
+
+
 fixes ex_requests''':: \<open>(identity \<times> bool option)set\<close>
-defines ex_requests'''_def: \<open>ex_requests''' \<equiv> {(''Bob'', Some(True))}\<close>
+defines ex_requests'''_def: \<open>ex_requests''' \<equiv> {(''Bob'', Some(True)), (''Bob'', Some(False))}\<close>
 
 fixes ex_requests'''':: \<open>(identity \<times> bool option)set\<close>
-defines ex_requests''''_def: \<open>ex_requests'''' \<equiv> {(''Alice'', None),(''Bob'', Some(True))}\<close>
+defines ex_requests''''_def: \<open>ex_requests'''' \<equiv> {(''Alice'', None),(''Bob'', Some(True)), (''Bob'', Some(False))}\<close>
 
 fixes ex_requestsV:: \<open>(identity \<times> bool option)set\<close>
-defines ex_requestsV_def: \<open>ex_requestsV \<equiv> {(''Alice'', Some(False)),(''Bob'', Some(True))}\<close>
+defines ex_requestsV_def: \<open>ex_requestsV \<equiv> {(''Alice'', Some(False)),(''Bob'', Some(True)), (''Bob'', Some(False))}\<close>
 
 fixes ex_requestsV':: \<open>(identity \<times> bool option)set\<close>
-defines ex_requestsV'_def: \<open>ex_requestsV' \<equiv> {(''Alice'', Some(True)),(''Bob'', Some(True))}\<close>
+defines ex_requestsV'_def: \<open>ex_requestsV' \<equiv> {(''Alice'', Some(True)),(''Bob'', Some(True)), (''Bob'', Some(False))}\<close>
 
 (* Graphs for the various states: initial*)
 fixes ex_graph :: "igraph"
@@ -102,17 +106,16 @@ defines ex_graph''_def: "ex_graph'' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)}
                                          ex_loc_ass ex_data black_box ex_requests''"
 
 
-(* Another possibility from initial state I 
-   Bob first actions a get to get a salary increase *)
+(* Next try: now from previous state Bob actions a get to get a salary increase *)
 fixes ex_graph''' :: "igraph"
 defines ex_graph'''_def: "ex_graph''' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
-                                         ex_loc_ass ex_data' black_box ex_requests"
+                                         ex_loc_ass ex_data' black_box ex_requests''"
 
 
 (* Bob puts in a credit application *)
 fixes ex_graph'''' :: "igraph"
 defines ex_graph''''_def: "ex_graph'''' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
-                                         ex_loc_ass ex_data' black_box ex_requests'"
+                                         ex_loc_ass ex_data' black_box ex_requests''a"
 
 
 (* CI evaluates Bob's application - this time positive *)
@@ -248,25 +251,25 @@ next show "CC =
     by (simp add: C_def CC_def ex_graph'_def ex_graph''_def black_box_def ex_requests''_def ex_requests'_def)
 qed
 
-lemma stepI_Ca: "Ini  \<rightarrow>\<^sub>n Ca"
+lemma stepCC_Ca: "CC  \<rightarrow>\<^sub>n Ca"
 proof (rule_tac l = N3 and a = "''Bob''" and m = "40000" in get)
-  show "graphI Ini = graphI Ini" by (rule refl)
-next show "''Bob'' @\<^bsub>graphI Ini\<^esub> N3"
-    by (simp add: Ini_def atI_def ex_graph_def ex_loc_ass_def) 
-next show \<open>N3 \<in> nodes (graphI Ini)\<close>
-    using Ini_def ex_graph_def nodes_def by auto
-next show \<open>enables Ini N3 (Actor ''Bob'') get\<close>
-    by (simp add: Ini_def enables_def local_policies_def)
+  show "graphI CC = graphI CC" by (rule refl)
+next show "''Bob'' @\<^bsub>graphI CC\<^esub> N3"
+    by (simp add: CC_def atI_def ex_graph''_def ex_loc_ass_def) 
+next show \<open>N3 \<in> nodes (graphI CC)\<close>
+    using CC_def ex_graph''_def nodes_def by auto
+next show \<open>enables CC N3 (Actor ''Bob'') get\<close>
+    by (simp add: CC_def enables_def local_policies_def)
 next show \<open>Ca =
     Infrastructure
-     (Lgraph (gra (graphI Ini)) (agra (graphI Ini))
-       ((dgra (graphI Ini))
+     (Lgraph (gra (graphI CC)) (agra (graphI CC))
+       ((dgra (graphI CC))
         (''Bob'' :=
-           (fst (dgra (graphI Ini) ''Bob''), fst (snd (dgra (graphI Ini) ''Bob'')), 40000,
-            snd (snd (snd (dgra (graphI Ini) ''Bob''))))))
-       (bb (graphI Ini)) (requests (graphI Ini)))
-     (delta Ini) \<close>
-    apply (simp add: Ini_def Ca_def ex_graph_def ex_graph'''_def ex_data_def ex_data'_def)
+           (fst (dgra (graphI CC) ''Bob''), fst (snd (dgra (graphI CC) ''Bob'')), 40000,
+            snd (snd (snd (dgra (graphI CC) ''Bob''))))))
+       (bb (graphI CC)) (requests (graphI CC)))
+     (delta CC) \<close>
+    apply (simp add: CC_def Ca_def ex_graph''_def ex_graph'''_def ex_data_def ex_data'_def)
     apply (rule ext)
     by force
 qed
@@ -285,7 +288,7 @@ next show \<open>CCa =
      (Lgraph (gra (graphI Ca)) (agra (graphI Ca)) (dgra (graphI Ca)) (bb (graphI Ca))
        (insert (''Bob'', None) (requests (graphI Ca))))
      (delta Ca)\<close>
-    by (simp add: CCa_def Ca_def ex_graph''''_def ex_graph'''_def ex_requests'_def ex_requests_def)
+    by (simp add: CCa_def Ca_def ex_graph''''_def ex_graph'''_def ex_requests''_def ex_requests''a_def)
 qed
 
 lemma stepCCa_CCCa: "CCa  \<rightarrow>\<^sub>n CCCa"
@@ -299,7 +302,7 @@ next show \<open>''CI'' \<in> actors_graph (graphI CCa)\<close>
     apply (simp add: actors_graph_def)
     by (metis (no_types, lifting) CCa_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graph''''_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
 next show \<open>(''Bob'', None) \<in> requests (graphI CCa)\<close>
-    by (simp add: CCa_def ex_graph''''_def ex_requests'_def)
+    by (simp add: CCa_def ex_graph''''_def ex_requests''a_def)
 next show \<open> ((Actor ''Bob'',{Actor ''CI''}),(N3, 40000, 1968, white)) = dgra (graphI CCa) ''Bob''\<close>
     by (simp add: CCa_def ex_graph''''_def ex_data'_def)
 next show \<open>Actor ''CI'' \<in> snd (Actor ''Bob'', {Actor ''CI''})\<close>
@@ -311,7 +314,7 @@ next show \<open>CCCa =
      (Lgraph (gra (graphI CCa)) (agra (graphI CCa)) (dgra (graphI CCa)) (bb (graphI CCa))
        (insert (''Bob'', Some (bb (graphI CCa) (N3, 40000, 1968, white))) (requests (graphI CCa) - {(''Bob'', None)})))
      (delta CCa) \<close>
-    by (simp add: CCCa_def ex_graphV_def CCa_def ex_graph''''_def ex_requests'''_def black_box_def ex_requests'_def)
+    by (simp add: CCCa_def ex_graphV_def CCa_def ex_graph''''_def ex_requests'''_def black_box_def ex_requests''a_def)
 qed
 
 lemma stepCCCa_Cb: "CCCa  \<rightarrow>\<^sub>n Cb"
@@ -470,5 +473,33 @@ qed
 (* Step 2: Now, apply counterfactuals to find a close state with DO and first precondition:
   Find an initial precondition that yields the desirable outcome DO 
   in a closest state using counterfactuals. *) 
+
+(* Application of counterfactuals to find that closest state with DO is CCCa *)
+lemma counterfactual_CCCa: \<open>CCCa \<in> (counterfactuals CC (\<lambda> s. DO ''Bob'' s))\<close>
+  apply (simp add: counterfactuals_def)
+  apply (rule conjI)
+   apply (simp add: CCCa_def DO_def ex_graphV_def ex_requests'''_def)
+  apply (rule_tac x = CC in exI)
+  apply (rule conjI)
+   apply (subgoal_tac \<open>CC \<rightarrow>\<^sub>n* Ca\<close>)
+  apply (subgoal_tac \<open>Ca \<rightarrow>\<^sub>n* CCa\<close>)
+  apply (subgoal_tac \<open>CCa \<rightarrow>\<^sub>n* CCCa\<close>)
+      apply (simp add: state_transition_infra_def state_transition_in_refl_def)
+  apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCCa_CCCa)
+  apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCa_CCa)
+  apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCC_Ca)
+(* *)
+  apply (simp add: closest_def)
+  apply (rule conjI)
+      apply (simp add: state_transition_infra_def state_transition_in_refl_def)
+      apply (simp add: state_transition_infra_def state_transition_in_refl_def)
+    apply (subgoal_tac \<open>CC \<rightarrow>\<^sub>n* Ca\<close>)
+  apply (subgoal_tac \<open>Ca \<rightarrow>\<^sub>n* CCa\<close>)
+  apply (subgoal_tac \<open>CCa \<rightarrow>\<^sub>n* CCCa\<close>)
+      apply (simp add: state_transition_infra_def state_transition_in_refl_def)
+  apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCCa_CCCa)
+  apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCa_CCa)
+by (simp add: r_into_rtrancl state_transition_in_refl_def stepCC_Ca)
+
 
 end
