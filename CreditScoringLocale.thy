@@ -205,11 +205,19 @@ defines M_def: \<open>M \<equiv> Credit_Kripke\<close>
 fixes DO :: \<open>identity \<Rightarrow> infrastructure \<Rightarrow> bool\<close>
 defines DO_def: \<open>DO a s \<equiv> (a, Some True) \<in> requests (graphI s)\<close>
 
-fixes ndoalice
-defines ndoalice_def: \<open>ndoalice \<equiv> {(s :: infrastructure). \<not>(DO ''Alice''  s)}\<close>
 
 fixes ndobob
 defines ndobob_def: \<open>ndobob \<equiv> {(s :: infrastructure). \<not>(DO ''Bob''  s)}\<close>
+
+fixes salary :: "identity \<Rightarrow> infrastructure \<Rightarrow> nat"
+defines salary_def: \<open>(salary a s) \<equiv> (fst(snd(snd(dgra (graphI s) a))))\<close>
+
+fixes pc0 
+defines pc0_def: \<open>pc0 A s \<equiv> (salary A s \<ge> 40000)\<close>
+
+fixes ndoalice
+defines ndoalice_def: \<open>ndoalice \<equiv> {(s :: infrastructure). (pc0 ''Alice'' s) \<and> \<not>(DO ''Alice''  s)}\<close>
+
 
 begin 
 
@@ -497,12 +505,15 @@ lemma counterfactual_CCCa: \<open>CCCa \<in> (counterfactuals CC (\<lambda> s. D
   apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCa_CCa)
 by (simp add: r_into_rtrancl state_transition_in_refl_def stepCC_Ca)
 
+(* As a result the new (first) precondition is pc0 \<equiv> salary A \<ge> 40000 *)
+
 (* Step 3: Generalisation *)
-(* Try to generalize over all actors *)
+(* Try to generalize over all actors, that is, try to show for all actors A
+    AG {w. pc0 \<longrightarrow> DO A s }*)
 (* Attack tree analysis shows that this fails because for Alice there is a path to
    a failure state with not DO. *)
 
-lemma att_nodoalice_Kripke': \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
+lemma att_nodoalice_Kripke: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
                         \<N>\<^bsub>({CCa},{CCCa})\<^esub>, \<N>\<^bsub>({CCCa},{Cb})\<^esub>,\<N>\<^bsub>({Cb},ndoalice)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndoalice)\<^esup>)\<close>
 proof (subst att_and, simp, rule conjI)
   show \<open>\<turnstile>\<N>\<^bsub>({Ini}, {C})\<^esub>\<close>
@@ -528,7 +539,9 @@ next show \<open> \<turnstile>[\<N>\<^bsub>({C}, {CC})\<^esub>, \<N>\<^bsub>({CC
     apply (simp add: att_base)
     apply (rule_tac x = CCb in exI)
     apply (rule conjI)
-    apply (simp add: DO_def CCb_def ex_graphV''_def ex_requestsV_def)
+     apply (simp add: CCb_def ex_graphV''_def pc0_def salary_def ex_data'_def)
+    apply (rule conjI)
+     apply (simp add: DO_def CCb_def ex_graphV''_def ex_requestsV_def)
     by (simp add: state_transition_infra_def stepCb_CCb)
 qed
 
@@ -537,11 +550,11 @@ lemma Credit_att': "M \<turnstile> EF ndoalice"
 proof -
   have a: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
                         \<N>\<^bsub>({CCa},{CCCa})\<^esub>, \<N>\<^bsub>({CCCa},{Cb})\<^esub>,\<N>\<^bsub>({Cb},ndoalice)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndoalice)\<^esup>)\<close> 
-    by (rule att_nodoalice_Kripke')
+    by (rule att_nodoalice_Kripke)
   hence "({Ini}, ndoalice) = attack ([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
                         \<N>\<^bsub>({CCa},{CCCa})\<^esub>, \<N>\<^bsub>({CCCa},{Cb})\<^esub>,\<N>\<^bsub>({Cb},ndoalice)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndoalice)\<^esup>)" by simp
   hence \<open>Kripke {s::infrastructure. \<exists>i::infrastructure\<in> {Ini}. i \<rightarrow>\<^sub>i* s} {Ini} \<turnstile> EF ndoalice\<close>
-    using AT_EF att_nodoalice_Kripke' by fastforce
+    using AT_EF att_nodoalice_Kripke by fastforce
   thus \<open>M \<turnstile> EF ndoalice\<close>
     by (simp add: Credit_Kripke_def Credit_states_def M_def)
 qed
