@@ -593,9 +593,14 @@ qed
    Now thgeneralisation step succeeds. *)
 
 lemma pc1_AG: \<open> M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
-proof (simp add: M_def pc1_def DO_def)
-  show \<open>Credit_Kripke \<turnstile> AG (EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> (A, Some True) \<in> requests (graphI s)})\<close>
+proof (simp add: M_def pc1_def DO_def Credit_Kripke_def check_def, rule conjI)
+  show \<open>Ini \<in> Credit_states\<close>
+    by (simp add: Credit_states_def state_transition_refl_def)
+next show \<open> Ini \<in> AG (EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> (A, Some True) \<in> requests (graphI s)})\<close>
+  proof (unfold AG_def, simp add: gfp_def)
+    show \<open>\<exists>x\<subseteq>EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> (A, Some True) \<in> requests (graphI s)}. x \<subseteq> AX x \<and> Ini \<in> x\<close>
     sorry
+qed
 qed
 
 end
