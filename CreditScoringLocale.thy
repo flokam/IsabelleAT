@@ -513,7 +513,7 @@ by (simp add: r_into_rtrancl state_transition_in_refl_def stepCC_Ca)
 (* Try to generalize over all actors, that is, try to show for all actors A
     AG {w. pc0 \<longrightarrow> DO A s }*)
 (* Attack tree analysis shows that this fails because for Alice there is a path to
-   a failure state with not DO. *)
+   a failure state where pc0 holds but not DO. *)
 
 lemma att_nodoalice_Kripke: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
                         \<N>\<^bsub>({CCa},{CCCa})\<^esub>, \<N>\<^bsub>({CCCa},{Cb})\<^esub>,\<N>\<^bsub>({Cb},ndoalice)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndoalice)\<^esup>)\<close>
@@ -547,7 +547,34 @@ next show \<open> \<turnstile>[\<N>\<^bsub>({C}, {CC})\<^esub>, \<N>\<^bsub>({CC
     by (simp add: state_transition_infra_def stepCb_CCb)
 qed
 
-(* The attack gives us the CTL formula by Correctness of AT *)
+(* Application of counterfactuals to find that the closest state to  CCb where DO holds is CCc.
+   This isnpires the next precondition pc1 as in CCCc we have 
+   salary A s \<ge> 40000 \<and> A  @\<^bsub>(graphI s)\<^esub> N3) *)
+lemma counterfactual_CCCc: \<open>CCCc \<in> (counterfactuals CCb (\<lambda> s. DO ''Alice'' s))\<close>
+  apply (simp add: counterfactuals_def)
+  apply (rule conjI)
+  apply (simp add: CCCc_def DO_def ex_graphX_def ex_requestsV''_def)
+  apply (rule_tac x = CCb in exI)
+  apply (rule conjI)
+   apply (subgoal_tac \<open>CCb \<rightarrow>\<^sub>n* Cc\<close>)
+   apply (subgoal_tac \<open>Cc \<rightarrow>\<^sub>n* CCc\<close>)
+   apply (subgoal_tac \<open>CCc \<rightarrow>\<^sub>n* CCCc\<close>)
+      apply (simp add: state_transition_infra_def state_transition_in_refl_def)
+     apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCCc_CCCc)
+  apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCc_CCc)
+  apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCCb_Cc)
+  apply (simp add: closest_def)
+  apply (rule conjI)
+      apply (simp add: state_transition_infra_def state_transition_in_refl_def)
+   apply (subgoal_tac \<open>CCb \<rightarrow>\<^sub>n* Cc\<close>)
+   apply (subgoal_tac \<open>Cc \<rightarrow>\<^sub>n* CCc\<close>)
+   apply (subgoal_tac \<open>CCc \<rightarrow>\<^sub>n* CCCc\<close>)
+      apply (simp add: state_transition_infra_def state_transition_in_refl_def)
+     apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCCc_CCCc)
+  apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCc_CCc)
+  by (simp add: r_into_rtrancl state_transition_in_refl_def stepCCb_Cc)
+
+(* The attack gives us the CTL formula of reachability of the failure state by Correctness of AT *)
 lemma Credit_att': "M \<turnstile> EF ndoalice"
 proof -
   have a: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
@@ -561,7 +588,7 @@ proof -
     by (simp add: Credit_Kripke_def Credit_states_def M_def)
 qed
 
-(* Next iteration: go back to 2 with be precondition 
+(* Next iteration: go back to 2 with the new precondition 
    pc1 A s  \<equiv>  (salary A s \<ge> 40000 \<and> (A  @\<^bsub>(graphI s)\<^esub> N3)).
    Now thgeneralisation step succeeds. *)
 
