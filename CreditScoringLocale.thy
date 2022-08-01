@@ -218,6 +218,8 @@ defines pc0_def: \<open>pc0 A s \<equiv> (salary A s \<ge> 40000)\<close>
 fixes ndoalice
 defines ndoalice_def: \<open>ndoalice \<equiv> {(s :: infrastructure). (pc0 ''Alice'' s) \<and> \<not>(DO ''Alice''  s)}\<close>
 
+fixes pc1
+defines pc1_def: \<open>pc1 A s \<equiv> (salary A s \<ge> 40000 \<and> (A  @\<^bsub>(graphI s)\<^esub> N3))\<close>
 
 begin 
 
@@ -557,6 +559,16 @@ proof -
     using AT_EF att_nodoalice_Kripke by fastforce
   thus \<open>M \<turnstile> EF ndoalice\<close>
     by (simp add: Credit_Kripke_def Credit_states_def M_def)
+qed
+
+(* Next iteration: go back to 2 with be precondition 
+   pc1 A s  \<equiv>  (salary A s \<ge> 40000 \<and> (A  @\<^bsub>(graphI s)\<^esub> N3)).
+   Now thgeneralisation step succeeds. *)
+
+lemma pc1_AG: \<open> M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
+proof (simp add: M_def pc1_def DO_def)
+  show \<open>Credit_Kripke \<turnstile> AG (EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> (A, Some True) \<in> requests (graphI s)})\<close>
+    sorry
 qed
 
 end
