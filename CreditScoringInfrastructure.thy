@@ -179,7 +179,7 @@ inductive state_transition_in :: "[infrastructure, infrastructure] \<Rightarrow>
           enables I l (Actor a) get \<Longrightarrow>
           I' = Infrastructure
                  (Lgraph (gra G)(agra G)
-                         ((dgra G)(n := (fst (dgra G n),(fst(snd (dgra G n)),m,snd(snd(snd(dgra G n)))))))
+                         ((dgra G)(a := (fst (dgra G a),(fst(snd (dgra G a)),m,snd(snd(snd(dgra G a)))))))
                          (bb G)(requests G))
                  (delta I) \<Longrightarrow>
           I \<rightarrow>\<^sub>n I'"
@@ -202,7 +202,7 @@ end
 text \<open>PCR algorithm\<close>
 text \<open>The definition of closest gives a unique predecessor s wrt @{text \<open>\<rightarrow>\<^sub>n*\<close>} for two points s' s''.\<close>
 definition \<open>closest s s' s'' \<equiv> ((s \<rightarrow>\<^sub>n*  s') \<and> (s \<rightarrow>\<^sub>n* s'') \<and>
-               (\<forall> s0. s0 \<rightarrow>\<^sub>n* s' \<and> s0 \<rightarrow>\<^sub>n* s' \<longrightarrow> s0 \<rightarrow>\<^sub>n* s))\<close>
+               (\<forall> s0. s0 \<rightarrow>\<^sub>n* s' \<and> s0 \<rightarrow>\<^sub>n* s'' \<longrightarrow> s0 \<rightarrow>\<^sub>n* s))\<close>
 
 text \<open>Using the definition of closest we can define counterfactuals for a state s wrt a desirable property
       P as states s'' with common predecessor s' if these exist. \<close>
