@@ -88,7 +88,10 @@ fixes ex_requestsV:: \<open>(identity \<times> bool option)set\<close>
 defines ex_requestsV_def: \<open>ex_requestsV \<equiv> {(''Alice'', Some(False)),(''Bob'', Some(True)), (''Bob'', Some(False))}\<close>
 
 fixes ex_requestsV':: \<open>(identity \<times> bool option)set\<close>
-defines ex_requestsV'_def: \<open>ex_requestsV' \<equiv> {(''Alice'', Some(True)),(''Bob'', Some(True)), (''Bob'', Some(False))}\<close>
+defines ex_requestsV'_def: \<open>ex_requestsV' \<equiv> {(''Alice'', None), (''Alice'', Some(False)),(''Bob'', Some(True)), (''Bob'', Some(False))}\<close>
+
+fixes ex_requestsV'':: \<open>(identity \<times> bool option)set\<close>
+defines ex_requestsV''_def: \<open>ex_requestsV'' \<equiv> {(''Alice'', Some(True)), (''Alice'', Some(False)),(''Bob'', Some(True)), (''Bob'', Some(False))}\<close>
 
 (* Graphs for the various states: initial*)
 fixes ex_graph :: "igraph"
@@ -133,20 +136,20 @@ fixes ex_graphV'' :: "igraph"
 defines ex_graphV''_def: "ex_graphV'' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
                                          ex_loc_ass ex_data' black_box ex_requestsV"
 
-(* In an alternative run, Alice moves to N3 first *)
+(* Alice now moves to N3 *)
 fixes ex_graphV''' :: "igraph"
 defines ex_graphV'''_def: "ex_graphV''' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
-                                         ex_loc_ass' ex_data'' black_box ex_requests'''"
+                                         ex_loc_ass' ex_data'' black_box ex_requestsV"
 
 (* Alice now puts in an application from N3 *)
 fixes ex_graphV'''' :: "igraph"
 defines ex_graphV''''_def: "ex_graphV'''' \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
-                                         ex_loc_ass' ex_data'' black_box ex_requests''''"
+                                         ex_loc_ass' ex_data'' black_box ex_requestsV'"
 
 (* This time, CI evaluates to positive *)
 fixes ex_graphX :: "igraph"
 defines ex_graphX_def: "ex_graphX \<equiv> Lgraph {(N3,SE1),(N3,E1),(SE1,E1)} 
-                                         ex_loc_ass' ex_data'' black_box ex_requestsV'"
+                                         ex_loc_ass' ex_data'' black_box ex_requestsV''"
 
 
 fixes local_policies :: "[igraph, location] \<Rightarrow> policy set"
@@ -201,6 +204,9 @@ defines M_def: \<open>M \<equiv> Credit_Kripke\<close>
 (* The desirable outcome DO *)
 fixes DO :: \<open>identity \<Rightarrow> infrastructure \<Rightarrow> bool\<close>
 defines DO_def: \<open>DO a s \<equiv> (a, Some True) \<in> requests (graphI s)\<close>
+
+fixes ndoalice
+defines ndoalice_def: \<open>ndoalice \<equiv> {(s :: infrastructure). \<not>(DO ''Alice''  s)}\<close>
 
 fixes ndobob
 defines ndobob_def: \<open>ndobob \<equiv> {(s :: infrastructure). \<not>(DO ''Bob''  s)}\<close>
@@ -362,22 +368,22 @@ next show \<open>CCb =
                      black_box_def SE1_def N3_def)
 qed
 
-lemma stepCCCa_Cc: "CCCa  \<rightarrow>\<^sub>n Cc"
+lemma stepCCb_Cc: "CCb  \<rightarrow>\<^sub>n Cc"
 proof (rule_tac l = SE1 and l' = N3 and a = "''Alice''"  in move)
-  show \<open>graphI CCCa = graphI CCCa\<close> by (rule refl)
-next show \<open>''Alice'' @\<^bsub>graphI CCCa\<^esub> SE1\<close>
-    by (simp add: CCCa_def N3_def SE1_def atI_def ex_graphV_def ex_loc_ass_def)
-next show \<open>SE1 \<in> nodes (graphI CCCa)\<close>
-    using CCCa_def ex_graphV_def nodes_def by auto
-next show \<open>N3 \<in> nodes (graphI CCCa)\<close>
-    using CCCa_def ex_graphV_def nodes_def by auto
-next show \<open>''Alice'' \<in> actors_graph (graphI CCCa)\<close>
-    apply (simp add: actors_graph_def)
-    by (smt (verit, ccfv_SIG) CCCa_def N3_def One_nat_def SE1_def Zero_not_Suc agra.simps ex_graphV_def ex_loc_ass_def gra.simps graphI.simps insertI1 location.inject mem_Collect_eq nodes_def)
-next show \<open>enables CCCa N3 (Actor ''Alice'') move\<close>
-    by (simp add: CCCa_def enables_def local_policies_def)
-next show \<open>Cc = Infrastructure (move_graph_a ''Alice'' SE1 N3 (graphI CCCa)) (delta CCCa)\<close>
-    apply (simp add: move_graph_a_def Cc_def ex_graphV'''_def CCCa_def ex_graphV_def ex_loc_ass_def
+  show \<open>graphI CCb = graphI CCb\<close> by (rule refl)
+next show \<open>''Alice'' @\<^bsub>graphI CCb\<^esub> SE1\<close>
+    by (simp add: CCb_def N3_def SE1_def atI_def ex_graphV''_def ex_loc_ass_def)
+next show \<open>SE1 \<in> nodes (graphI CCb)\<close>
+    using CCb_def ex_graphV''_def nodes_def by auto
+next show \<open>N3 \<in> nodes (graphI CCb)\<close>
+    using CCb_def ex_graphV''_def nodes_def by auto
+next show \<open>''Alice'' \<in> actors_graph (graphI CCb)\<close>
+    apply (simp add: actors_graph_def CCb_def ex_graphV''_def ex_loc_ass_def E1_def SE1_def N3_def nodes_def)
+    by (metis loc.simps n_not_Suc_n numeral_2_eq_2)
+  next show \<open>enables CCb N3 (Actor ''Alice'') move\<close>
+    by (simp add: CCb_def enables_def local_policies_def)
+next show \<open>Cc = Infrastructure (move_graph_a ''Alice'' SE1 N3 (graphI CCb)) (delta CCb)\<close>
+    apply (simp add: move_graph_a_def Cc_def ex_graphV'''_def CCb_def ex_graphV''_def ex_loc_ass_def
              ex_loc_ass'_def ex_data'_def ex_data''_def SE1_def N3_def)
     apply (rule conjI)
     apply (rule ext)
@@ -400,8 +406,8 @@ next show \<open> CCc =
      (Lgraph (gra (graphI Cc)) (agra (graphI Cc)) (dgra (graphI Cc)) (bb (graphI Cc))
        (insert (''Alice'', None) (requests (graphI Cc))))
      (delta Cc) \<close>
-    by (simp add: CCc_def ex_graphV''''_def ex_loc_ass'_def Cc_def ex_graphV'''_def ex_requests'''_def
-                     ex_requests''''_def)
+    by (simp add: CCc_def ex_graphV'''_def ex_loc_ass'_def Cc_def ex_graphV''''_def ex_requestsV_def
+                     ex_requestsV'_def)
 qed
 
 lemma stepCCc_CCCc: "CCc  \<rightarrow>\<^sub>n CCCc"
@@ -415,7 +421,7 @@ next show \<open>''CI'' \<in> actors_graph (graphI CCc)\<close>
     apply (simp add: actors_graph_def CCc_def ex_graphV''''_def nodes_def ex_loc_ass'_def E1_def SE1_def N3_def)
     by blast 
 next show \<open> (''Alice'', None) \<in> requests (graphI CCc)\<close>
-    by (simp add: CCc_def ex_graphV''''_def ex_requests''''_def)
+    by (simp add: CCc_def ex_graphV''''_def ex_requestsV'_def)
 next show \<open>((Actor ''Alice'',{Actor ''CI''}),(N3, 40000,1982, black)) = dgra (graphI CCc) ''Alice''\<close>
     by (simp add: CCc_def ex_graphV''''_def ex_data''_def)
 next show \<open> Actor ''CI'' \<in> snd (Actor ''Alice'', {Actor ''CI''})\<close> by simp
@@ -427,23 +433,13 @@ next show \<open>CCCc =
        (insert (''Alice'', Some (bb (graphI CCc) (N3, 40000, 1982, black)))
          (requests (graphI CCc) - {(''Alice'', None)})))
      (delta CCc)\<close>
-    by (simp add: CCCc_def ex_graphX_def CCc_def ex_graphV''''_def ex_requestsV'_def ex_requests''''_def
+    by (simp add: CCCc_def ex_graphX_def CCc_def ex_graphV''''_def ex_requestsV'_def ex_requestsV''_def
                      black_box_def)
 qed
 
 (* Application of PCR cycle *)
 
 (* Step 1: find an attack *)
-lemma att_Kripke: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},{CC})\<^esup>)\<close>
-proof (subst att_and, simp, rule conjI)
-  show \<open>\<turnstile>\<N>\<^bsub>({Ini}, {C})\<^esub>\<close>
-    apply (simp add: att_base)
-    using state_transition_infra_def stepI_C by fastforce
-next show \<open> \<turnstile>[\<N>\<^bsub>({C}, {CC})\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({C}, {CC})\<^esup> \<close>
-    apply (subst att_and, simp)
-    by (simp add: is_attack_tree.simps(1) state_transition_infra_def stepC_CC)
-qed
-
 lemma att_ndobob_Kripke: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},ndobob)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndobob)\<^esup>)\<close>
 proof (subst att_and, simp, rule conjI)
   show \<open>\<turnstile>\<N>\<^bsub>({Ini}, {C})\<^esub>\<close>
@@ -501,5 +497,53 @@ lemma counterfactual_CCCa: \<open>CCCa \<in> (counterfactuals CC (\<lambda> s. D
   apply (simp add: r_into_rtrancl state_transition_in_refl_def stepCa_CCa)
 by (simp add: r_into_rtrancl state_transition_in_refl_def stepCC_Ca)
 
+(* Step 3: Generalisation *)
+(* Try to generalize over all actors *)
+(* Attack tree analysis shows that this fails because for Alice there is a path to
+   a failure state with not DO. *)
+
+lemma att_nodoalice_Kripke': \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
+                        \<N>\<^bsub>({CCa},{CCCa})\<^esub>, \<N>\<^bsub>({CCCa},{Cb})\<^esub>,\<N>\<^bsub>({Cb},ndoalice)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndoalice)\<^esup>)\<close>
+proof (subst att_and, simp, rule conjI)
+  show \<open>\<turnstile>\<N>\<^bsub>({Ini}, {C})\<^esub>\<close>
+    by (simp add: AT.att_base state_transition_infra_def stepI_C)
+next show \<open> \<turnstile>[\<N>\<^bsub>({C}, {CC})\<^esub>, \<N>\<^bsub>({CC}, {Ca})\<^esub>, \<N>\<^bsub>({Ca}, {CCa})\<^esub>, \<N>\<^bsub>({CCa}, {CCCa})\<^esub>, \<N>\<^bsub>({CCCa}, {Cb})\<^esub>, 
+              \<N>\<^bsub>({Cb}, ndoalice)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({C}, ndoalice)\<^esup>\<close>
+    apply (subst att_and, simp, rule conjI)
+     apply (simp add: att_base)
+     apply (simp add: state_transition_infra_def stepC_CC)
+    apply (subst att_and, simp, rule conjI)
+     apply (simp add: att_base)
+     apply (simp add: state_transition_infra_def stepCC_Ca)
+    apply (subst att_and, simp, rule conjI)
+     apply (simp add: att_base)
+     apply (simp add: state_transition_infra_def stepCa_CCa)
+    apply (subst att_and, simp, rule conjI)
+     apply (simp add: att_base)
+     apply (simp add: state_transition_infra_def stepCCa_CCCa)
+    apply (subst att_and, simp, rule conjI)
+     apply (simp add: att_base)
+     apply (simp add: state_transition_infra_def stepCCCa_Cb)
+    apply (subst att_and, simp add: ndoalice_def)
+    apply (simp add: att_base)
+    apply (rule_tac x = CCb in exI)
+    apply (rule conjI)
+    apply (simp add: DO_def CCb_def ex_graphV''_def ex_requestsV_def)
+    by (simp add: state_transition_infra_def stepCb_CCb)
+qed
+
+(* The attack gives us the CTL formula by Correctness of AT *)
+lemma Credit_att': "M \<turnstile> EF ndoalice"
+proof -
+  have a: \<open>\<turnstile>([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
+                        \<N>\<^bsub>({CCa},{CCCa})\<^esub>, \<N>\<^bsub>({CCCa},{Cb})\<^esub>,\<N>\<^bsub>({Cb},ndoalice)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndoalice)\<^esup>)\<close> 
+    by (rule att_nodoalice_Kripke')
+  hence "({Ini}, ndoalice) = attack ([\<N>\<^bsub>({Ini},{C})\<^esub>, \<N>\<^bsub>({C},{CC})\<^esub>,\<N>\<^bsub>({CC},{Ca})\<^esub>,\<N>\<^bsub>({Ca},{CCa})\<^esub>, 
+                        \<N>\<^bsub>({CCa},{CCCa})\<^esub>, \<N>\<^bsub>({CCCa},{Cb})\<^esub>,\<N>\<^bsub>({Cb},ndoalice)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>({Ini},ndoalice)\<^esup>)" by simp
+  hence \<open>Kripke {s::infrastructure. \<exists>i::infrastructure\<in> {Ini}. i \<rightarrow>\<^sub>i* s} {Ini} \<turnstile> EF ndoalice\<close>
+    using AT_EF att_nodoalice_Kripke' by fastforce
+  thus \<open>M \<turnstile> EF ndoalice\<close>
+    by (simp add: Credit_Kripke_def Credit_states_def M_def)
+qed
 
 end
