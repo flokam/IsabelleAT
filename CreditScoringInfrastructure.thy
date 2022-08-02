@@ -144,6 +144,19 @@ where "move_graph_a n l l' G \<equiv> Lgraph (gra G)
                                ((dgra G)(n := (fst (dgra G n),(l',snd(snd(dgra G n)))))) 
                     (bb G)(requests G)"
 
+definition put_graph_a 
+  where "put_graph_a a l G \<equiv> (Lgraph (gra G)(agra G)(dgra G)(bb G)
+                                      (insert (a, None)(requests G)))"
+
+definition eval_graph_a
+  where "eval_graph_a a l G \<equiv> (Lgraph (gra G)(agra G)(dgra G)(bb G)
+                          (insert (a, Some (bb G (snd (dgra G a))))(requests G - {(a, None)})))"
+
+definition get_graph_a
+  where \<open>get_graph_a a l m G \<equiv> (Lgraph (gra G)(agra G)
+                         ((dgra G)(a := (fst (dgra G a),(fst(snd (dgra G a)),m,snd(snd(snd(dgra G a)))))))
+                         (bb G)(requests G))\<close>
+
 text \<open>The state transition relation defines the semantics for the actions. We concentrate
      only on two: move and get. Move models the moving of actors from one locations to another
      automatically posting the ephemeral ids at the new location (and stop posting them at the 
@@ -159,28 +172,24 @@ inductive state_transition_in :: "[infrastructure, infrastructure] \<Rightarrow>
   put : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> 
           enables I l (Actor a) put \<Longrightarrow>
           I' = Infrastructure 
-                  (Lgraph (gra G)(agra G)(dgra G)(bb G)
-                          (insert (a, None)(requests G)))
+                  (put_graph_a a l G)
                   (delta I) \<Longrightarrow>
           I \<rightarrow>\<^sub>n I'"
 |   eval : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow>
            c \<in> actors_graph G \<Longrightarrow> (a, None) \<in> requests G \<Longrightarrow>
-           (lb, d) = dgra G a \<Longrightarrow> Actor c \<in> snd lb \<Longrightarrow> 
+           Actor c \<in> snd (fst  (dgra G a)) \<Longrightarrow> 
            enables I l (Actor c) eval \<Longrightarrow>
           I' = Infrastructure 
-                  (Lgraph (gra G)(agra G)(dgra G)(bb G)
-                          (insert (a, Some (bb G d))(requests G - {(a, None)})))
+                  (eval_graph_a a l G)
                   (delta I) \<Longrightarrow>
           I \<rightarrow>\<^sub>n I'"
 |   move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
           a \<in> actors_graph(graphI I); enables I l' (Actor a) move;
-         I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
+         I' = Infrastructure (move_graph_a a l l' G)(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
 | get: "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow>
           enables I l (Actor a) get \<Longrightarrow>
           I' = Infrastructure
-                 (Lgraph (gra G)(agra G)
-                         ((dgra G)(a := (fst (dgra G a),(fst(snd (dgra G a)),m,snd(snd(snd(dgra G a)))))))
-                         (bb G)(requests G))
+                 (get_graph_a a l m G)
                  (delta I) \<Longrightarrow>
           I \<rightarrow>\<^sub>n I'"
 

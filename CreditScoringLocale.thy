@@ -233,12 +233,8 @@ next show "N3 \<in> nodes (graphI Ini)"
     using Ini_def ex_graph_def nodes_def by auto
 next show \<open>enables Ini N3 (Actor ''Bob'') put\<close>
     by (simp add: Ini_def enables_def local_policies_def)
-next show \<open>C =
-    Infrastructure
-     (Lgraph (gra (graphI Ini)) (agra (graphI Ini)) (dgra (graphI Ini)) (bb (graphI Ini))
-       (insert (''Bob'', None) (requests (graphI Ini))))
-     (delta Ini)\<close>
-    using C_def Ini_def agra.simps bb.simps delta.simps dgra.simps ex_graph'_def ex_graph_def ex_requests'_def ex_requests_def gra.simps graphI.simps requests.simps by presburger
+next show \<open>C = Infrastructure (put_graph_a ''Bob'' N3 (graphI Ini)) (delta Ini)\<close>
+    by (simp add: C_def Ini_def ex_graph'_def ex_graph_def ex_requests'_def ex_requests_def put_graph_a_def)
 qed
 
 lemma stepC_CC: "C  \<rightarrow>\<^sub>n CC"
@@ -253,18 +249,13 @@ next show \<open>''CI'' \<in> actors_graph (graphI C)\<close>
     by (metis (no_types, lifting) C_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graph'_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
 next show "(''Bob'', None) \<in> requests (graphI C)"
     by (simp add: C_def ex_graph'_def ex_requests'_def)
-next show " ((Actor ''Bob'',{Actor ''CI''}),(N3, 35000, 1968, white)) = dgra (graphI C) ''Bob''"
+next show \<open> Actor ''CI'' \<in> snd (fst (dgra (graphI C) ''Bob''))\<close>
     by (simp add: C_def ex_graph'_def ex_data_def)
-next show \<open> Actor ''CI'' \<in> snd (Actor ''Bob'', {Actor ''CI''})\<close>
-    by fastforce
 next show \<open>enables C N3 (Actor ''CI'') eval\<close>
     by (simp add: C_def enables_def local_policies_def)
-next show "CC =
-    Infrastructure
-     (Lgraph (gra (graphI C)) (agra (graphI C)) (dgra (graphI C)) (bb (graphI C))
-       (insert (''Bob'', Some (bb (graphI C) (N3, 35000, 1968, white))) (requests (graphI C) - {(''Bob'', None)})))
-     (delta C)"
-    by (simp add: C_def CC_def ex_graph'_def ex_graph''_def black_box_def ex_requests''_def ex_requests'_def)
+next show "CC = Infrastructure (eval_graph_a ''Bob'' N3 (graphI C)) (delta C)"
+    by (simp add: eval_graph_a_def C_def CC_def ex_graph'_def ex_graph''_def black_box_def 
+                    ex_requests''_def ex_requests'_def ex_data_def)
 qed
 
 lemma stepCC_Ca: "CC  \<rightarrow>\<^sub>n Ca"
@@ -276,16 +267,8 @@ next show \<open>N3 \<in> nodes (graphI CC)\<close>
     using CC_def ex_graph''_def nodes_def by auto
 next show \<open>enables CC N3 (Actor ''Bob'') get\<close>
     by (simp add: CC_def enables_def local_policies_def)
-next show \<open>Ca =
-    Infrastructure
-     (Lgraph (gra (graphI CC)) (agra (graphI CC))
-       ((dgra (graphI CC))
-        (''Bob'' :=
-           (fst (dgra (graphI CC) ''Bob''), fst (snd (dgra (graphI CC) ''Bob'')), 40000,
-            snd (snd (snd (dgra (graphI CC) ''Bob''))))))
-       (bb (graphI CC)) (requests (graphI CC)))
-     (delta CC) \<close>
-    apply (simp add: CC_def Ca_def ex_graph''_def ex_graph'''_def ex_data_def ex_data'_def)
+next show \<open>Ca = Infrastructure (get_graph_a ''Bob'' N3 40000 (graphI CC)) (delta CC) \<close>
+    apply (simp add: get_graph_a_def CC_def Ca_def ex_graph''_def ex_graph'''_def ex_data_def ex_data'_def)
     apply (rule ext)
     by force
 qed
@@ -299,12 +282,8 @@ next show \<open>N3 \<in> nodes (graphI Ca)\<close>
     using Ca_def ex_graph'''_def nodes_def by auto
 next show \<open>enables Ca N3 (Actor ''Bob'') put\<close>
     by (simp add: Ca_def enables_def local_policies_def)
-next show \<open>CCa =
-    Infrastructure
-     (Lgraph (gra (graphI Ca)) (agra (graphI Ca)) (dgra (graphI Ca)) (bb (graphI Ca))
-       (insert (''Bob'', None) (requests (graphI Ca))))
-     (delta Ca)\<close>
-    by (simp add: CCa_def Ca_def ex_graph''''_def ex_graph'''_def ex_requests''_def ex_requests''a_def)
+next show \<open>CCa = Infrastructure (put_graph_a ''Bob'' N3 (graphI Ca)) (delta Ca)\<close>
+    by (simp add: put_graph_a_def CCa_def Ca_def ex_graph''''_def ex_graph'''_def ex_requests''_def ex_requests''a_def)
 qed
 
 lemma stepCCa_CCCa: "CCa  \<rightarrow>\<^sub>n CCCa"
@@ -319,18 +298,13 @@ next show \<open>''CI'' \<in> actors_graph (graphI CCa)\<close>
     by (metis (no_types, lifting) CCa_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graph''''_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
 next show \<open>(''Bob'', None) \<in> requests (graphI CCa)\<close>
     by (simp add: CCa_def ex_graph''''_def ex_requests''a_def)
-next show \<open> ((Actor ''Bob'',{Actor ''CI''}),(N3, 40000, 1968, white)) = dgra (graphI CCa) ''Bob''\<close>
+next show \<open>Actor ''CI'' \<in>snd (fst (dgra (graphI CCa) ''Bob''))\<close>
     by (simp add: CCa_def ex_graph''''_def ex_data'_def)
-next show \<open>Actor ''CI'' \<in> snd (Actor ''Bob'', {Actor ''CI''})\<close>
-    by force
 next show \<open>enables CCa N3 (Actor ''CI'') eval\<close>
     by (simp add: CCa_def enables_def local_policies_def)
-next show \<open>CCCa =
-    Infrastructure
-     (Lgraph (gra (graphI CCa)) (agra (graphI CCa)) (dgra (graphI CCa)) (bb (graphI CCa))
-       (insert (''Bob'', Some (bb (graphI CCa) (N3, 40000, 1968, white))) (requests (graphI CCa) - {(''Bob'', None)})))
-     (delta CCa) \<close>
-    by (simp add: CCCa_def ex_graphV_def CCa_def ex_graph''''_def ex_requests'''_def black_box_def ex_requests''a_def)
+next show \<open>CCCa = Infrastructure (eval_graph_a ''Bob'' N3 (graphI CCa)) (delta CCa)  \<close>
+    by (simp add: eval_graph_a_def CCCa_def ex_graphV_def CCa_def ex_graph''''_def 
+          ex_requests'''_def black_box_def ex_requests''a_def ex_data'_def)
 qed
 
 lemma stepCCCa_Cb: "CCCa  \<rightarrow>\<^sub>n Cb"
@@ -342,12 +316,8 @@ next show \<open>SE1 \<in> nodes (graphI CCCa)\<close>
     using CCCa_def ex_graphV_def nodes_def by auto
 next show \<open>enables CCCa SE1 (Actor ''Alice'') put\<close>
     by (simp add: CCCa_def enables_def local_policies_def)
-next show \<open>Cb =
-    Infrastructure
-     (Lgraph (gra (graphI CCCa)) (agra (graphI CCCa)) (dgra (graphI CCCa)) (bb (graphI CCCa))
-       (insert (''Alice'', None) (requests (graphI CCCa))))
-     (delta CCCa) \<close>
-    by (simp add: CCCa_def Cb_def ex_graphV'_def ex_graphV_def ex_requests''''_def ex_requests'''_def)
+next show \<open>Cb = Infrastructure (put_graph_a ''Alice'' SE1 (graphI CCCa)) (delta CCCa)\<close>
+    by (simp add: put_graph_a_def CCCa_def Cb_def ex_graphV'_def ex_graphV_def ex_requests''''_def ex_requests'''_def)
 qed
 
 lemma stepCb_CCb: "Cb  \<rightarrow>\<^sub>n CCb"
@@ -362,20 +332,13 @@ next show \<open>''CI'' \<in> actors_graph (graphI Cb)\<close>
     by (metis (no_types, lifting) Cb_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graphV'_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
 next show \<open>(''Alice'', None) \<in> requests (graphI Cb)\<close>
     by (simp add: Cb_def ex_graphV'_def ex_requests''''_def)
-next show \<open>((Actor ''Alice'',{Actor ''CI''}),(SE1, 40000,1982, black)) = dgra (graphI Cb) ''Alice''\<close>
+next show \<open>Actor ''CI'' \<in> snd (fst (dgra (graphI Cb) ''Alice''))\<close>
     by (simp add: Cb_def ex_graphV'_def ex_data'_def)
-next show \<open>Actor ''CI'' \<in> snd (Actor ''Alice'', {Actor ''CI''})\<close>
-    by force
 next show \<open>enables Cb SE1 (Actor ''CI'') eval\<close>
     by (simp add: Cb_def enables_def local_policies_def) 
-next show \<open>CCb =
-    Infrastructure
-     (Lgraph (gra (graphI Cb)) (agra (graphI Cb)) (dgra (graphI Cb)) (bb (graphI Cb))
-       (insert (''Alice'', Some (bb (graphI Cb) (SE1, 40000, 1982, black)))
-         (requests (graphI Cb) - {(''Alice'', None)})))
-     (delta Cb) \<close>
-    by (simp add: CCb_def ex_graphV''_def Cb_def ex_graphV'_def ex_requestsV_def ex_requests''''_def
-                     black_box_def SE1_def N3_def)
+next show \<open>CCb = Infrastructure (eval_graph_a ''Alice'' SE1 (graphI Cb)) (delta Cb) \<close>
+    by (simp add: eval_graph_a_def CCb_def ex_graphV''_def Cb_def ex_graphV'_def ex_requestsV_def ex_requests''''_def
+                     black_box_def SE1_def N3_def ex_data'_def)
 qed
 
 lemma stepCCb_Cc: "CCb  \<rightarrow>\<^sub>n Cc"
@@ -411,12 +374,8 @@ next show \<open> N3 \<in> nodes (graphI Cc)\<close>
     using Cc_def ex_graphV'''_def nodes_def by auto
 next show \<open> enables Cc N3 (Actor ''Alice'') put\<close>
     by (simp add: Cc_def enables_def local_policies_def)
-next show \<open> CCc =
-    Infrastructure
-     (Lgraph (gra (graphI Cc)) (agra (graphI Cc)) (dgra (graphI Cc)) (bb (graphI Cc))
-       (insert (''Alice'', None) (requests (graphI Cc))))
-     (delta Cc) \<close>
-    by (simp add: CCc_def ex_graphV'''_def ex_loc_ass'_def Cc_def ex_graphV''''_def ex_requestsV_def
+next show \<open>CCc = Infrastructure (put_graph_a ''Alice'' N3 (graphI Cc)) (delta Cc)\<close>
+    by (simp add: put_graph_a_def CCc_def ex_graphV'''_def ex_loc_ass'_def Cc_def ex_graphV''''_def ex_requestsV_def
                      ex_requestsV'_def)
 qed
 
@@ -432,19 +391,13 @@ next show \<open>''CI'' \<in> actors_graph (graphI CCc)\<close>
     by blast 
 next show \<open> (''Alice'', None) \<in> requests (graphI CCc)\<close>
     by (simp add: CCc_def ex_graphV''''_def ex_requestsV'_def)
-next show \<open>((Actor ''Alice'',{Actor ''CI''}),(N3, 40000,1982, black)) = dgra (graphI CCc) ''Alice''\<close>
+next show \<open> Actor ''CI'' \<in> snd (fst (dgra (graphI CCc) ''Alice''))\<close> 
     by (simp add: CCc_def ex_graphV''''_def ex_data''_def)
-next show \<open> Actor ''CI'' \<in> snd (Actor ''Alice'', {Actor ''CI''})\<close> by simp
 next show \<open>enables CCc N3 (Actor ''CI'') eval\<close>
     by (simp add: CCc_def enables_def local_policies_def)
-next show \<open>CCCc =
-    Infrastructure
-     (Lgraph (gra (graphI CCc)) (agra (graphI CCc)) (dgra (graphI CCc)) (bb (graphI CCc))
-       (insert (''Alice'', Some (bb (graphI CCc) (N3, 40000, 1982, black)))
-         (requests (graphI CCc) - {(''Alice'', None)})))
-     (delta CCc)\<close>
-    by (simp add: CCCc_def ex_graphX_def CCc_def ex_graphV''''_def ex_requestsV'_def ex_requestsV''_def
-                     black_box_def)
+next show \<open>CCCc = Infrastructure (eval_graph_a ''Alice'' N3 (graphI CCc)) (delta CCc)\<close>
+    by (simp add: eval_graph_a_def CCCc_def ex_graphX_def CCc_def ex_graphV''''_def ex_requestsV'_def ex_requestsV''_def
+                     black_box_def ex_data''_def)
 qed
 
 (* Application of PCR cycle *)
@@ -592,15 +545,54 @@ qed
    pc1 A s  \<equiv>  (salary A s \<ge> 40000 \<and> (A  @\<^bsub>(graphI s)\<^esub> N3)).
    Now thgeneralisation step succeeds. *)
 
-lemma pc1_AG: \<open> M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
-proof (simp add: M_def pc1_def DO_def Credit_Kripke_def check_def, rule conjI)
+lemma pc1_AG_O: \<open> M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
+proof (simp add: M_def pc1_def Credit_Kripke_def check_def, rule conjI)
   show \<open>Ini \<in> Credit_states\<close>
     by (simp add: Credit_states_def state_transition_refl_def)
-next show \<open> Ini \<in> AG (EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> (A, Some True) \<in> requests (graphI s)})\<close>
-  proof (unfold AG_def, simp add: gfp_def)
-    show \<open>\<exists>x\<subseteq>EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> (A, Some True) \<in> requests (graphI s)}. x \<subseteq> AX x \<and> Ini \<in> x\<close>
-    sorry
-qed
+next show \<open> Ini \<in> AG (EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s})\<close>
+  proof (unfold AG_def, simp add: gfp_def,
+rule_tac x = \<open>{s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s}\<close> in exI,
+        rule conjI)
+    show \<open>{s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s} \<subseteq> EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s}\<close>
+      apply (rule subsetI)
+      apply (rule EF_lem2a)
+      by assumption
+  next show \<open>{s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s} \<subseteq> AX {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s} \<and>
+    Ini \<in> {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s} \<close>
+    proof
+      show \<open> Ini \<in> {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s}\<close>
+        oops
+(* It suffices to prove for all actors and not CI *)
+lemma pc1_AG: \<open> \<forall> A \<in> {''Alice'',''Bob''}. M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
+proof (rule ballI, simp add: M_def pc1_def Credit_Kripke_def check_def, rule conjI)
+  show \<open>\<And>A. A = ''Alice'' \<or> A = ''Bob'' \<Longrightarrow> Ini \<in> Credit_states\<close>
+    by (simp add: Credit_states_def state_transition_refl_def)
+next show \<open>\<And>A. A = ''Alice'' \<or> A = ''Bob'' \<Longrightarrow> Ini \<in> AG (EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s})\<close>
+  proof (unfold AG_def, simp add: gfp_def,
+        rule_tac x = \<open>{x. x \<in> states (Credit_Kripke)}\<close> in exI,
+        rule conjI)
+    show \<open>\<And>A. A = ''Alice'' \<or> A = ''Bob'' \<Longrightarrow>
+          {x. x \<in> states Credit_Kripke} \<subseteq> EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s}\<close>
+      apply (rule subsetI)
+       apply (rule EF_step_star)
+       prefer 2
+      apply (rule CollectI)
+
+(*      apply (rule EF_lem2a)
+      apply (rule CollectI)
+      apply (rule impI)
+      apply (erule conjE)
+      apply (simp add: Credit_Kripke_def )
+ not true: \<And>x. x \<in> Credit_states \<Longrightarrow> 40000 \<le> salary A x \<Longrightarrow> A @\<^bsub>graphI x\<^esub> N3 \<Longrightarrow> DO A x*)
+      sorry
+  next show \<open>{x. x \<in> states Credit_Kripke} \<subseteq> AX {x. x \<in> states Credit_Kripke} \<and> Ini \<in> {x. x \<in> states Credit_Kripke}\<close>
+    proof 
+      show \<open>Ini \<in> {x. x \<in> states Credit_Kripke}\<close>
+        by (simp add: Credit_Kripke_def Credit_states_def state_transition_refl_def)
+    next show \<open>{x. x \<in> states Credit_Kripke} \<subseteq> AX {x. x \<in> states Credit_Kripke} \<close>
+        by (simp add: AX_def Collect_mono Credit_Kripke_def Credit_states_def rtrancl.intros(2) state_transition_refl_def)
+    qed
+  qed
 qed
 
 end
