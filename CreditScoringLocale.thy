@@ -249,8 +249,8 @@ next show \<open>''CI'' \<in> actors_graph (graphI C)\<close>
     by (metis (no_types, lifting) C_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graph'_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
 next show "(''Bob'', None) \<in> requests (graphI C)"
     by (simp add: C_def ex_graph'_def ex_requests'_def)
-next show \<open> Actor ''CI'' \<in> snd (fst (dgra (graphI C) ''Bob''))\<close>
-    by (simp add: C_def ex_graph'_def ex_data_def)
+next show \<open> Actor ''CI'' \<in> readers (dgra (graphI C) ''Bob'') \<or> Actor ''CI'' = owner (dgra (graphI C) ''Bob'')\<close>
+    by (simp add: readers_def C_def ex_graph'_def ex_data_def)
 next show \<open>enables C N3 (Actor ''CI'') eval\<close>
     by (simp add: C_def enables_def local_policies_def)
 next show "CC = Infrastructure (eval_graph_a ''Bob'' N3 (graphI C)) (delta C)"
@@ -298,8 +298,8 @@ next show \<open>''CI'' \<in> actors_graph (graphI CCa)\<close>
     by (metis (no_types, lifting) CCa_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graph''''_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
 next show \<open>(''Bob'', None) \<in> requests (graphI CCa)\<close>
     by (simp add: CCa_def ex_graph''''_def ex_requests''a_def)
-next show \<open>Actor ''CI'' \<in>snd (fst (dgra (graphI CCa) ''Bob''))\<close>
-    by (simp add: CCa_def ex_graph''''_def ex_data'_def)
+next show \<open>Actor ''CI'' \<in> readers (dgra (graphI CCa) ''Bob'') \<or> Actor ''CI'' = owner (dgra (graphI CCa) ''Bob'')\<close>
+    by (simp add: readers_def CCa_def ex_graph''''_def ex_data'_def)
 next show \<open>enables CCa N3 (Actor ''CI'') eval\<close>
     by (simp add: CCa_def enables_def local_policies_def)
 next show \<open>CCCa = Infrastructure (eval_graph_a ''Bob'' N3 (graphI CCa)) (delta CCa)  \<close>
@@ -332,8 +332,8 @@ next show \<open>''CI'' \<in> actors_graph (graphI Cb)\<close>
     by (metis (no_types, lifting) Cb_def E1_def N3_def One_nat_def SE1_def Suc_n_not_le_n agra.simps ex_graphV'_def ex_loc_ass_def gra.simps graphI.simps insertCI location.inject mem_Collect_eq nat_le_linear nodes_def numeral_2_eq_2)
 next show \<open>(''Alice'', None) \<in> requests (graphI Cb)\<close>
     by (simp add: Cb_def ex_graphV'_def ex_requests''''_def)
-next show \<open>Actor ''CI'' \<in> snd (fst (dgra (graphI Cb) ''Alice''))\<close>
-    by (simp add: Cb_def ex_graphV'_def ex_data'_def)
+next show \<open>Actor ''CI'' \<in> readers (dgra (graphI Cb) ''Alice'') \<or> Actor ''CI'' = owner (dgra (graphI Cb) ''Alice'')\<close>
+    by (simp add: readers_def Cb_def ex_graphV'_def ex_data'_def)
 next show \<open>enables Cb SE1 (Actor ''CI'') eval\<close>
     by (simp add: Cb_def enables_def local_policies_def) 
 next show \<open>CCb = Infrastructure (eval_graph_a ''Alice'' SE1 (graphI Cb)) (delta Cb) \<close>
@@ -391,8 +391,8 @@ next show \<open>''CI'' \<in> actors_graph (graphI CCc)\<close>
     by blast 
 next show \<open> (''Alice'', None) \<in> requests (graphI CCc)\<close>
     by (simp add: CCc_def ex_graphV''''_def ex_requestsV'_def)
-next show \<open> Actor ''CI'' \<in> snd (fst (dgra (graphI CCc) ''Alice''))\<close> 
-    by (simp add: CCc_def ex_graphV''''_def ex_data''_def)
+next show \<open> Actor ''CI'' \<in> readers (dgra (graphI CCc) ''Alice'') \<or> Actor ''CI'' = owner (dgra (graphI CCc) ''Alice'')\<close> 
+    by (simp add: readers_def CCc_def ex_graphV''''_def ex_data''_def)
 next show \<open>enables CCc N3 (Actor ''CI'') eval\<close>
     by (simp add: CCc_def enables_def local_policies_def)
 next show \<open>CCCc = Infrastructure (eval_graph_a ''Alice'' N3 (graphI CCc)) (delta CCc)\<close>
@@ -544,55 +544,139 @@ qed
 (* Next iteration: go back to 2 with the new precondition 
    pc1 A s  \<equiv>  (salary A s \<ge> 40000 \<and> (A  @\<^bsub>(graphI s)\<^esub> N3)).
    Now thgeneralisation step succeeds. *)
+lemma Alice_Bob_in_Credit_Kripke: "s \<in> states(Credit_Kripke)  \<Longrightarrow> 
+      actors_graph (graphI s) = {''Alice'',''Bob'',''CI''}"
+  apply (subgoal_tac \<open>(Ini, s) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<close>)
+  prefer 2
+   apply (smt (verit, del_insts) CollectD Collect_cong Credit_Kripke_def Credit_states_def split_cong state_transition_infra_def state_transition_refl_def states.simps)
+  apply (subgoal_tac \<open>actors_graph (graphI Ini) =  {''Alice'',''Bob'',''CI''}\<close>)
+   apply (erule subst)
+   apply (rule sym)
+   apply (erule same_actors)
+  apply (simp add: Ini_def ex_graph_def actors_graph_def ex_loc_ass_def E1_def SE1_def N3_def nodes_def)
+  apply (rule equalityI)
+   apply fastforce
+  apply (rule subsetI)
+  apply (rule CollectI)
+  apply (subgoal_tac \<open>x = ''Alice'' \<or> x = ''Bob'' \<or> x = ''CI''\<close>)
+   apply (metis (no_types, lifting) location.inject n_not_Suc_n numeral_2_eq_2 zero_neq_numeral)
+  by force
 
-lemma pc1_AG_O: \<open> M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
-proof (simp add: M_def pc1_def Credit_Kripke_def check_def, rule conjI)
+lemma pc1_AG_OO: \<open>\<forall> A \<in> CreditScoring_actors. M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
+proof (simp add: CreditScoring_actors_def M_def pc1_def Credit_Kripke_def check_def, rule conjI)
   show \<open>Ini \<in> Credit_states\<close>
     by (simp add: Credit_states_def state_transition_refl_def)
-next show \<open> Ini \<in> AG (EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s})\<close>
-  proof (unfold AG_def, simp add: gfp_def,
-rule_tac x = \<open>{s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s}\<close> in exI,
+next show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''Alice'' s \<and> ''Alice'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Alice'' s}) \<and>
+    Ini \<in> Credit_states \<and>
+    Ini \<in> AG (EF {s. 40000 \<le> salary ''Bob'' s \<and> ''Bob'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Bob'' s}) \<and>
+    Ini \<in> Credit_states \<and> Ini \<in> AG (EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''CI'' s})\<close>
+  proof
+    show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''Alice'' s \<and> ''Alice'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Alice'' s})\<close>
+    proof (unfold AG_def, simp add: gfp_def,
+        rule_tac x = \<open>{s. s \<in> states(Credit_Kripke)}\<close> in exI,
         rule conjI)
-    show \<open>{s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s} \<subseteq> EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s}\<close>
-      apply (rule subsetI)
-      apply (rule EF_lem2a)
-      by assumption
-  next show \<open>{s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s} \<subseteq> AX {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s} \<and>
-    Ini \<in> {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s} \<close>
-    proof
-      show \<open> Ini \<in> {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s}\<close>
-        oops
-(* It suffices to prove for all actors and not CI *)
-lemma pc1_AG: \<open> \<forall> A \<in> {''Alice'',''Bob''}. M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
-proof (rule ballI, simp add: M_def pc1_def Credit_Kripke_def check_def, rule conjI)
-  show \<open>\<And>A. A = ''Alice'' \<or> A = ''Bob'' \<Longrightarrow> Ini \<in> Credit_states\<close>
-    by (simp add: Credit_states_def state_transition_refl_def)
-next show \<open>\<And>A. A = ''Alice'' \<or> A = ''Bob'' \<Longrightarrow> Ini \<in> AG (EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s})\<close>
-  proof (unfold AG_def, simp add: gfp_def,
-        rule_tac x = \<open>{x. x \<in> states (Credit_Kripke)}\<close> in exI,
+      show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> 
+            EF {s. 40000 \<le> salary ''Alice'' s \<and> ''Alice'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Alice'' s}\<close>
+        apply (rule subsetI)
+        apply (drule CollectD)
+        apply (simp add: Credit_Kripke_def Credit_states_def)
+        apply (subgoal_tac \<open>\<exists> l \<in> nodes (graphI x). ''Alice'' @\<^bsub> graphI x\<^esub> l\<close>)
+         prefer 2
+         apply (rule_tac I = Ini and y = x and l = SE1 in actor_has_location)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+           apply (simp add: actors_graph_def Ini_def nodes_def ex_graph_def ex_loc_ass_def SE1_def N3_def E1_def, force)
+        apply (simp add: nodes_def Ini_def ex_graph_def SE1_def E1_def N3_def, blast)
+         apply (simp add: Ini_def ex_graph_def ex_loc_ass_def atI_def SE1_def N3_def)
+        apply (erule bexE)
+        apply (rule_tac y = \<open>Infrastructure (
+                             eval_graph_a ''Alice'' N3 (
+                             put_graph_a ''Alice'' N3 (
+                             get_graph_a ''Alice'' N3 40000 (
+                             move_graph_a ''Alice'' l N3 (graphI x)))))
+                             (delta x)\<close> in EF_step_star)
+         prefer 2
+         apply (simp add: eval_graph_a_def put_graph_a_def get_graph_a_def move_graph_a_def DO_def 
+               salary_def N3_def same_bb)
+         apply (subgoal_tac \<open>bb (graphI x) = bb(graphI Ini)\<close>)
+        apply (subgoal_tac \<open>bb (graphI x) = black_box\<close>)
+        apply (simp add: black_box_def)
+        apply (smt (z3) N3_def fst_conv order_refl snd_conv)
+        using Ini_def bb.simps ex_graph_def graphI.simps apply presburger
+         apply (rule sym, rule same_bb)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+(* *)
+        apply (subgoal_tac \<open>x \<rightarrow>\<^sub>i* Infrastructure (move_graph_a ''Alice'' l N3 (graphI x))(delta x)\<close>)
+        apply (subgoal_tac \<open>Infrastructure (move_graph_a ''Alice'' l N3 (graphI x))(delta x) \<rightarrow>\<^sub>i*
+                            Infrastructure (get_graph_a ''Alice'' N3 40000 (
+                                            move_graph_a ''Alice'' l N3 (graphI x)))(delta x)\<close>)
+        apply (subgoal_tac \<open>Infrastructure (get_graph_a ''Alice'' N3 40000 (
+                                            move_graph_a ''Alice'' l N3 (graphI x)))(delta x) \<rightarrow>\<^sub>i*
+                            Infrastructure (put_graph_a ''Alice'' N3 (
+                                            (get_graph_a ''Alice'' N3 40000 (
+                                            move_graph_a ''Alice'' l N3 (graphI x)))))(delta x)\<close>)
+        apply (subgoal_tac \<open> Infrastructure (put_graph_a ''Alice'' N3 (
+                                            (get_graph_a ''Alice'' N3 40000 (
+                                            move_graph_a ''Alice'' l N3 (graphI x)))))(delta x)\<rightarrow>\<^sub>i*
+                             Infrastructure (eval_graph_a ''Alice'' N3 (
+                                            (put_graph_a ''Alice'' N3 (
+                                            (get_graph_a ''Alice'' N3 40000 (
+                                            move_graph_a ''Alice'' l N3 (graphI x)))))))(delta x)\<close>)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)    
+        sorry
+next show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke} \<and> Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
+  proof
+  show \<open>Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
+    by (simp add: Credit_Kripke_def Credit_states_def state_transition_refl_def actors_graph_def)
+next show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke} \<close>
+    by (simp add: AX_def Collect_mono Credit_Kripke_def Credit_states_def rtrancl.intros(2) state_transition_refl_def)
+qed
+qed
+next show \<open>Ini \<in> Credit_states \<and>
+    Ini \<in> AG (EF {s. 40000 \<le> salary ''Bob'' s \<and> ''Bob'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Bob'' s}) \<and>
+    Ini \<in> Credit_states \<and> Ini \<in> AG (EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''CI'' s}) \<close>
+  proof
+    show \<open>Ini \<in> Credit_states \<close>
+ by (simp add: Credit_states_def state_transition_refl_def)
+next show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''Bob'' s \<and> ''Bob'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Bob'' s}) \<and>
+    Ini \<in> Credit_states \<and> Ini \<in> AG (EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''CI'' s})\<close>
+  proof 
+    show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''Bob'' s \<and> ''Bob'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Bob'' s})\<close>
+    proof (unfold AG_def, simp add: gfp_def,
+        rule_tac x = \<open>{s. s \<in> states(Credit_Kripke)}\<close> in exI,
         rule conjI)
-    show \<open>\<And>A. A = ''Alice'' \<or> A = ''Bob'' \<Longrightarrow>
-          {x. x \<in> states Credit_Kripke} \<subseteq> EF {s. 40000 \<le> salary A s \<and> A @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO A s}\<close>
-      apply (rule subsetI)
-       apply (rule EF_step_star)
-       prefer 2
-      apply (rule CollectI)
-
-(*      apply (rule EF_lem2a)
-      apply (rule CollectI)
-      apply (rule impI)
-      apply (erule conjE)
-      apply (simp add: Credit_Kripke_def )
- not true: \<And>x. x \<in> Credit_states \<Longrightarrow> 40000 \<le> salary A x \<Longrightarrow> A @\<^bsub>graphI x\<^esub> N3 \<Longrightarrow> DO A x*)
-      sorry
-  next show \<open>{x. x \<in> states Credit_Kripke} \<subseteq> AX {x. x \<in> states Credit_Kripke} \<and> Ini \<in> {x. x \<in> states Credit_Kripke}\<close>
-    proof 
-      show \<open>Ini \<in> {x. x \<in> states Credit_Kripke}\<close>
-        by (simp add: Credit_Kripke_def Credit_states_def state_transition_refl_def)
-    next show \<open>{x. x \<in> states Credit_Kripke} \<subseteq> AX {x. x \<in> states Credit_Kripke} \<close>
-        by (simp add: AX_def Collect_mono Credit_Kripke_def Credit_states_def rtrancl.intros(2) state_transition_refl_def)
-    qed
-  qed
+      show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> 
+            EF {s. 40000 \<le> salary ''Bob'' s \<and> ''Bob'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Bob'' s}\<close> 
+        sorry
+    next show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke} \<and> Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
+      proof
+        show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke}\<close>
+    by (simp add: AX_def Collect_mono Credit_Kripke_def Credit_states_def rtrancl.intros(2) state_transition_refl_def)
+next show \<open>Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
+    by (simp add: Credit_Kripke_def Credit_states_def state_transition_refl_def actors_graph_def)
+qed
+qed
+next show \<open> Ini \<in> Credit_states \<and> Ini \<in> AG (EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''CI'' s})\<close>
+  proof 
+    show \<open> Ini \<in> Credit_states\<close>
+    by (simp add: Credit_Kripke_def Credit_states_def state_transition_refl_def actors_graph_def)
+next show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''CI'' s}) \<close>
+    proof (unfold AG_def, simp add: gfp_def,
+        rule_tac x = \<open>{s. s \<in> states(Credit_Kripke)}\<close> in exI,
+        rule conjI)
+      show \<open> {s. s \<in> states Credit_Kripke} \<subseteq> EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''CI'' s}\<close>
+        sorry
+    next show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke} \<and> Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
+      proof
+        show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke}\<close>
+    by (simp add: AX_def Collect_mono Credit_Kripke_def Credit_states_def rtrancl.intros(2) state_transition_refl_def)
+next show \<open>Ini \<in> {s. s \<in> states Credit_Kripke} \<close>
+    by (simp add: Credit_Kripke_def Credit_states_def state_transition_refl_def actors_graph_def)
+qed
+qed
+qed
+qed
+qed
+qed
 qed
 
 end
