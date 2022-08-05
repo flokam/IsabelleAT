@@ -562,6 +562,192 @@ lemma Alice_Bob_in_Credit_Kripke: "s \<in> states(Credit_Kripke)  \<Longrightarr
    apply (metis (no_types, lifting) location.inject n_not_Suc_n numeral_2_eq_2 zero_neq_numeral)
   by force
 
+lemma step_rtrancl: \<open>a \<rightarrow>\<^sub>n b \<Longrightarrow> a \<rightarrow>\<^sub>i* b\<close>
+  by (simp add: r_into_rtrancl state_transition_infra_def state_transition_refl_def)
+
+lemma enables_move0: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> 
+     \<forall> a \<in> actors_graph (graphI y). \<forall> l \<in> nodes (graphI y). enables y l (Actor a) move\<close>
+proof (erule rtrancl_induct)
+  show \<open>\<forall>a\<in>actors_graph (graphI Ini). \<forall>l\<in>nodes (graphI Ini). enables Ini l (Actor a) move\<close>
+  proof (clarify, simp add: Ini_def ex_graph_def local_policies_def  nodes_def enables_def
+         E1_def N3_def SE1_def, erule exE, blast)
+  qed
+next show \<open>\<And>y z. (Ini, y) \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+           (y, z) \<in> {(x, y). x \<rightarrow>\<^sub>n y} \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI y). \<forall>l\<in>nodes (graphI y). enables y l (Actor a) move \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI z). \<forall>l\<in>nodes (graphI z). enables z l (Actor a) move\<close>
+    apply (clarify, simp add: Ini_def ex_graph_def local_policies_def  nodes_def enables_def
+         E1_def N3_def SE1_def, erule exE)
+    apply (erule state_transition_in.cases)
+    apply (smt (z3) delta.simps gra.simps graphI.simps init_state_policy local_policies_def put put_graph_a_def same_actors0)
+    apply (smt (z3) case_prodI delta.simps empty_iff eval_graph_a_def gra.simps graphI.simps init_state_policy insert_iff local_policies_def)
+     apply (simp add: enables_def)
+    apply (erule bexE)
+     apply (rule_tac x = x in bexI)
+proof -
+  fix yb :: infrastructure and z :: infrastructure and a :: "char list" and l :: location and ya :: location and G :: igraph and I :: infrastructure and aa :: "char list" and la :: location and l' :: location and I' :: infrastructure and x :: "(actor \<Rightarrow> bool) \<times> action set"
+  assume a1: "case x of (p, e) \<Rightarrow> move \<in> e \<and> p (Actor aa)"
+assume a2: "x \<in> delta I (graphI I) l'"
+  assume a3: "(Infrastructure (Lgraph {(Location 0, Location (Suc 0)), (Location 0, Location 2), (Location (Suc 0), Location 2)} ex_loc_ass ex_data black_box ex_requests) local_policies, I) \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>*"
+  then have "local_policies (graphI I) l' = {(\<lambda>a. True, {get, move, put, eval})}"
+    using a2 by (metis (no_types) delta.simps empty_iff init_state_policy local_policies_def)
+    then show "case x of (p, A) \<Rightarrow> move \<in> A \<and> p (Actor a)"
+using a3 a2 a1 init_state_policy by fastforce
+next show \<open>\<And>y z a l ya G I aa la l' I' x.
+       (Infrastructure
+         (Lgraph {(Location 0, Location (Suc 0)), (Location 0, Location 2), (Location (Suc 0), Location 2)} ex_loc_ass
+           ex_data black_box ex_requests)
+         local_policies,
+        I)
+       \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       \<forall>a\<in>actors_graph (graphI I).
+          \<forall>l. (\<exists>y. (l, y) \<in> gra (graphI I) \<or> (y, l) \<in> gra (graphI I)) \<longrightarrow>
+              (\<exists>x\<in>delta I (graphI I) l. case x of (p, e) \<Rightarrow> move \<in> e \<and> p (Actor a)) \<Longrightarrow>
+       a \<in> actors_graph (move_graph_a aa la l' (graphI I)) \<Longrightarrow>
+       (l, ya) \<in> gra (move_graph_a aa la l' (graphI I)) \<or> (ya, l) \<in> gra (move_graph_a aa la l' (graphI I)) \<Longrightarrow>
+       y = I \<Longrightarrow>
+       z = Infrastructure (move_graph_a aa la l' (graphI I)) (delta I) \<Longrightarrow>
+       G = graphI I \<Longrightarrow>
+       aa @\<^bsub>graphI I\<^esub> la \<Longrightarrow>
+       la \<in> nodes (graphI I) \<Longrightarrow>
+       l' \<in> nodes (graphI I) \<Longrightarrow>
+       aa \<in> actors_graph (graphI I) \<Longrightarrow>
+       I' = Infrastructure (move_graph_a aa la l' (graphI I)) (delta I) \<Longrightarrow>
+       x \<in> delta I (graphI I) l' \<Longrightarrow>
+       case x of (p, e) \<Rightarrow> move \<in> e \<and> p (Actor aa) \<Longrightarrow> x \<in> delta I (move_graph_a aa la l' (graphI I)) l\<close>
+    apply (simp add: move_graph_a_def local_policies_def init_state_policy)
+    by (smt (z3) delta.simps empty_iff init_state_policy local_policies_def)
+next show \<open>\<And>y z a l ya G I aa la I' m.
+       (Infrastructure
+         (Lgraph {(Location 0, Location (Suc 0)), (Location 0, Location 2), (Location (Suc 0), Location 2)} ex_loc_ass
+           ex_data black_box ex_requests)
+         local_policies,
+        y)
+       \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       \<forall>a\<in>actors_graph (graphI y).
+          \<forall>l. (\<exists>ya. (l, ya) \<in> gra (graphI y) \<or> (ya, l) \<in> gra (graphI y)) \<longrightarrow>
+              (\<exists>x\<in>delta y (graphI y) l. case x of (p, e) \<Rightarrow> move \<in> e \<and> p (Actor a)) \<Longrightarrow>
+       a \<in> actors_graph (graphI z) \<Longrightarrow>
+       (l, ya) \<in> gra (graphI z) \<or> (ya, l) \<in> gra (graphI z) \<Longrightarrow>
+       y = I \<Longrightarrow>
+       z = I' \<Longrightarrow>
+       G = graphI I \<Longrightarrow>
+       aa @\<^bsub>G\<^esub> la \<Longrightarrow>
+       la \<in> nodes G \<Longrightarrow>
+       enables I la (Actor aa) get \<Longrightarrow>
+       I' = Infrastructure (get_graph_a aa la m G) (delta I) \<Longrightarrow>
+       \<exists>x\<in>delta z (graphI z) l. case x of (p, e) \<Rightarrow> move \<in> e \<and> p (Actor a) \<close>
+     apply (simp add: enables_def)
+    apply (erule bexE)
+     apply (rule_tac x = x in bexI)
+proof -
+fix yb :: infrastructure and z :: infrastructure and a :: "char list" and l :: location and ya :: location and G :: igraph and I :: infrastructure and aa :: "char list" and la :: location and I' :: infrastructure and m :: nat and x :: "(actor \<Rightarrow> bool) \<times> action set"
+  assume "G = graphI I"
+  assume a1: "x \<in> delta I (graphI I) la"
+assume "(Infrastructure (Lgraph {(Location 0, Location (Suc 0)), (Location 0, Location 2), (Location (Suc 0), Location 2)} ex_loc_ass ex_data black_box ex_requests) local_policies, I) \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>*"
+  then have f2: "delta I = local_policies"
+    by (smt (z3) delta.simps init_state_policy)
+  have "\<forall>p pa. \<exists>paa A. ((case p of (x::actor \<Rightarrow> bool, xa::action set) \<Rightarrow> pa x xa) \<or> (paa, A) = p) \<and> (\<not> pa paa A \<or> (case p of (x, xa) \<Rightarrow> pa x xa))"
+  by auto
+then show "case x of (p, A) \<Rightarrow> move \<in> A \<and> p (Actor a)"
+  using f2 a1 by (smt (z3) empty_iff fst_conv insertI1 insert_iff local_policies_def snd_conv)
+next show \<open>\<And>y z a l ya G I aa la I' m x.
+       (Infrastructure
+         (Lgraph {(Location 0, Location (Suc 0)), (Location 0, Location 2), (Location (Suc 0), Location 2)} ex_loc_ass
+           ex_data black_box ex_requests)
+         local_policies,
+        I)
+       \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       \<forall>a\<in>actors_graph (graphI I).
+          \<forall>l. (\<exists>ya. (l, ya) \<in> gra (graphI I) \<or> (ya, l) \<in> gra (graphI I)) \<longrightarrow>
+              (\<exists>x\<in>delta I (graphI I) l. case x of (p, e) \<Rightarrow> move \<in> e \<and> p (Actor a)) \<Longrightarrow>
+       a \<in> actors_graph (get_graph_a aa la m (graphI I)) \<Longrightarrow>
+       (l, ya) \<in> gra (get_graph_a aa la m (graphI I)) \<or> (ya, l) \<in> gra (get_graph_a aa la m (graphI I)) \<Longrightarrow>
+       y = I \<Longrightarrow>
+       z = Infrastructure (get_graph_a aa la m (graphI I)) (delta I) \<Longrightarrow>
+       G = graphI I \<Longrightarrow>
+       aa @\<^bsub>graphI I\<^esub> la \<Longrightarrow>
+       la \<in> nodes (graphI I) \<Longrightarrow>
+       I' = Infrastructure (get_graph_a aa la m (graphI I)) (delta I) \<Longrightarrow>
+       x \<in> delta I (graphI I) la \<Longrightarrow>
+       case x of (p, e) \<Rightarrow> get \<in> e \<and> p (Actor aa) \<Longrightarrow> x \<in> delta I (get_graph_a aa la m (graphI I)) l \<close>
+    apply (simp add: get_graph_a_def init_state_policy local_policies_def actors_graph_def atI_def, erule exE)
+    by (smt (z3) delta.simps empty_iff init_state_policy local_policies_def)
+qed
+qed
+qed
+
+lemma enables_move: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> a \<in> actors_graph (graphI y)
+                   \<Longrightarrow> l \<in> nodes (graphI y) \<Longrightarrow>  enables y l (Actor a) move\<close>
+  using enables_move0 by blast
+
+lemma enables_get0: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+           \<forall> a \<in> actors_graph (graphI y). \<forall> l \<in> nodes (graphI y). enables y l (Actor a) get\<close>
+proof (erule rtrancl_induct)
+  show \<open>\<forall>a\<in>actors_graph (graphI Ini). \<forall>l\<in>nodes (graphI Ini). enables Ini l (Actor a) get\<close>
+    by (simp add: Ini_def enables_def ex_graph_def local_policies_def nodes_def)
+next show \<open>\<And>y z. (Ini, y) \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+           (y, z) \<in> {(x, y). x \<rightarrow>\<^sub>n y} \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI y). \<forall>l\<in>nodes (graphI y). enables y l (Actor a) get \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI z). \<forall>l\<in>nodes (graphI z). enables z l (Actor a) get \<close>
+    apply (clarify, simp add: Ini_def ex_graph_def local_policies_def  nodes_def enables_def
+         E1_def N3_def SE1_def, erule exE)
+    apply (erule state_transition_in.cases)
+    apply (smt (z3) N3_def delta.simps gra.simps graphI.simps init_state_policy local_policies_def put put_graph_a_def same_actors0)
+    apply (smt (z3) E1_def N3_def One_nat_def SE1_def delta.simps empty_iff eval eval_graph_a_def ex_graph_def gra.simps graphI.simps init_state_policy local_policies_def same_actors0)
+     apply (simp add: enables_def)
+    apply (erule bexE)
+     apply (rule_tac x = x in bexI)
+    apply (smt (z3) bex_empty case_prodI2 delta.simps fst_conv init_state_policy insert_iff local_policies_def snd_conv)
+    apply (simp add: move_graph_a_def local_policies_def init_state_policy)
+    apply (smt (z3) all_not_in_conv delta.simps init_state_policy local_policies_def)
+     apply (simp add: enables_def)
+    apply (erule bexE)
+     apply (rule_tac x = x in bexI)
+    apply (smt (z3) Pair_inject bex_empty case_prodE case_prodI2 delta.simps init_state_policy insertE local_policies_def)
+    apply (simp add: get_graph_a_def local_policies_def init_state_policy)
+proof -
+fix yb :: infrastructure and z :: infrastructure and a :: "char list" and l :: location and ya :: location and G :: igraph and I :: infrastructure and aa :: "char list" and la :: location and I' :: infrastructure and m :: nat and x :: "(actor \<Rightarrow> bool) \<times> action set"
+  assume a1: "G = graphI I"
+  assume a2: "x \<in> delta I (graphI I) la"
+  assume a3: "(l, ya) \<in> gra (graphI I) \<or> (ya, l) \<in> gra (graphI I)"
+  assume a4: "\<forall>a\<in>actors_graph (graphI I). \<forall>l. (\<exists>y. (l, y) \<in> gra (graphI I) \<or> (y, l) \<in> gra (graphI I)) \<longrightarrow> (\<exists>x\<in>delta I (graphI I) l. case x of (p, e) \<Rightarrow> get \<in> e \<and> p (Actor a))"
+  assume a5: "(Infrastructure (Lgraph {(Location 0, Location (Suc 0)), (Location 0, Location 2), (Location (Suc 0), Location 2)} ex_loc_ass ex_data black_box ex_requests) local_policies, I) \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>*"
+  assume a6: "a \<in> actors_graph (Lgraph (gra (graphI I)) (agra (graphI I)) ((dgra (graphI I)) (aa := (fst (dgra (graphI I) aa), fst (snd (dgra (graphI I) aa)), m, snd (snd (snd (dgra (graphI I) aa)))))) (bb (graphI I)) (requests (graphI I)))"
+  assume "I' = Infrastructure (Lgraph (gra (graphI I)) (agra (graphI I)) ((dgra (graphI I)) (aa := (fst (dgra (graphI I) aa), fst (snd (dgra (graphI I) aa)), m, snd (snd (snd (dgra (graphI I) aa)))))) (bb (graphI I)) (requests (graphI I))) (delta I)"
+  have f7: "a \<in> {cs. \<exists>l. l \<in> {l. \<exists>la. (l, la) \<in> gra G \<or> (la, l) \<in> gra G} \<and> cs \<in> agra G l}"
+    using a6 a1 by (simp add: actors_graph_def nodes_def)
+  have "\<forall>l cs. \<exists>p. \<forall>la lb. ((l, la) \<notin> gra (graphI I) \<or> cs \<notin> actors_graph (graphI I) \<or> p \<in> delta I (graphI I) l) \<and> ((lb, l) \<notin> gra (graphI I) \<or> cs \<notin> actors_graph (graphI I) \<or> p \<in> delta I (graphI I) l)"
+    using a4 by blast
+  then obtain pp :: "location \<Rightarrow> char list \<Rightarrow> (actor \<Rightarrow> bool) \<times> action set" where
+    f8: "\<And>l la cs lb. ((l, la) \<notin> gra (graphI I) \<or> cs \<notin> actors_graph (graphI I) \<or> pp l cs \<in> delta I (graphI I) l) \<and> ((lb, l) \<notin> gra (graphI I) \<or> cs \<notin> actors_graph (graphI I) \<or> pp l cs \<in> delta I (graphI I) l)"
+    by (metis (no_types))
+  then have f9: "\<And>l la. (l, la) \<notin> gra G \<or> pp la a \<in> delta I G la"
+    using f7 a1 actors_graph_def nodes_def by blast
+  have "\<And>l la. (l, la) \<notin> gra G \<or> pp l a \<in> delta I G l"
+    using f8 f7 a1 actors_graph_def nodes_def by blast
+  then show "x \<in> delta I (Lgraph (gra (graphI I)) (agra (graphI I)) ((dgra (graphI I)) (aa := (fst (dgra (graphI I) aa), fst (snd (dgra (graphI I) aa)), m, snd (snd (snd (dgra (graphI I) aa)))))) (bb (graphI I)) (requests (graphI I))) l"
+    using f9 a5 a3 a2 a1 by (smt (z3) delta.simps empty_iff init_state_policy local_policies_def)
+qed
+qed
+  
+lemma enables_get: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> a \<in> actors_graph (graphI y)
+                   \<Longrightarrow> l \<in> nodes (graphI y) \<Longrightarrow>  enables y l (Actor a) get\<close>
+  using enables_get0 by blast
+
+lemma enables_put: \<open>(I, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> a \<in> actors_graph (graphI y)
+                   \<Longrightarrow> l \<in> nodes (graphI y) \<Longrightarrow>  enables y l (Actor a) put\<close>
+  sorry
+
+lemma enables_eval: \<open>(I, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> a \<in> actors_graph (graphI y)
+                   \<Longrightarrow> l \<in> nodes (graphI y) \<Longrightarrow>  enables y l (Actor a) eval\<close>
+  sorry
+
+lemma dgra_inv: \<open>(I, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* 
+                   \<Longrightarrow> dgra (graphI I) = dgra (graphI y)\<close>
+  sorry
+
+
 lemma pc1_AG_OO: \<open>\<forall> A \<in> CreditScoring_actors. M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
 proof (simp add: CreditScoring_actors_def M_def pc1_def Credit_Kripke_def check_def, rule conjI)
   show \<open>Ini \<in> Credit_states\<close>
@@ -621,8 +807,79 @@ next show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''Alice'' s \<and> ''Al
                                             (put_graph_a ''Alice'' N3 (
                                             (get_graph_a ''Alice'' N3 40000 (
                                             move_graph_a ''Alice'' l N3 (graphI x)))))))(delta x)\<close>)
-        apply (simp add: state_transition_infra_def state_transition_refl_def)    
-        sorry
+            apply (simp add: state_transition_infra_def state_transition_refl_def)    
+           prefer 4
+        apply (rule step_rtrancl)
+           apply (rule_tac G = \<open>graphI x\<close> and a = \<open>''Alice''\<close> and l = l and l' = N3 in state_transition_in.move)
+        apply (rule refl)
+                apply assumption
+               apply assumption
+              apply (subst same_nodes)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (simp add: same_nodes Ini_def ex_graph_def nodes_def, blast)
+             apply (simp add: actors_graph_def atI_def, blast)
+        apply (rule enables_move)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+              apply (simp add: actors_graph_def atI_def, force)
+              apply (subst same_nodes)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+            apply (simp add: same_nodes Ini_def ex_graph_def nodes_def, blast)
+           apply (rule refl)
+(* 3 *)
+          prefer 3
+        apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(move_graph_a ''Alice'' l N3 (graphI x))\<close> and a = \<open>''Alice''\<close> and
+                        l = N3 in state_transition_in.get)
+              apply simp
+             apply (simp add: atI_def move_graph_a_def)
+         apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+           apply (rule enables_get)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (verit, best) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+          apply (subgoal_tac \<open>(delta (Infrastructure (move_graph_a ''Alice'' l N3 (graphI x)) (delta x))) = delta x\<close>)
+        apply simp
+        using delta.simps apply blast
+(* 2 *)
+         prefer 2
+        apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(get_graph_a ''Alice'' N3 40000 (move_graph_a ''Alice'' l N3 (graphI x)))\<close> and
+                        a = \<open>''Alice''\<close> and l = \<open>N3\<close> in state_transition_in.put)
+             apply simp
+             apply (simp add: atI_def move_graph_a_def get_graph_a_def)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+          apply (rule enables_put)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (verit, ccfv_SIG) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (subgoal_tac \<open>(delta (Infrastructure (get_graph_a ''Alice'' N3 40000 (move_graph_a ''Alice'' l N3 (graphI x))) (delta x))) = delta x\<close>)
+          apply simp
+        using delta.simps apply blast
+(* *)
+       apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(put_graph_a ''Alice'' N3 (get_graph_a ''Alice'' N3 40000 (move_graph_a ''Alice'' l N3 (graphI x))))\<close>
+                     and a = \<open>''Alice''\<close> and l = \<open>N3\<close> and c = \<open>''CI''\<close> in state_transition_in.eval)
+            apply simp
+             apply (simp add: atI_def move_graph_a_def get_graph_a_def put_graph_a_def)
+        apply (smt (z3) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (smt (z3) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def graphI.simps insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+           apply (simp add: actors_graph_def put_graph_a_def get_graph_a_def move_graph_a_def)
+          apply (subgoal_tac \<open>dgra (graphI Ini) = dgra (graphI x)\<close>)
+        apply (subgoal_tac \<open>Actor ''CI'' \<in> readers  (dgra (graphI x) ''Alice'')\<close>)
+            apply (simp add: readers_def owner_def put_graph_a_def get_graph_a_def move_graph_a_def)
+           apply (erule subst)
+           apply (simp add: Ini_def ex_graph_def ex_data_def readers_def)
+        apply (simp add: dgra_inv state_transition_infra_def state_transition_refl_def)
+          apply (rule enables_eval)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (z3) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (z3) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (subgoal_tac \<open>(delta
+              (Infrastructure
+                (put_graph_a ''Alice'' N3 (get_graph_a ''Alice'' N3 40000 (move_graph_a ''Alice'' l N3 (graphI x))))
+                (delta x))) = delta x\<close>)
+         apply simp
+        using delta.simps by blast
 next show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke} \<and> Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
   proof
   show \<open>Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
