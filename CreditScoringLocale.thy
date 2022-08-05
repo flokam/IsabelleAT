@@ -735,18 +735,60 @@ lemma enables_get: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure)
                    \<Longrightarrow> l \<in> nodes (graphI y) \<Longrightarrow>  enables y l (Actor a) get\<close>
   using enables_get0 by blast
 
-lemma enables_put: \<open>(I, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> a \<in> actors_graph (graphI y)
+lemma enables_put0: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+       \<forall> a \<in> actors_graph (graphI y). \<forall> l \<in> nodes (graphI y). enables y l (Actor a) put\<close>
+proof (erule rtrancl_induct)
+  show \<open>\<forall>a\<in>actors_graph (graphI Ini). \<forall>l\<in>nodes (graphI Ini). enables Ini l (Actor a) put\<close>
+   by (simp add: Ini_def enables_def ex_graph_def local_policies_def nodes_def)
+next show \<open>\<And>y z. (Ini, y) \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+           (y, z) \<in> {(x, y). x \<rightarrow>\<^sub>n y} \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI y). \<forall>l\<in>nodes (graphI y). enables y l (Actor a) put \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI z). \<forall>l\<in>nodes (graphI z). enables z l (Actor a) put \<close>
+    by (smt (verit, ccfv_threshold) Ini_def case_prod_conv delta.simps delta_invariant enables_def enables_move0 init_state_policy local_policies_def mem_Collect_eq same_actors0 same_nodes0)
+qed
+
+lemma enables_put: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> a \<in> actors_graph (graphI y)
                    \<Longrightarrow> l \<in> nodes (graphI y) \<Longrightarrow>  enables y l (Actor a) put\<close>
-  sorry
+  using enables_put0 by blast
 
-lemma enables_eval: \<open>(I, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> a \<in> actors_graph (graphI y)
+lemma enables_eval0: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> 
+              \<forall> a \<in> actors_graph (graphI y). \<forall> l \<in> nodes (graphI y). enables y l (Actor a) eval\<close>
+proof (erule rtrancl_induct)
+  show \<open>\<forall>a\<in>actors_graph (graphI Ini). \<forall>l\<in>nodes (graphI Ini). enables Ini l (Actor a) eval\<close>
+     by (simp add: Ini_def enables_def ex_graph_def local_policies_def nodes_def)
+ next show \<open> \<And>y z. (Ini, y) \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+           (y, z) \<in> {(x, y). x \<rightarrow>\<^sub>n y} \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI y). \<forall>l\<in>nodes (graphI y). enables y l (Actor a) eval \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI z). \<forall>l\<in>nodes (graphI z). enables z l (Actor a) eval \<close>
+     by (smt (verit, ccfv_SIG) Ini_def bex_empty delta.simps enables_def enables_get init_state_policy insertI1 insert_commute local_policies_def rtrancl.rtrancl_into_rtrancl singletonD snd_conv split_cong)
+ qed
+
+lemma enables_eval: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow> a \<in> actors_graph (graphI y)
                    \<Longrightarrow> l \<in> nodes (graphI y) \<Longrightarrow>  enables y l (Actor a) eval\<close>
-  sorry
+  using enables_eval0 by blast
 
-lemma dgra_inv: \<open>(I, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* 
-                   \<Longrightarrow> dgra (graphI I) = dgra (graphI y)\<close>
-  sorry
+lemma dgra_inv0: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* 
+                   \<Longrightarrow> \<forall> a \<in> actors_graph (graphI y). fst (dgra (graphI Ini) a) = fst (dgra (graphI y) a)\<close>
+proof (erule rtrancl_induct, rule ballI, rule refl)
+  show \<open> \<And>y z. (Ini, y) \<in> {(x, y). x \<rightarrow>\<^sub>n y}\<^sup>* \<Longrightarrow>
+           (y, z) \<in> {(x, y). x \<rightarrow>\<^sub>n y} \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI y). fst (dgra (graphI Ini) a) = fst (dgra (graphI y) a) \<Longrightarrow>
+           \<forall>a\<in>actors_graph (graphI z). fst (dgra (graphI Ini) a) = fst (dgra (graphI z) a)\<close>
+    apply (clarify, simp add: Ini_def ex_graph_def ex_data_def)
+    apply (erule state_transition_in.cases)
+    apply (smt (z3) char.inject dgra.simps fst_conv graphI.simps list.inject put put_graph_a_def same_actors0)
+      apply (smt (z3) char.inject dgra.simps eval eval_graph_a_def fst_conv graphI.simps list.inject same_actors0)
+    apply (simp add: move_graph_a_def same_actors0)
+    apply (smt (z3) actors_graph_def agra.simps char.inject fst_conv fun_upd_apply gra.simps insert_Diff insert_iff list.inject mem_Collect_eq nodes_def)
+    apply (simp add: actors_graph_def ex_loc_ass_def state_transition_in_refl_def state_transition_infra_def
+                     get_graph_a_def)
+    apply (erule exE)
+    by (smt (z3) char.inject fst_conv gra.simps list.inject mem_Collect_eq nodes_def)
+qed
 
+lemma dgra_inv: \<open>(Ini, y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* 
+                   \<Longrightarrow> a \<in> actors_graph (graphI y) \<Longrightarrow> fst (dgra (graphI Ini) a) = fst (dgra (graphI y) a)\<close>
+  using dgra_inv0 by blast
 
 lemma pc1_AG_OO: \<open>\<forall> A \<in> CreditScoring_actors. M \<turnstile> AG (EF {s. pc1 A s \<longrightarrow> DO A s})\<close>
 proof (simp add: CreditScoring_actors_def M_def pc1_def Credit_Kripke_def check_def, rule conjI)
@@ -864,14 +906,16 @@ next show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''Alice'' s \<and> ''Al
         apply (smt (z3) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
         apply (smt (z3) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def graphI.simps insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
            apply (simp add: actors_graph_def put_graph_a_def get_graph_a_def move_graph_a_def)
-          apply (subgoal_tac \<open>dgra (graphI Ini) = dgra (graphI x)\<close>)
+          apply (subgoal_tac \<open>fst(dgra (graphI Ini) ''Alice'') = fst(dgra (graphI x) ''Alice'')\<close>)
         apply (subgoal_tac \<open>Actor ''CI'' \<in> readers  (dgra (graphI x) ''Alice'')\<close>)
             apply (simp add: readers_def owner_def put_graph_a_def get_graph_a_def move_graph_a_def)
-           apply (erule subst)
            apply (simp add: Ini_def ex_graph_def ex_data_def readers_def)
-        apply (simp add: dgra_inv state_transition_infra_def state_transition_refl_def)
-          apply (rule enables_eval)
+           apply (erule subst, simp)
+        apply (rule dgra_inv)
         apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (simp add: Alice_Bob_in_Credit_Kripke Credit_Kripke_def Credit_states_def)
+          apply (rule enables_eval)
+          apply (simp add: state_transition_infra_def state_transition_refl_def)
         apply (smt (z3) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
         apply (smt (z3) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
         apply (subgoal_tac \<open>(delta
@@ -903,7 +947,125 @@ next show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''Bob'' s \<and> ''Bob'
         rule conjI)
       show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> 
             EF {s. 40000 \<le> salary ''Bob'' s \<and> ''Bob'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''Bob'' s}\<close> 
-        sorry
+        apply (rule subsetI)
+        apply (drule CollectD)
+        apply (simp add: Credit_Kripke_def Credit_states_def)
+        apply (subgoal_tac \<open>\<exists> l \<in> nodes (graphI x). ''Bob'' @\<^bsub> graphI x\<^esub> l\<close>)
+         prefer 2
+         apply (rule_tac I = Ini and y = x and l = N3 in actor_has_location)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+           apply (simp add: actors_graph_def Ini_def nodes_def ex_graph_def ex_loc_ass_def SE1_def N3_def E1_def, force)
+        apply (simp add: nodes_def Ini_def ex_graph_def SE1_def E1_def N3_def, blast)
+         apply (simp add: Ini_def ex_graph_def ex_loc_ass_def atI_def SE1_def N3_def)
+        apply (erule bexE)
+        apply (rule_tac y = \<open>Infrastructure (
+                             eval_graph_a ''Bob'' N3 (
+                             put_graph_a ''Bob'' N3 (
+                             get_graph_a ''Bob'' N3 40000 (
+                             move_graph_a ''Bob'' l N3 (graphI x)))))
+                             (delta x)\<close> in EF_step_star)
+         prefer 2
+         apply (simp add: eval_graph_a_def put_graph_a_def get_graph_a_def move_graph_a_def DO_def 
+               salary_def N3_def same_bb)
+         apply (subgoal_tac \<open>bb (graphI x) = bb(graphI Ini)\<close>)
+        apply (subgoal_tac \<open>bb (graphI x) = black_box\<close>)
+        apply (simp add: black_box_def)
+        apply (smt (z3) N3_def fst_conv order_refl snd_conv)
+        using Ini_def bb.simps ex_graph_def graphI.simps apply presburger
+         apply (rule sym, rule same_bb)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+(* *)
+        apply (subgoal_tac \<open>x \<rightarrow>\<^sub>i* Infrastructure (move_graph_a ''Bob'' l N3 (graphI x))(delta x)\<close>)
+        apply (subgoal_tac \<open>Infrastructure (move_graph_a ''Bob'' l N3 (graphI x))(delta x) \<rightarrow>\<^sub>i*
+                            Infrastructure (get_graph_a ''Bob'' N3 40000 (
+                                            move_graph_a ''Bob'' l N3 (graphI x)))(delta x)\<close>)
+        apply (subgoal_tac \<open>Infrastructure (get_graph_a ''Bob'' N3 40000 (
+                                            move_graph_a ''Bob'' l N3 (graphI x)))(delta x) \<rightarrow>\<^sub>i*
+                            Infrastructure (put_graph_a ''Bob'' N3 (
+                                            (get_graph_a ''Bob'' N3 40000 (
+                                            move_graph_a ''Bob'' l N3 (graphI x)))))(delta x)\<close>)
+        apply (subgoal_tac \<open> Infrastructure (put_graph_a ''Bob'' N3 (
+                                            (get_graph_a ''Bob'' N3 40000 (
+                                            move_graph_a ''Bob'' l N3 (graphI x)))))(delta x)\<rightarrow>\<^sub>i*
+                             Infrastructure (eval_graph_a ''Bob'' N3 (
+                                            (put_graph_a ''Bob'' N3 (
+                                            (get_graph_a ''Bob'' N3 40000 (
+                                            move_graph_a ''Bob'' l N3 (graphI x)))))))(delta x)\<close>)
+            apply (simp add: state_transition_infra_def state_transition_refl_def)    
+           prefer 4
+        apply (rule step_rtrancl)
+           apply (rule_tac G = \<open>graphI x\<close> and a = \<open>''Bob''\<close> and l = l and l' = N3 in state_transition_in.move)
+        apply (rule refl)
+                apply assumption
+               apply assumption
+              apply (subst same_nodes)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (simp add: same_nodes Ini_def ex_graph_def nodes_def, blast)
+             apply (simp add: actors_graph_def atI_def, blast)
+        apply (rule enables_move)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+              apply (simp add: actors_graph_def atI_def, force)
+              apply (subst same_nodes)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+            apply (simp add: same_nodes Ini_def ex_graph_def nodes_def, blast)
+           apply (rule refl)
+(* 3 *)
+          prefer 3
+        apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(move_graph_a ''Bob'' l N3 (graphI x))\<close> and a = \<open>''Bob''\<close> and
+                        l = N3 in state_transition_in.get)
+             apply simp
+             apply (simp add: atI_def move_graph_a_def)
+         apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+           apply (rule enables_get)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (verit, best) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+          apply (subgoal_tac \<open>(delta (Infrastructure (move_graph_a ''Alice'' l N3 (graphI x)) (delta x))) = delta x\<close>)
+        apply simp
+        using delta.simps apply blast
+(* 2 *)
+         prefer 2
+        apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(get_graph_a ''Bob'' N3 40000 (move_graph_a ''Bob'' l N3 (graphI x)))\<close> and
+                        a = \<open>''Bob''\<close> and l = \<open>N3\<close> in state_transition_in.put)
+             apply simp
+              apply (simp add: atI_def move_graph_a_def get_graph_a_def)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+          apply (rule enables_put)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (verit, ccfv_SIG) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (subgoal_tac \<open>(delta (Infrastructure (get_graph_a ''Alice'' N3 40000 (move_graph_a ''Alice'' l N3 (graphI x))) (delta x))) = delta x\<close>)
+          apply simp
+        using delta.simps apply blast
+(* *)
+       apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(put_graph_a ''Bob'' N3 (get_graph_a ''Bob'' N3 40000 (move_graph_a ''Bob'' l N3 (graphI x))))\<close>
+                     and a = \<open>''Bob''\<close> and l = \<open>N3\<close> and c = \<open>''CI''\<close> in state_transition_in.eval)
+            apply simp
+             apply (simp add: atI_def move_graph_a_def get_graph_a_def put_graph_a_def)
+        apply (smt (z3) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (smt (z3) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def graphI.simps insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+           apply (simp add: actors_graph_def put_graph_a_def get_graph_a_def move_graph_a_def)
+          apply (subgoal_tac \<open>fst(dgra (graphI Ini) ''Bob'') = fst(dgra (graphI x) ''Bob'')\<close>)
+        apply (subgoal_tac \<open>Actor ''CI'' \<in> readers  (dgra (graphI x) ''Bob'')\<close>)
+            apply (simp add: readers_def owner_def put_graph_a_def get_graph_a_def move_graph_a_def)
+           apply (simp add: Ini_def ex_graph_def ex_data_def readers_def)
+           apply (erule subst, simp)
+        apply (rule dgra_inv)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (simp add: Alice_Bob_in_Credit_Kripke Credit_Kripke_def Credit_states_def)
+          apply (rule enables_eval)
+          apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (z3) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (z3) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (subgoal_tac \<open>(delta
+              (Infrastructure
+                (put_graph_a ''Bob'' N3 (get_graph_a ''Bob'' N3 40000 (move_graph_a ''Bob'' l N3 (graphI x))))
+                (delta x))) = delta x\<close>)
+         apply simp
+        using delta.simps by blast
     next show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke} \<and> Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
       proof
         show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke}\<close>
@@ -920,8 +1082,127 @@ next show \<open>Ini \<in> AG (EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' 
     proof (unfold AG_def, simp add: gfp_def,
         rule_tac x = \<open>{s. s \<in> states(Credit_Kripke)}\<close> in exI,
         rule conjI)
-      show \<open> {s. s \<in> states Credit_Kripke} \<subseteq> EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''CI'' s}\<close>
-        sorry
+      show \<open> {s. s \<in> states Credit_Kripke} \<subseteq> 
+             EF {s. 40000 \<le> salary ''CI'' s \<and> ''CI'' @\<^bsub>graphI s\<^esub> N3 \<longrightarrow> DO ''CI'' s}\<close>
+        apply (rule subsetI)
+        apply (drule CollectD)
+        apply (simp add: Credit_Kripke_def Credit_states_def)
+        apply (subgoal_tac \<open>\<exists> l \<in> nodes (graphI x). ''CI'' @\<^bsub> graphI x\<^esub> l\<close>)
+         prefer 2
+         apply (rule_tac I = Ini and y = x and l = E1 in actor_has_location)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+           apply (simp add: actors_graph_def Ini_def nodes_def ex_graph_def ex_loc_ass_def SE1_def N3_def E1_def, force)
+        apply (simp add: nodes_def Ini_def ex_graph_def SE1_def E1_def N3_def, blast)
+         apply (simp add: Ini_def ex_graph_def ex_loc_ass_def atI_def E1_def N3_def SE1_def)
+        apply (erule bexE)
+        apply (rule_tac y = \<open>Infrastructure (
+                             eval_graph_a ''CI'' N3 (
+                             put_graph_a ''CI'' N3 (
+                             get_graph_a ''CI'' N3 40000 (
+                             move_graph_a ''CI'' l N3 (graphI x)))))
+                             (delta x)\<close> in EF_step_star)
+         prefer 2
+         apply (simp add: eval_graph_a_def put_graph_a_def get_graph_a_def move_graph_a_def DO_def 
+               salary_def N3_def same_bb)
+         apply (subgoal_tac \<open>bb (graphI x) = bb(graphI Ini)\<close>)
+        apply (subgoal_tac \<open>bb (graphI x) = black_box\<close>)
+        apply (simp add: black_box_def)
+        apply (smt (z3) N3_def fst_conv order_refl snd_conv)
+        using Ini_def bb.simps ex_graph_def graphI.simps apply presburger
+         apply (rule sym, rule same_bb)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+(* *)
+        apply (subgoal_tac \<open>x \<rightarrow>\<^sub>i* Infrastructure (move_graph_a ''CI'' l N3 (graphI x))(delta x)\<close>)
+        apply (subgoal_tac \<open>Infrastructure (move_graph_a ''CI'' l N3 (graphI x))(delta x) \<rightarrow>\<^sub>i*
+                            Infrastructure (get_graph_a ''CI'' N3 40000 (
+                                            move_graph_a ''CI'' l N3 (graphI x)))(delta x)\<close>)
+        apply (subgoal_tac \<open>Infrastructure (get_graph_a ''CI'' N3 40000 (
+                                            move_graph_a ''CI'' l N3 (graphI x)))(delta x) \<rightarrow>\<^sub>i*
+                            Infrastructure (put_graph_a ''CI'' N3 (
+                                            (get_graph_a ''CI'' N3 40000 (
+                                            move_graph_a ''CI'' l N3 (graphI x)))))(delta x)\<close>)
+        apply (subgoal_tac \<open> Infrastructure (put_graph_a ''CI'' N3 (
+                                            (get_graph_a ''CI'' N3 40000 (
+                                            move_graph_a ''CI'' l N3 (graphI x)))))(delta x)\<rightarrow>\<^sub>i*
+                             Infrastructure (eval_graph_a ''CI'' N3 (
+                                            (put_graph_a ''CI'' N3 (
+                                            (get_graph_a ''CI'' N3 40000 (
+                                            move_graph_a ''CI'' l N3 (graphI x)))))))(delta x)\<close>)
+            apply (simp add: state_transition_infra_def state_transition_refl_def)    
+           prefer 4
+        apply (rule step_rtrancl)
+           apply (rule_tac G = \<open>graphI x\<close> and a = \<open>''CI''\<close> and l = l and l' = N3 in state_transition_in.move)
+        apply (rule refl)
+                apply assumption
+               apply assumption
+              apply (subst same_nodes)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (simp add: same_nodes Ini_def ex_graph_def nodes_def, blast)
+             apply (simp add: actors_graph_def atI_def, blast)
+        apply (rule enables_move)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+              apply (simp add: actors_graph_def atI_def, force)
+              apply (subst same_nodes)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+            apply (simp add: same_nodes Ini_def ex_graph_def nodes_def, blast)
+           apply (rule refl)
+(* 3 *)
+          prefer 3
+        apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(move_graph_a ''CI'' l N3 (graphI x))\<close> and a = \<open>''CI''\<close> and
+                        l = N3 in state_transition_in.get)
+             apply simp
+             apply (simp add: atI_def move_graph_a_def)
+         apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+           apply (rule enables_get)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (verit, best) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+          apply (subgoal_tac \<open>(delta (Infrastructure (move_graph_a ''Alice'' l N3 (graphI x)) (delta x))) = delta x\<close>)
+        apply simp
+        using delta.simps apply blast
+(* 2 *)
+         prefer 2
+        apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(get_graph_a ''CI'' N3 40000 (move_graph_a ''CI'' l N3 (graphI x)))\<close> and
+                        a = \<open>''CI''\<close> and l = \<open>N3\<close> in state_transition_in.put)
+             apply simp
+              apply (simp add: atI_def move_graph_a_def get_graph_a_def)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+          apply (rule enables_put)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (verit, ccfv_SIG) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (verit, ccfv_SIG) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (subgoal_tac \<open>(delta (Infrastructure (get_graph_a ''Alice'' N3 40000 (move_graph_a ''Alice'' l N3 (graphI x))) (delta x))) = delta x\<close>)
+          apply simp
+        using delta.simps apply blast
+(* *)
+       apply (rule step_rtrancl)
+        apply (rule_tac G = \<open>(put_graph_a ''CI'' N3 (get_graph_a ''CI'' N3 40000 (move_graph_a ''CI'' l N3 (graphI x))))\<close>
+                     and a = \<open>''CI''\<close> and l = \<open>N3\<close> and c = \<open>''CI''\<close> in state_transition_in.eval)
+            apply simp
+             apply (simp add: atI_def move_graph_a_def get_graph_a_def put_graph_a_def)
+        apply (smt (z3) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (smt (z3) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def graphI.simps insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+           apply (simp add: actors_graph_def put_graph_a_def get_graph_a_def move_graph_a_def)
+          apply (subgoal_tac \<open>fst(dgra (graphI Ini) ''CI'') = fst(dgra (graphI x) ''CI'')\<close>)
+        apply (subgoal_tac \<open>Actor ''CI'' = owner  (dgra (graphI x) ''CI'')\<close>)
+            apply (simp add: readers_def owner_def put_graph_a_def get_graph_a_def move_graph_a_def)
+           apply (simp add: Ini_def ex_graph_def ex_data_def owner_def)
+           apply (erule subst, simp)
+        apply (rule dgra_inv)
+        apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (simp add: Alice_Bob_in_Credit_Kripke Credit_Kripke_def Credit_states_def)
+          apply (rule enables_eval)
+          apply (simp add: state_transition_infra_def state_transition_refl_def)
+        apply (smt (z3) Alice_Bob_in_Credit_Kripke CollectI Collect_cong Credit_Kripke_def Credit_states_def insertCI same_actors split_cong state_transition_infra_def state_transition_refl_def states.simps)
+        apply (smt (z3) CollectI Collect_cong Ini_def ex_graph_def gra.simps graphI.simps insertCI nodes_def same_nodes split_cong state_transition_infra_def state_transition_refl_def)
+        apply (subgoal_tac \<open>(delta
+              (Infrastructure
+                (put_graph_a ''CI'' N3 (get_graph_a ''CI'' N3 40000 (move_graph_a ''CI'' l N3 (graphI x))))
+                (delta x))) = delta x\<close>)
+         apply simp
+        using delta.simps by blast
     next show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke} \<and> Ini \<in> {s. s \<in> states Credit_Kripke}\<close>
       proof
         show \<open>{s. s \<in> states Credit_Kripke} \<subseteq> AX {s. s \<in> states Credit_Kripke}\<close>
