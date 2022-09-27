@@ -215,7 +215,7 @@ definition \<open>closest s s' s'' \<equiv> ((s \<rightarrow>\<^sub>n*  s') \<an
 
 text \<open>Using the definition of closest we can define counterfactuals for a state s wrt a desirable property
       P as states s'' with common predecessor s' if these exist. \<close>
-definition \<open>counterfactuals s P \<equiv> {s''. P s'' \<and> (\<exists> s'. (s' \<rightarrow>\<^sub>n* s'') \<and> closest s s' s'')}\<close>
+definition \<open>counterfactuals s P \<equiv> {s''. P s'' \<and> (\<exists> s'. (s' \<rightarrow>\<^sub>n* s'') \<and> closest s' s s'')}\<close>
 
 (* standard invariants *)
 lemma delta_invariant: "\<forall> z z'. (z \<rightarrow>\<^sub>n z') \<longrightarrow>  delta(z) = delta(z')"    
