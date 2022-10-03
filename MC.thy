@@ -424,6 +424,22 @@ proof (simp add: state_transition_refl_def)
     by (erule rtrancl_induct) (auto simp add: AG_step)
 qed
 
+lemma AG_all_sO: "\<forall> y. x \<rightarrow>\<^sub>i* y \<longrightarrow> y \<in> s \<Longrightarrow> x \<in> AG s"
+proof (simp add: state_transition_refl_def)
+  show " \<forall>y. (x, y) \<in> {(x, y). x \<rightarrow>\<^sub>i y}\<^sup>* \<longrightarrow> y \<in> s \<Longrightarrow> x \<in> AG s "
+    apply (subgoal_tac "x \<in> s")
+    prefer 2
+    apply (meson rtrancl.rtrancl_refl)
+    apply (unfold AG_def, simp add: gfp_def)
+    apply (rule_tac x = "{y. (x, y) \<in> {(x, y). x \<rightarrow>\<^sub>i y}\<^sup>*}" in exI)
+    apply (rule conjI)
+    apply blast
+    apply (rule conjI)
+     apply (simp add: AX_def)
+    apply (simp add: Collect_mono rtrancl.rtrancl_into_rtrancl)
+    by blast
+qed
+
 lemma AG_imp_notnotEF: 
 "I \<noteq> {} \<Longrightarrow> ((Kripke {s. \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} I  \<turnstile> AG s)) \<Longrightarrow> 
  (\<not>(Kripke {s. \<exists> i \<in> I. (i \<rightarrow>\<^sub>i* s)} (I :: ('s :: state)set)  \<turnstile> EF (- s)))"
