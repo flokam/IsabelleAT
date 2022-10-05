@@ -51,24 +51,12 @@ datatype igraph = Lgraph
 
 
 datatype infrastructure = 
-         Infrastructure \<open>igraph\<close>
-                        \<open>[igraph, location] \<Rightarrow> policy set\<close>
+         Infrastructure (graphI: \<open>igraph\<close>)
+                        (delta: \<open>[igraph, location] \<Rightarrow> policy set\<close>)
                        
 primrec loc :: \<open>location \<Rightarrow> nat\<close>
 where  \<open>loc(Location n) = n\<close>
 
-(*
-primrec gra :: \<open>igraph \<Rightarrow> (location * location)set\<close>
-where  \<open>gra(Lgraph g a d b e) = g\<close>
-primrec agra :: \<open>igraph \<Rightarrow> (location \<Rightarrow> identity set)\<close>
-where  \<open>agra(Lgraph g a d b e) = a\<close>
-primrec dgra :: \<open>igraph \<Rightarrow> identity \<Rightarrow> (dlm * data)\<close>
-  where  \<open>dgra(Lgraph g a d b e) = d\<close>
-primrec bb :: \<open>igraph \<Rightarrow> (data \<Rightarrow> bool)\<close>
-where  \<open>bb(Lgraph g a d b e) = b\<close>
-primrec requests:: \<open>igraph \<Rightarrow> (identity * bool option)set\<close>
-  where \<open>requests(Lgraph g a d b e) = e\<close>
-*)
 lemma agra_simps: \<open>agra (Lgraph g a d b e) = a\<close>
  by (rule CreditScoringInfrastructure.igraph.sel(2))
 
@@ -81,19 +69,12 @@ where  "actors_graph g == {x. ? y. y : nodes g \<and> x \<in> (agra g y)}"
 text \<open>There are projection functions text{@ \<open>graphI\<close>} and text{@ \<open>delta\<close>} when applied
 to an infrastructure return the graph and the policy, respectively.\<close>
 
-
-primrec graphI :: "infrastructure \<Rightarrow> igraph"
-where "graphI (Infrastructure g d) = g"
-primrec delta :: "[infrastructure, igraph, location] \<Rightarrow> policy set"
-where "delta (Infrastructure g d) = d"
-
-(*
 lemma graphI_simps[simp]: \<open>graphI (Infrastructure g d) = g\<close>
   by (rule infrastructure.sel(1))
 
 lemma delta_simps[simp]: \<open>delta (Infrastructure g d) = d\<close>
   by (rule infrastructure.sel(2))
-*)
+
 text \<open>Predicates and projections for the labels to encode their meaning.\<close>
 definition owner :: "dlm * data \<Rightarrow> actor" where "owner d \<equiv> fst(fst d)"
 definition owns :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"
