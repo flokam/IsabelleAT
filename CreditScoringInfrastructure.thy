@@ -43,19 +43,21 @@ type_synonym data = \<open>location \<times> nat \<times> dob \<times> ethnicity
 type_synonym dlm = \<open>actor \<times> actor set\<close>
 
 datatype igraph = Lgraph 
-                     \<open>(location \<times> location)set\<close>
-                     \<open>location \<Rightarrow> identity set\<close>
-                     \<open> identity \<Rightarrow> dlm \<times> data\<close>
-                     \<open> data \<Rightarrow> bool\<close>
-                     \<open>(identity \<times> bool option)set\<close>
+                    (gra: \<open>(location \<times> location)set\<close>)
+                    (agra: \<open>location \<Rightarrow> identity set\<close>)
+                    (dgra: \<open> identity \<Rightarrow> dlm \<times> data\<close>)
+                    (bb: \<open> data \<Rightarrow> bool\<close>)
+                    (requests: \<open>(identity \<times> bool option)set\<close>)
 
 
 datatype infrastructure = 
-         Infrastructure \<open>igraph\<close> 
+         Infrastructure \<open>igraph\<close>
                         \<open>[igraph, location] \<Rightarrow> policy set\<close>
                        
 primrec loc :: \<open>location \<Rightarrow> nat\<close>
 where  \<open>loc(Location n) = n\<close>
+
+(*
 primrec gra :: \<open>igraph \<Rightarrow> (location * location)set\<close>
 where  \<open>gra(Lgraph g a d b e) = g\<close>
 primrec agra :: \<open>igraph \<Rightarrow> (location \<Rightarrow> identity set)\<close>
@@ -66,6 +68,9 @@ primrec bb :: \<open>igraph \<Rightarrow> (data \<Rightarrow> bool)\<close>
 where  \<open>bb(Lgraph g a d b e) = b\<close>
 primrec requests:: \<open>igraph \<Rightarrow> (identity * bool option)set\<close>
   where \<open>requests(Lgraph g a d b e) = e\<close>
+*)
+lemma agra_simps: \<open>agra (Lgraph g a d b e) = a\<close>
+ by (rule CreditScoringInfrastructure.igraph.sel(2))
 
 definition nodes :: \<open>igraph \<Rightarrow> location set\<close>
 where \<open>nodes g == { x. (? y. ((x,y): gra g) | ((y,x): gra g))}\<close>
@@ -75,11 +80,20 @@ where  "actors_graph g == {x. ? y. y : nodes g \<and> x \<in> (agra g y)}"
 
 text \<open>There are projection functions text{@ \<open>graphI\<close>} and text{@ \<open>delta\<close>} when applied
 to an infrastructure return the graph and the policy, respectively.\<close>
+
+
 primrec graphI :: "infrastructure \<Rightarrow> igraph"
 where "graphI (Infrastructure g d) = g"
 primrec delta :: "[infrastructure, igraph, location] \<Rightarrow> policy set"
 where "delta (Infrastructure g d) = d"
 
+(*
+lemma graphI_simps[simp]: \<open>graphI (Infrastructure g d) = g\<close>
+  by (rule infrastructure.sel(1))
+
+lemma delta_simps[simp]: \<open>delta (Infrastructure g d) = d\<close>
+  by (rule infrastructure.sel(2))
+*)
 text \<open>Predicates and projections for the labels to encode their meaning.\<close>
 definition owner :: "dlm * data \<Rightarrow> actor" where "owner d \<equiv> fst(fst d)"
 definition owns :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"
