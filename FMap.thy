@@ -20,14 +20,8 @@ lemma fmap_lem_map[rule_format]: "finite S \<Longrightarrow> n \<in> S \<longrig
    apply simp
   apply clarify
   apply (simp add: fmap_def)
-  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
-   apply (drule_tac A = "F" in Finite_Set.comp_fun_commute.fold_insert)
-     apply assumption+
-   apply (erule ssubst)
-   apply (erule disjE)
-  apply force+
-apply (simp add: comp_fun_commute_def)
-by force
+  by (metis finite_insert imageI image_fold_insert insertCI)
+
 
 
 lemma fmap_lem_map_rev[rule_format]: "finite S \<Longrightarrow> inj f \<Longrightarrow> (f n) \<in> (fmap f S) \<longrightarrow> n \<in> S"
@@ -35,65 +29,36 @@ lemma fmap_lem_map_rev[rule_format]: "finite S \<Longrightarrow> inj f \<Longrig
    apply (simp add: fmap_def)
   apply clarify
   apply (simp add: fmap_def)
-  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
-   apply (drule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
-     apply assumption+
-   apply (subgoal_tac "f n \<in> insert (f x) (Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} F)")
-    prefer 2
-    apply simp
-   apply (subgoal_tac "f n = f x")
-    prefer 2
-    apply simp
-   apply (erule injD, assumption) 
-apply (simp add: comp_fun_commute_def)
-by force
+  by (metis finite_insert image_fold_insert inj_image_mem_iff insertE)
 
 lemma fold_one: "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} {n} = {f n}"
-  thm Finite_Set.comp_fun_commute.fold_insert
-  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
-   apply (drule_tac A = "{}" in Finite_Set.comp_fun_commute.fold_insert)
-     apply simp+
-  apply (simp add: comp_fun_commute_def)
-  by force
-
-(*
-lemma fold_oneL: "Finite_Set.fold (\<lambda> (x::'a). (#)(f x)) [] {n} = [f n]"
-  apply (subgoal_tac "comp_fun_commute (\<lambda> (x::'a). (#)(f x))")
-   apply (drule_tac A = "{}" and z = "[]" in Finite_Set.comp_fun_commute.fold_insert)
-     apply simp+
-  apply (simp add: comp_fun_commute_def)
-fails here  
-by force
-*)
-
+  by (metis finite.emptyI finite_insert image_empty image_fold_insert image_insert)
 
 lemma fold_one_plus: "Finite_Set.fold (+) (b::real) {a::real} = a + b"
-  apply (subgoal_tac "comp_fun_commute (+)")
-   apply (drule_tac A = "{}" in Finite_Set.comp_fun_commute.fold_insert)
+  apply (subgoal_tac "comp_fun_commute_on {a} (+)")
+   apply (drule_tac A = "{}" in Finite_Set.comp_fun_commute_on.fold_insert)
   apply simp+
-  apply (simp add: comp_fun_commute_def)
-  apply (simp add: comp_def)
-by force
+  by (simp add: comp_fun_commute_on_def)
 
 lemma fold_two_plus: "a \<noteq> c \<Longrightarrow> Finite_Set.fold (+) (b::real) {a::real, c} = a + b + c"
-  apply (subgoal_tac "comp_fun_commute (+)")
-   apply (drule_tac A = "{ c}" and x = a in Finite_Set.comp_fun_commute.fold_insert)
+  apply (subgoal_tac "comp_fun_commute_on {a::real, c} (+)")
+   apply (drule_tac A = "{ c}" and x = a in Finite_Set.comp_fun_commute_on.fold_insert)
      apply simp+
    apply (simp add: fold_one_plus)
    apply (subgoal_tac "a + (c + b) = a + b + c")
     apply (erule ssubst)
     apply assumption
   apply simp
-  apply (simp add: comp_fun_commute_def)
+  apply (simp add: comp_fun_commute_on_def)
   apply (simp add: comp_def)
 by force
 
 lemma fold_three_plus: "a \<noteq> c \<Longrightarrow> a \<noteq> b \<Longrightarrow> b \<noteq> c \<Longrightarrow> Finite_Set.fold (+) (d::real) {a::real, b, c} = a + b + c + d"
-  apply (subgoal_tac "comp_fun_commute (+)")
-   apply (drule_tac A = "{b, c}" and x = a and z = d in Finite_Set.comp_fun_commute.fold_insert)
+  apply (subgoal_tac "comp_fun_commute_on {a::real, b, c} (+)")
+   apply (drule_tac A = "{b, c}" and x = a and z = d in Finite_Set.comp_fun_commute_on.fold_insert)
      apply simp+
    apply (simp add: fold_two_plus)
-  apply (simp add: comp_fun_commute_def)
+  apply (simp add: comp_fun_commute_on_def)
   apply (simp add: comp_def)
 by force
 
@@ -111,39 +76,7 @@ lemma fmap_lem[rule_format]: "finite S \<Longrightarrow> \<forall> n. (fmap f (i
    apply (rule allI)
    apply (simp add: fmap_def)
    apply (rule fold_one)
-(* *)
-  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
-   apply (rule allI)
-   apply (drule_tac x = x in spec)
-   apply (erule ssubst)
-   apply (subgoal_tac "fmap f (insert n (insert x F)) = insert (f n) (fmap f (insert x F))")
-  apply (erule ssubst)
-    apply (subgoal_tac "fmap f (insert x F) = insert (f x) (fmap f F)")
-     apply simp
-    apply (drule_tac A = "F" in Finite_Set.comp_fun_commute.fold_insert)
-      apply assumption
-     apply assumption
-    apply (unfold fmap_def, assumption)
-   apply (case_tac "n \<in> insert x F")
-    defer
-    apply (drule_tac A = "insert x F" in Finite_Set.comp_fun_commute.fold_insert)
-     apply simp
-  apply assumption+
-  apply (simp add: comp_fun_commute_def)
-  apply force
-(* n \<in> insert x F *)
-  apply (simp add: Finite_Set.comp_fun_commute.fold_rec)
-  apply (subgoal_tac "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} (insert n (insert x F)) =
-                     Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} (insert x F)")
-   prefer 2
-   apply (subgoal_tac "insert n (insert x F) = insert x F")
-    apply simp
-  apply blast
-  apply (erule ssubst)
-  apply (rule Finite_Set.comp_fun_commute.fold_rec)
-apply (simp add: comp_fun_commute_def)
-   apply force
-  by simp
+  by (metis finite.insertI fmap_def image_fold_insert image_insert)
 
 
 lemma insert_delete: "x \<notin> S \<Longrightarrow> (insert x S) - {x} = S"
@@ -153,48 +86,7 @@ lemma fmap_lem_del[rule_format]: "finite S \<Longrightarrow> inj f \<Longrightar
   apply (erule_tac F = S in finite_induct)
    apply (rule ballI)
    apply (simp add: fmap_def)
-(* *)
-  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
-   apply (rule ballI)
-apply simp
-   apply (erule disjE)
-(* n = x *)
-    apply simp
-    apply (drule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
-      apply assumption+
-    apply (unfold fmap_def)
-    apply (rotate_tac -1)
-  apply (erule ssubst)
-  apply (rule sym)
-    apply (rule insert_delete)
-    apply (erule contrapos_nn)
-  apply (rule fmap_lem_map_rev, assumption, assumption)
-  apply (simp add: fmap_def)
-(* n \<in> F *)
-    apply (frule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert, assumption, assumption)
-   apply (rotate_tac -1)
-   apply (erule ssubst)
-  apply (subgoal_tac "insert (f x) (Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} F) - {f n} =
-                      insert (f x) ((Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} F) - {f n})")
-   apply (rotate_tac -1)
-   apply (erule ssubst)
-   apply (drule_tac x = n in bspec,assumption)
-   apply (rotate_tac -1)
-   apply (erule subst)
-    apply (drule_tac A = "F - {n}" and z = "{}" and x = x in Finite_Set.comp_fun_commute.fold_insert)
-      apply simp+
-    apply (subgoal_tac "insert x (F - {n}) = insert x F - {n}")
-     apply simp
-    apply blast
-   apply (subgoal_tac "f x \<noteq> f n")
-    apply force
-   apply (subgoal_tac "x \<noteq> n")
-  apply (rotate_tac -1)
-  apply (erule contrapos_nn)
-    apply (erule injD, assumption)
-  apply blast
-apply (simp add: comp_fun_commute_def)
-by force
+  by (smt (verit) finite.emptyI finite.insertI finite_Diff fmap_def fold_one image_fold_insert inj_on_image_set_diff top_greatest)
 
 
 lemma fmap_empty1: "(fmap f {} = S) \<Longrightarrow> (S = {})"
@@ -217,24 +109,7 @@ lemma fmap_empty3: "fmap f {} = {}"
 lemma fmap_empty4[rule_format]: "finite S \<Longrightarrow> fmap f S = {} \<longrightarrow> S = {}"
   apply (erule_tac F = S in finite_induct)
   apply simp
-  apply (simp add: fmap_def)
-  apply (subgoal_tac "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} ({x}) \<noteq> {}")
-  apply (subgoal_tac "Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} ({x}) \<subseteq> 
-                      Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} (insert x F)")
-    apply blast
-  apply (subst fold_one)
-   apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
-  thm Finite_Set.comp_fun_commute.fold_insert
-   apply (drule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
-     apply simp
-     apply simp
-  apply (erule ssubst)
-    apply simp
-     apply (simp add: comp_fun_commute_def)
-     apply force
-    apply (subst fold_one)
-  by simp
-
+  by (simp add: fmap_lem)
 
 lemma insert_delete0: "x \<in> A \<Longrightarrow> A = insert x (A - {x})"
   by auto
@@ -319,19 +194,7 @@ lemma fmap_inj0: "inj f \<Longrightarrow> inj_on (fmap f){S. finite S}"
 lemma fmap_lem_map_rev0[rule_format]: "finite S \<Longrightarrow> (\<forall>y\<in>S. f y \<noteq> f n) \<longrightarrow> (f n) \<in> (fmap f S) \<longrightarrow> n \<in> S"
   apply (erule_tac F = S in finite_induct)
    apply (simp add: fmap_def)
-  apply clarify
-  apply (simp add: fmap_def)
-  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
-   apply (drule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
-     apply assumption+
-   apply (subgoal_tac "f n \<in> insert (f x) (Finite_Set.fold (\<lambda>x::'a. insert (f x)) {} F)")
-    prefer 2
-    apply simp
-   apply (subgoal_tac "f n = f x")
-  apply simp
-    apply simp
-apply (simp add: comp_fun_commute_def)
-by force
+  by (metis fmap_lem insert_iff)
 
 lemma fmap_lem_map_rev1: "finite S \<Longrightarrow> (\<forall>y\<in>S. f y \<noteq> f n) \<Longrightarrow> (f n) \<in> (fmap f S) \<Longrightarrow> n \<in> S"
   apply (erule fmap_lem_map_rev0)
@@ -344,15 +207,16 @@ lemma fmap_lem_del_set1[rule_format]: "finite S \<Longrightarrow>
    apply (rule ballI)
    apply (simp add: fmap_def)
 (* *)
-  apply (subgoal_tac "comp_fun_commute (\<lambda>x::'a. insert (f x))")
+  apply (subgoal_tac "comp_fun_commute_on S (\<lambda>x::'a. insert (f x))")
    apply (rule ballI)
    prefer 2
-apply (simp add: comp_fun_commute_def)
+apply (simp add: comp_fun_commute_on_def)
    apply force
 (* *)
   apply (case_tac "n = x")
    apply (simp add: fmap_def)
-   apply (frule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute.fold_insert)
+   apply (frule_tac A = "F" and z = "{}" in Finite_Set.comp_fun_commute_on.fold_insert)
+  sorry
      apply assumption+
    apply (rotate_tac -1)
   apply (erule ssubst)

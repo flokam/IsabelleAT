@@ -663,10 +663,7 @@ proof -
             show "{((a, as), n)} \<subseteq> {dl. x \<in> Rep_ledger lg dl \<and> snd dl = n}"
               by (insert c000, simp)
           next show "{dl. x \<in> Rep_ledger lg dl \<and> snd dl = n} \<subseteq> {((a, as), n)}"
-             by (insert c000, rule subsetI, subgoal_tac "xa = ((a,as),n)", simp,
-              drule CollectD, case_tac xa, simp,
-              rule_tac dl = aa and dl' = "(a,as)" in ledger_to_loc_data_unique,
-               erule conjE, erule inset_n_empty, erule conjE, rule inset_n_empty, simp)
+              using Rep_ledger c000 by fastforce
             qed
           have c300: "fmap data_trans {dl. x \<in> Rep_ledger lg dl} - {(y,x). x = n} =
                       fmap data_trans ({dl. x \<in> Rep_ledger lg dl} - {((a,as),n)})"

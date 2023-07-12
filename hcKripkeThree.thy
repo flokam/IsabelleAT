@@ -634,7 +634,7 @@ proof (simp add: state_transition_in_refl_def)
 qed
 
 (* Second attack: Eve can go to cloud and override Bob's data
-   (that she got from outide the sysmte) and ass it as her own 
+   (that she got from outside the system) and pass it as her own 
    (labeling it as hers) because the policy allows Eve to put on cloud. *)
 (* Note the first bunch of lemmas develops the attack refinement *)
 lemma hcR_ref: "[\<N>\<^bsub>(IhcR,shcR)\<^esub>] \<oplus>\<^sub>\<and>\<^bsup>(IhcR,shcR)\<^esup> \<sqsubseteq>

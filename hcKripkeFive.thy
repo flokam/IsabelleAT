@@ -522,14 +522,8 @@ apply (drule sym)
         apply (simp add: hc_scenarioV_def local_policiesV_def ex_graphV_def RRLoopFive.nodes_def)
   apply (simp add: hospitalF_def sphoneF_def
                   homeF_def cloudF_def cloudV_def homeV_def sphoneV_def hospitalV_def hc_scenarioV_def)
-  apply (subgoal_tac "RRLoopFive.nodes (RRLoopFive.graphI I) = {Location 0, Location 1, Location 2, Location 3}")
-  apply simp
-  apply (drule sym)
-  apply (simp add: hc_scenarioV_def local_policiesV_def ex_graphV_def RRLoopFive.nodes_def)
-  apply (simp add: hospitalF_def sphoneF_def
-                  homeF_def cloudF_def cloudV_def homeV_def sphoneV_def hospitalV_def hc_scenarioV_def)
+    apply (metis (full_types) RRLoopFive.delta.simps bex_empty cloudV_def hc_scenarioV_def homeV_def hospitalV_def local_policiesV_def numeral_1_eq_Suc_0 numerals(1) sphoneV_def)
     sorry
-(*    by blast  *)
 (* put *)
 next show "\<And>(s::RRLoopFive.infrastructure) (s'::RRLoopFive.infrastructure) (G::RRLoopFive.igraph)
        (I::RRLoopFive.infrastructure) (a::char list) (l::location) (as::char list set)
@@ -604,16 +598,7 @@ apply (drule sym)
         apply (simp add: hc_scenarioV_def local_policiesV_def ex_graphV_def RRLoopFive.nodes_def)
   apply (simp add: hospitalF_def sphoneF_def
                   homeF_def cloudF_def cloudV_def homeV_def sphoneV_def hospitalV_def hc_scenarioV_def)
-  apply (subgoal_tac "RRLoopFive.nodes (RRLoopFive.graphI I) = {Location 0, Location 1, Location 2, Location 3}")
-  apply simp
-  apply (drule sym)
-  apply (simp add: hc_scenarioV_def local_policiesV_def ex_graphV_def RRLoopFive.nodes_def)
-  apply (simp add: hospitalF_def sphoneF_def ex_ledgerV_def ex_locsV_def ex_credsV_def ex_locV_ass_def
-                  homeF_def cloudF_def cloudV_def homeV_def sphoneV_def hospitalV_def hc_scenarioV_def)
-    sorry
-(* 
-    by blast
-*)
+    by (metis (full_types) RRLoopFive.delta.simps bex_empty cloudV_def hc_scenarioV_def homeV_def hospitalV_def local_policiesV_def numeral_1_eq_Suc_0 numerals(1) sphoneV_def)
 qed
 
 theorem refmapFive: "hc_KripkeF  \<sqsubseteq>\<^sub>rmapV hc_KripkeV" 
