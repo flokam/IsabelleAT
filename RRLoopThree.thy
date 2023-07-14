@@ -129,7 +129,7 @@ where
          I' = Infrastructure (move_graph_a h l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
 | get_data : "G = graphI I \<Longrightarrow> h @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow> 
         enables I l (Actor h) get \<Longrightarrow> 
-       ((Actor h', hs), n) \<in> lgra G l' \<Longrightarrow> Actor h \<in> hs \<Longrightarrow> 
+       ((Actor h', hs), n) \<in> lgra G l' \<Longrightarrow> Actor h \<in> hs \<or> h = h' \<Longrightarrow> 
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)
                    ((lgra G)(l := (lgra G l)  \<union> {((Actor h', hs), n)})))
@@ -187,6 +187,8 @@ definition ref_map :: "[RRLoopThree.infrastructure,
 lemma delta_invariant: "\<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z')"    
   apply clarify
   apply (erule state_transition_in.cases)
- by simp+
+  by simp+
+
+
 
 end

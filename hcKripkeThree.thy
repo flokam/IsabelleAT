@@ -289,7 +289,7 @@ next show "\<And>(s::RRLoopThree.infrastructure) (s'::RRLoopThree.infrastructure
        l' \<in> RRLoopThree.nodes G \<Longrightarrow>
        RRLoopThree.enables I l (Actor h) get \<Longrightarrow>
        ((Actor h', hs), n) \<in> RRLoopThree.lgra G l' \<Longrightarrow>
-       Actor h \<in> hs \<Longrightarrow>
+       Actor h \<in> hs \<or> h = h'\<Longrightarrow>
        I' =
        RRLoopThree.infrastructure.Infrastructure
         (RRLoopThree.igraph.Lgraph (RRLoopThree.gra G) (RRLoopThree.agra G) (RRLoopThree.cgra G)
@@ -708,7 +708,12 @@ next show "h \<in> hc_actorsR \<Longrightarrow>
       by (simp add: hc_scenarioR_def owns_def)
   qed
 
-
+(* This is the global policy expressing data privacy *)
+(* It cannot be proved justly because Eve can steal and put Bob's data on the cloud labeled as her own *)
+lemma global_policy: \<open>(\<forall> (l :: location) \<in> nodes(graphI I). (\<forall> l' \<in> nodes(graphI I). 
+     \<forall> d:: data. \<forall> lb:: dlm. \<forall> lb':: dlm. 
+         (lb, d) \<in> (lgra(graphI I) l) \<longrightarrow> (lb', d) \<in> (lgra(graphI I) l') \<longrightarrow> lb = lb')) \<close>
+  oops
 
 end
 end

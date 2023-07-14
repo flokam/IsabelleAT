@@ -154,45 +154,47 @@ lemma move_graph_eq: "move_graph_a a l l g = g"
 proof (simp add: move_graph_a_def, case_tac g, force)
 qed
 
-inductive state_transition_in :: "[infrastructure, infrastructure] \<Rightarrow> bool" ("(_ \<rightarrow>\<^sub>n _)" 50)
+inductive state_transition_in :: "[LedgerRRLoopFour.infrastructure, infrastructure] \<Rightarrow> bool" ("(_ \<rightarrow>\<^sub>n _)" 50)
 where
-  move: "\<lbrakk> G = graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
-          (a) \<in> actors_graph(graphI I); enables I l' (Actor a) move;
-         I' = Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk> \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
-(*
-| get_data : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow> 
-        enables I l (Actor a) get \<Longrightarrow> 
-        (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow> l' \<in> L  \<Longrightarrow> a \<in> as \<Longrightarrow> 
-        I' = Infrastructure 
+  move: "\<lbrakk> G = LedgerRRLoopFour.graphI I; a @\<^bsub>G\<^esub> l; l \<in> nodes G; l' \<in> nodes G;
+          (a) \<in> actors_graph(graphI I); LedgerRRLoopFour.enables I l' (Actor a) move;
+         I' = LedgerRRLoopFour.Infrastructure (move_graph_a a l l' (graphI I))(delta I) \<rbrakk>
+         \<Longrightarrow> (I :: LedgerRRLoopFour.infrastructure) \<rightarrow>\<^sub>n I'" 
+| get_data : "G = LedgerRRLoopFour.graphI I \<Longrightarrow> (a @\<^bsub>G\<^esub> l) \<Longrightarrow> l \<in> LedgerRRLoopFour.nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow>
+        LedgerRRLoopFour.enables I l (Actor a) get \<Longrightarrow> 
+        (ledgra G d = (Some ((a', as), L))) \<Longrightarrow> ((a \<in> as) \<or> (a = a')) \<Longrightarrow> 
+        I' = LedgerRRLoopFour.Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                           ((ledgra G)((a', as), n) := (L \<union> {l})))
+                           ((ledgra G)(d := Some((a', as), (L \<union> {l})))))
                    (delta I)
-         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
+         \<Longrightarrow> (I :: LedgerRRLoopFour.infrastructure) \<rightarrow>\<^sub>n I'" 
 | process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
         enables I l (Actor a) eval \<Longrightarrow> 
-        (ledgra G \<nabla> ((a', as), n)) = L \<Longrightarrow>
+        ledgra G d = Some ((a', as), L) \<Longrightarrow>
         a \<in> as \<or> a = a'\<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                                 ((ledgra G ((a', as), n) := {}
-                                    (f :: label_fun) \<Updown> ((a', as), n) := L)))
+                                 (((ledgra G)(d:= None))((f d):= Some ((a', as), L))))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"  
 | del_data : "G = graphI I \<Longrightarrow> a \<in> actors_graph G \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l \<in> L \<Longrightarrow>
-             (ledgra G \<nabla> ((a, as), n)) = L \<Longrightarrow>
+             ledgra G d = Some ((a', as), L) \<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                    (ledgra G ((a, as),n) := L - {l}))
+                    ((ledgra G)(d:= None)))
                    (delta I)
-         \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-| put : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> enables I l (Actor a) put \<Longrightarrow>
-        I' = Infrastructure 
+         \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
+| put : "G = LedgerRRLoopFour.graphI I \<Longrightarrow> LedgerRRLoopFour.atI a G l \<Longrightarrow> 
+         LedgerRRLoopFour.enables I l (Actor a) put \<Longrightarrow>
+         ledgra G d = Some ((a, as), L) \<Longrightarrow>
+        I' = LedgerRRLoopFour.Infrastructure 
                   (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                          (ledgra G ((a, as),n) := {l}))
+                          ((ledgra G)(d := Some ((a, as), insert l L))))
                    (delta I)
           \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
-*)
 
+
+(* *)
 instantiation "infrastructure" :: state
 begin
 
@@ -216,11 +218,10 @@ definition dlm_to_dlm:: "LedgerRRLoopFour.dlm \<Rightarrow> RRLoopThree.dlm"
 definition data_trans :: "LedgerRRLoopFour.dlm \<times> data \<Rightarrow> RRLoopThree.dlm \<times> data"
   where "data_trans  \<equiv> (\<lambda> (l :: (string *  string set),d :: string). (dlm_to_dlm l, d))"
 
-definition ledger_to_loc :: \<open>ledger \<Rightarrow> location \<Rightarrow> (dlm \<times> data) set\<close>
+definition ledger_to_loc :: \<open>ledger \<Rightarrow> location \<Rightarrow> (RRLoopThree.dlm \<times> RRLoopThree.data) set\<close>
   where 
 \<open>ledger_to_loc ld l \<equiv> (if (\<exists> d. l \<in> snd(the(ld d))) then
                {(lb,d). l \<in> snd(the(ld d))} else {})\<close>
-
 
 lemma update_empty_lem0: "xa \<in> (f(x := {})) y \<Longrightarrow> xa \<in> f y"
   by (simp, case_tac "x = y", simp+)
@@ -272,6 +273,8 @@ definition ref_map :: "[LedgerRRLoopFour.infrastructure,
 lemma delta_invariant: "\<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z')"
   apply clarify
   apply (erule state_transition_in.cases)
- by simp+
+  by simp+
+
+
              
 end
