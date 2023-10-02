@@ -12,10 +12,12 @@ type_synonym data = string
    actors by identities since otherwise the uniqueness of the label imposed
    in the ledger typedef cannot be proved for actors (note that we intentionally
    didn't stipulate Actor to be injective to allow for insider attacks) 
-before:
+before: *)
 type_synonym dlm = "actor * actor set"
-now: *)
+(*
+now:
 type_synonym dlm = "identity * identity set"
+*)
 
 type_synonym acond = "(dlm * data) set"
 
@@ -114,15 +116,15 @@ definition isin :: "[igraph,location, string] \<Rightarrow> bool"
   where "isin G l s \<equiv> s = (lgra G l)"
 
 (* types need to change because of new dlm labels *)
-definition owner :: "dlm * data \<Rightarrow> identity" where "owner d \<equiv> fst(fst d)"
+definition owner :: "dlm * data \<Rightarrow> actor" where "owner d \<equiv> fst(fst d)"
     
-definition owns :: "[igraph, location, identity, dlm * data] \<Rightarrow> bool"    
+definition owns :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"    
   where "owns G l a d \<equiv> owner d = a"
     
-definition readers :: "dlm * data \<Rightarrow> identity set"
+definition readers :: "dlm * data \<Rightarrow> actor set"
   where "readers d \<equiv> snd (fst d)"
 
-definition has_access :: "[igraph, location, identity, dlm * data] \<Rightarrow> bool"    
+definition has_access :: "[igraph, location, actor, dlm * data] \<Rightarrow> bool"    
 where "has_access G l a d \<equiv> owns G l a d \<or> a \<in> readers d"
   
 definition atI :: "[identity, igraph, location] \<Rightarrow> bool" ("_ @\<^bsub>(_)\<^esub> _" 50)
@@ -142,8 +144,8 @@ where "move_graph_a n l l' g \<equiv> Lgraph (gra g)
 typedef label_fun = "{f :: dlm * data \<Rightarrow> dlm * data. 
                         \<forall> x:: dlm * data. fst x = fst (f x)}"  
 proof (auto)
-  show "\<exists>x::(identity \<times> identity set) \<times> string \<Rightarrow> (identity \<times> identity set) \<times> string.
-       \<forall>(a::identity) (b::identity set) ba::string. (a, b) = fst (x ((a, b), ba))"
+  show "\<exists>x::(actor \<times> actor set) \<times> string \<Rightarrow> (actor \<times> actor set) \<times> string.
+       \<forall>(a::actor) (b::actor set) ba::string. (a, b) = fst (x ((a, b), ba))"
   by (rule_tac x = id in exI, simp)
 qed
 
@@ -162,23 +164,23 @@ where
          \<Longrightarrow> (I :: LedgerRRLoopFour.infrastructure) \<rightarrow>\<^sub>n I'" 
 | get_data : "G = LedgerRRLoopFour.graphI I \<Longrightarrow> (a @\<^bsub>G\<^esub> l) \<Longrightarrow> l \<in> LedgerRRLoopFour.nodes G \<Longrightarrow> l' \<in> nodes G \<Longrightarrow>
         LedgerRRLoopFour.enables I l (Actor a) get \<Longrightarrow> 
-        (ledgra G d = (Some ((a', as), L))) \<Longrightarrow> ((a \<in> as) \<or> (a = a')) \<Longrightarrow> 
+        (ledgra G d = (Some ((Actor a', as), L))) \<Longrightarrow> ((Actor a \<in> as) \<or> (a = a')) \<Longrightarrow> l' \<in> L \<Longrightarrow>
         I' = LedgerRRLoopFour.Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                           ((ledgra G)(d := Some((a', as), (L \<union> {l})))))
+                           ((ledgra G)(d := Some((Actor a', as), (L \<union> {l})))))
                    (delta I)
          \<Longrightarrow> (I :: LedgerRRLoopFour.infrastructure) \<rightarrow>\<^sub>n I'" 
-| process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow>
-        enables I l (Actor a) eval \<Longrightarrow> 
-        ledgra G d = Some ((a', as), L) \<Longrightarrow>
-        a \<in> as \<or> a = a'\<Longrightarrow>
+| process : "G = graphI I \<Longrightarrow> a @\<^bsub>G\<^esub> l \<Longrightarrow> l \<in> nodes G \<Longrightarrow>
+        enables I l (Actor a) eval \<Longrightarrow> l \<in> L \<Longrightarrow>
+        ledgra G d = Some ((Actor a', as), L) \<Longrightarrow>
+        Actor a \<in> as \<or> a = a'\<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                                 (((ledgra G)(d:= None))((f d):= Some ((a', as), L))))
+                                 (((ledgra G)(d:= None))((f d):= Some ((Actor a', as), L))))
                    (delta I)
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'"  
 | del_data : "G = graphI I \<Longrightarrow> a \<in> actors_graph G \<Longrightarrow> l \<in> nodes G \<Longrightarrow> l \<in> L \<Longrightarrow>
-             ledgra G d = Some ((a', as), L) \<Longrightarrow>
+             ledgra G d = Some ((Actor a, as), L) \<Longrightarrow>
         I' = Infrastructure 
                    (Lgraph (gra G)(agra G)(cgra G)(lgra G)
                     ((ledgra G)(d:= None)))
@@ -186,10 +188,10 @@ where
          \<Longrightarrow> I \<rightarrow>\<^sub>n I'" 
 | put : "G = LedgerRRLoopFour.graphI I \<Longrightarrow> LedgerRRLoopFour.atI a G l \<Longrightarrow> 
          LedgerRRLoopFour.enables I l (Actor a) put \<Longrightarrow>
-         ledgra G d = Some ((a, as), L) \<Longrightarrow>
+         ledgra G d = Some ((Actor a, as), L) \<Longrightarrow>
         I' = LedgerRRLoopFour.Infrastructure 
                   (Lgraph (gra G)(agra G)(cgra G)(lgra G)
-                          ((ledgra G)(d := Some ((a, as), insert l L))))
+                          ((ledgra G)(d := Some ((Actor a, as), insert l L))))
                    (delta I)
           \<Longrightarrow> I \<rightarrow>\<^sub>n I'"
 
@@ -210,18 +212,18 @@ where "s \<rightarrow>\<^sub>n* s' \<equiv> ((s,s') \<in> {(x,y). state_transiti
 end
 
 thm Finite_Set.fold_def
-
+(*
 definition dlm_to_dlm:: "LedgerRRLoopFour.dlm \<Rightarrow> RRLoopThree.dlm"
   where
   "dlm_to_dlm  \<equiv> (\<lambda> ((s :: string), (sl :: string set)). (Actor s, Actor ` sl))"
 
 definition data_trans :: "LedgerRRLoopFour.dlm \<times> data \<Rightarrow> RRLoopThree.dlm \<times> data"
   where "data_trans  \<equiv> (\<lambda> (l :: (string *  string set),d :: string). (dlm_to_dlm l, d))"
-
+*)
 definition ledger_to_loc :: \<open>ledger \<Rightarrow> location \<Rightarrow> (RRLoopThree.dlm \<times> RRLoopThree.data) set\<close>
   where 
-\<open>ledger_to_loc ld l \<equiv> (if (\<exists> d. l \<in> snd(the(ld d))) then
-               {(lb,d). l \<in> snd(the(ld d))} else {})\<close>
+\<open>ledger_to_loc ld l \<equiv> {(lb,d). (case ld d of Some lL \<Rightarrow> (l \<in> snd lL \<and> lb = fst lL)
+                                | None \<Rightarrow> False)}\<close>
 
 lemma update_empty_lem0: "xa \<in> (f(x := {})) y \<Longrightarrow> xa \<in> f y"
   by (simp, case_tac "x = y", simp+)
@@ -229,7 +231,7 @@ lemma update_empty_lem0: "xa \<in> (f(x := {})) y \<Longrightarrow> xa \<in> f y
 
 lemma inset_n_empty: "x \<in> s \<Longrightarrow> s \<noteq> {}"
   by force
-
+(*
 lemma inj_data_trans: "inj Actor \<Longrightarrow> inj data_trans"
   apply (rule injI)
   apply (simp add: data_trans_def dlm_to_dlm_def)
@@ -244,7 +246,7 @@ lemma inj_data_trans: "inj Actor \<Longrightarrow> inj data_trans"
    apply (erule injD, assumption)
   apply (erule image_inj)
   by simp
-
+*)
 lemma setsub_spec: "A - {x. P x} = A - {x. x \<in> A \<and> P x}"
   by blast
 

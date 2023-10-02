@@ -125,6 +125,25 @@ lemma same_nodes: "(hc_scenarioR, s) \<in> {(x::RRLoopThree.infrastructure, y::R
     apply (drule same_nodes0)
   by simp  
 
+lemma finite_nodes_hcR: \<open>finite(nodes (graphI hc_scenarioR))\<close>
+  apply (simp add: hc_scenarioR_def ex_graphR_def RRLoopThree.nodes_def
+                   homeR_def cloudR_def hospitalR_def sphoneR_def)
+  apply (subgoal_tac \<open>{x::location.
+      \<exists>y::location.
+         x = Location (Suc (0::nat)) \<and> y = Location (3::nat) \<or>
+         x = Location (0::nat) \<and> y = Location (3::nat) \<or>
+         x = Location (3::nat) \<and> y = Location (2::nat) \<or>
+         y = Location (Suc (0::nat)) \<and> x = Location (3::nat) \<or>
+         y = Location (0::nat) \<and> x = Location (3::nat) \<or>
+         y = Location (3::nat) \<and> x = Location (2::nat)}
+   \<subseteq> {Location (0:: nat),Location (1:: nat), 
+      Location (2:: nat),Location (3:: nat)}\<close>)
+  prefer 2
+   apply fastforce
+  by (erule finite_subset, simp)
+
+
+
 lemma finite_data_imp0: 
 "(hc_scenarioR, I) \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>*  \<Longrightarrow>
 (\<forall>l::location. finite (RRLoopThree.lgra (RRLoopThree.graphI hc_scenarioR) l)) \<longrightarrow>
@@ -142,37 +161,6 @@ lemma finite_data0:
   apply (drule finite_data_imp0)
 by (simp add: hc_scenarioR_def ex_graphR_def ex_locsR_def)
 
-lemma init_state_policy0: "\<lbrakk> \<forall> z z'. z \<rightarrow>\<^sub>n z' \<longrightarrow>  delta(z) = delta(z'); 
-                          (x,y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<rbrakk> \<Longrightarrow> 
-                          delta(x) = delta(y)"  
-  apply (rule mp)
-  prefer 2
-   apply (rotate_tac 1)
-    apply assumption
-  thm rtrancl_induct
-  apply (erule rtrancl_induct)  
-    apply (rule impI)
-   apply (rule refl)
-    apply (subgoal_tac "delta y = delta z")
-   apply (erule impE)
-    apply assumption
-    apply (rule impI)
-   apply (rule trans)
-    apply assumption+
-  apply (drule_tac x = y in spec)
-  apply (drule_tac x = z in spec)
-    apply (rotate_tac -1)
-  apply (erule impE)
-    apply simp
-by assumption
- 
-lemma init_state_policy: "\<lbrakk> (x,y) \<in> {(x::infrastructure, y::infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<rbrakk> \<Longrightarrow> 
-                          delta(x) = delta(y)"  
-  apply (rule init_state_policy0)
-    apply (rule delta_invariant)
-  by assumption
-
-
 lemma refmapTwo_lem: "\<forall>s::RRLoopThree.infrastructure.
        (hc_scenarioR, s) \<in> {(x::RRLoopThree.infrastructure, y::RRLoopThree.infrastructure). x \<rightarrow>\<^sub>n y}\<^sup>* \<longrightarrow>
        (\<forall>s'::RRLoopThree.infrastructure. s \<rightarrow>\<^sub>n s' \<longrightarrow> rmapR s \<rightarrow>\<^sub>n rmapR s')"
@@ -182,7 +170,7 @@ lemma refmapTwo_lem: "\<forall>s::RRLoopThree.infrastructure.
    apply (erule same_nodes)
   apply (subgoal_tac "delta hc_scenarioR = delta s")
   prefer 2
-  apply (erule init_state_policy)
+  apply (erule RRLoopThree.init_state_policy)
   apply (erule state_transition_in.cases) 
 proof -
 (* move *)
