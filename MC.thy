@@ -406,7 +406,50 @@ lemma AF_lem00: "(AF f) = (f \<union> AX (lfp (\<lambda> Z :: ('a :: state) set.
 lemma AF_lem000: "(AF f) = (f \<union> AX (AF f))"
   by (metis AF_def AF_lem00)
 
+lemma AF_lem1: "x \<in> f \<or> x \<in> (AX (AF f)) \<Longrightarrow> x \<in> AF f"
+  using AF_lem000 by blast
 
+lemma AF_lem2b: 
+  assumes "x \<in> (AX (AF f))"
+  shows "x \<in> AF f"
+  by (simp add: AF_lem1 assms)
+
+lemma AF_lem2a: assumes "x \<in> f" shows "x \<in> AF f"
+  by (simp add: AF_lem1 assms)
+
+lemma AF_lem2c: assumes "x \<notin> f" shows "x \<in> AF (- f)"
+  by (simp add: AF_lem1 assms)
+
+lemma AF_lem2d: assumes "x \<notin> AF f" shows "x \<notin> f"
+  using AF_lem1 assms by auto
+
+lemma AF_lem3b: assumes "x \<in> AX (f \<union> AX (AF f))" shows "x \<in> (AF f)"
+  by (metis AF_lem000 AF_lem2b assms)
+
+lemma AX_lem0l: "x \<in> (AX f) \<Longrightarrow> x \<in> (AX (f \<union> g))"
+  by (auto simp: AX_def)
+
+lemma AX_lem0r: "x \<in> (AX g) \<Longrightarrow> x \<in> (AX (f \<union> g))"
+  by (auto simp: AX_def)
+
+lemma AX_step: assumes "\<forall> y. x  \<rightarrow>\<^sub>i y \<longrightarrow> y \<in> f" shows "x \<in> AX f"
+  using assms 
+  by (auto simp add: AX_def)
+
+lemma AF_E[rule_format]: "\<forall> f. x \<in> (AF f) \<longrightarrow> x \<in> (f \<union> AX (AF f))"
+  using AF_lem000 by blast
+
+lemma AF_step: assumes "\<forall> y. x  \<rightarrow>\<^sub>i y \<longrightarrow> y \<in> f" shows "x \<in> AF f"
+  using AF_lem3b AX_step assms by blast
+
+lemma AF_step_step: assumes "\<forall> y. x  \<rightarrow>\<^sub>i y \<longrightarrow> y \<in> AF f" shows  "x \<in> AF f"
+  using AF_lem2b AX_step assms by blast
+
+lemma AF_step_star: "\<forall> x. \<exists> y. x  \<rightarrow>\<^sub>i* y \<and> y \<in> f \<Longrightarrow> x \<in> AF f"
+proof (simp add: state_transition_refl_def)
+  show \<open>\<forall>x. \<exists>y. (x, y) \<in> {(x, y). x \<rightarrow>\<^sub>i y}\<^sup>* \<and> y \<in> f \<Longrightarrow> x \<in> AF f\<close>
+  proof (erule converse_rtrancl_induct)
+    oops
 
 subsubsection \<open>AG lemmas\<close>
 
