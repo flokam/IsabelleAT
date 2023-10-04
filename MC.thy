@@ -390,7 +390,25 @@ lemma EF_step_inv: "(I \<subseteq> {sa::'s :: state. (\<exists>i\<in>I. i \<righ
          \<Longrightarrow> \<forall> x \<in> I. \<exists> y \<in> s. x \<rightarrow>\<^sub>i* y"
   using EF_step_star_rev by fastforce
   
-subsubsection \<open>AG lemmas\<close> 
+subsubsection \<open>AF lemmas\<close> 
+lemma AF_lem0: "(x \<in> AF f) = (x \<in> f \<union> AX (lfp (\<lambda>Z :: ('a :: state) set. f \<union> AX Z)))"
+proof -
+  have "lfp (\<lambda>Z :: ('a :: state) set. f \<union> AX Z) = 
+                    f \<union> (AX (lfp (\<lambda>Z :: 'a set. f \<union> AX Z)))"
+    by (rule def_lfp_unfold, rule reflexive, unfold mono_def AX_def, auto)
+  thus "(x \<in> AF (f :: ('a :: state) set)) = (x \<in> f \<union> AX (lfp (\<lambda>Z :: ('a :: state) set. f \<union> AX Z)))"
+    by (simp add: AF_def)
+qed
+
+lemma AF_lem00: "(AF f) = (f \<union> AX (lfp (\<lambda> Z :: ('a :: state) set. f \<union> AX Z)))"
+  by (auto simp add: AF_lem0)
+
+lemma AF_lem000: "(AF f) = (f \<union> AX (AF f))"
+  by (metis AF_def AF_lem00)
+
+
+
+subsubsection \<open>AG lemmas\<close>
 
 lemma AG_in_lem:   "x \<in> AG s \<Longrightarrow> x \<in> s"  
   by (auto simp add: AG_def gfp_def)

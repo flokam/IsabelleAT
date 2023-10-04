@@ -115,6 +115,31 @@ theorem prop_pres':  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> init K \<subs
   apply (rule subset_antisym, assumption)
 by (erule init_ref)
 
+theorem prop_presAF:  "K \<sqsubseteq>\<^sub>E K' \<Longrightarrow> (\<forall> s' \<in> (Pow (states K')). 
+                      (K' \<turnstile> AF s') \<longrightarrow> (Kripke (states K)(E ` (init K')) \<turnstile> AF (E ` s')))" 
+  apply clarify
+  apply (frule init_ref)
+  apply (unfold refinement_def)
+  apply (erule conjE)+
+  apply (simp add: check_def)
+  apply (rule subsetI)
+  apply (rule CollectI)
+  apply (rule conjI)
+  apply (rule_tac A = "init K" in subsetD, assumption)
+   apply (rule_tac A = "E ` init K'" in subsetD, assumption+)
+  apply (subgoal_tac "? y. y \<in> init K' \<and> E y = x")
+   prefer 2
+  apply force
+  apply (erule exE)
+  apply (erule conjE)
+   apply (rotate_tac 1)
+   apply (drule subsetD, assumption)
+   apply (erule CollectE)
+  apply (erule conjE)
+(* Need to apply an equivalent of the following*)
+(*    apply (drule EF_step_star_rev) : ?x \<in> EF ?s \<Longrightarrow> \<exists>y\<in>?s. ?x \<rightarrow>\<^sub>i* y*)
+
+  oops
 
 (* For refinement' *)
 lemma init_ref_ref: "K \<subseteq>\<^sub>E K' \<Longrightarrow> E ` (init K') \<subseteq> (init K)"
